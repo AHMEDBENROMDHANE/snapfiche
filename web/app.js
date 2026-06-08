@@ -817,7 +817,8 @@ imgGenerate.onclick = async () => {
   }
 };
 
-function showImageResult(container, url, prompt) {
+function showImageResult(container, url, prompt, history) {
+  history = history || []; // pile des images précédentes (pour Annuler)
   container.innerHTML = '';
   const img = document.createElement('img');
   img.src = url;
@@ -844,6 +845,12 @@ function showImageResult(container, url, prompt) {
 
   actions.appendChild(saveBtn);
   actions.appendChild(editBtn);
+  if (history.length) {
+    const undoBtn = document.createElement('button');
+    undoBtn.textContent = '↩️ Annuler la modif';
+    undoBtn.onclick = () => showImageResult(container, history[history.length - 1], prompt, history.slice(0, -1));
+    actions.appendChild(undoBtn);
+  }
   container.appendChild(actions);
 
   // ---- Édition par IA (langage naturel) ----
@@ -868,8 +875,8 @@ function showImageResult(container, url, prompt) {
       const { taskId } = await window.api.generate(descriptor);
       const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
       refreshBalance();
-      // ré-affiche le résultat modifié (édition itérative possible)
-      showImageResult(container, res.resultUrl, prompt);
+      // ré-affiche le résultat modifié (édition itérative + historique pour Annuler)
+      showImageResult(container, res.resultUrl, prompt, [...history, url]);
     } catch (e) {
       estatus.textContent = '❌ ' + e.message;
       estatus.className = 'edit-status error';
