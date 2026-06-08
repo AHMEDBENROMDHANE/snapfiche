@@ -171,6 +171,23 @@ function brandSuffix(c) {
   if (c.info) parts.push(c.info);
   return '\n\nConsignes de marque : ' + parts.join('. ') + '.';
 }
+// Coordonnées prêtes à afficher sur l'affiche (handles courts, pas d'URL complète).
+function contactLine(c) {
+  if (!c) return '';
+  const parts = [];
+  if (c.phone) parts.push('Tél : ' + c.phone);
+  if (c.email) parts.push(c.email);
+  if (c.whatsapp) { const n = (c.whatsapp.match(/(\+?\d[\d ]{5,})/) || [])[1]; parts.push('WhatsApp' + (n ? ' ' + n.trim() : '')); }
+  if (c.instagram) { const h = (c.instagram.match(/instagram\.com\/([^/?#]+)/) || [])[1]; if (h) parts.push('@' + h); }
+  if (c.facebook) { const f = (c.facebook.match(/(?:facebook|fb)\.com\/([^/?#]+)/) || [])[1]; if (f) parts.push('fb : ' + f); }
+  if (c.website) parts.push(c.website.replace(/^https?:\/\//, '').replace(/\/$/, ''));
+  return parts.join('   ·   ');
+}
+function contactDirective(c) {
+  const cl = contactLine(c);
+  if (!cl) return '';
+  return ` Affiche en bas de l'affiche, en petit mais parfaitement lisible, ces coordonnées EXACTES (reproduis-les caractère par caractère, ne modifie aucun chiffre ni lettre) : ${cl}.`;
+}
 function applyBrand(prefix, prompt) {
   const useBrand = document.getElementById(prefix + 'UseBrand').checked;
   const c = activeCompany();
@@ -386,8 +403,22 @@ document.getElementById('companyFetch').onclick = async () => {
       p.classList.remove('hidden');
       document.getElementById('companyLogoClear').classList.remove('hidden');
     }
+    // Détection automatique de la catégorie/secteur via l'IA (si vide)
+    const catEl = document.getElementById('companyCategory');
+    if (!catEl.value.trim() && (d.name || d.info)) {
+      try {
+        const r2 = await window.api.aiChat({
+          model: AI_MODEL,
+          messages: [
+            { role: 'system', content: "Tu identifies le secteur d'activité d'une entreprise. Réponds UNIQUEMENT par 1 à 3 mots (ex : Restauration, Immobilier, Boutique high-tech), sans phrase ni ponctuation finale." },
+            { role: 'user', content: `Entreprise : ${d.name || ''}. Description : ${d.info || ''}. Site : ${url}. Quel est son secteur d'activité ?` },
+          ],
+        });
+        if (r2.text) catEl.value = r2.text.trim().replace(/[.\n]/g, '').slice(0, 40);
+      } catch (_) {}
+    }
     const n = ['name', 'email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
-    status.textContent = (n || addedCol) ? `✅ Récupéré : ${n} champ(s), ${addedCol} couleur(s), ${d.logo ? 'logo ✓' : 'pas de logo'}. Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+    status.textContent = (n || addedCol) ? `✅ Récupéré : ${n} champ(s), ${addedCol} couleur(s), ${catEl.value ? 'catégorie ✓, ' : ''}${d.logo ? 'logo ✓' : 'pas de logo'}. Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
   } catch (e) {
     status.textContent = '❌ ' + e.message;
   } finally {
@@ -762,6 +793,7 @@ imgGenerate.onclick = async () => {
     if (sourceUrl) images.push(sourceUrl);
     let prompt2 = applyBrand('img', applyStyleManual('img', prompt));
     const c = activeCompany();
+    if (c && document.getElementById('imgShowContact').checked) prompt2 += contactDirective(c);
     if (c && c.logoFile && document.getElementById('imgUseLogo').checked) {
       const logoKie = await uploadCompanyLogo(statusEl); // logo placé par l'IA
       if (logoKie) {
@@ -1592,8 +1624,8 @@ document.getElementById('aiImprove').onclick = async () => {
     const { text } = await window.api.aiChat({
       model: AI_MODEL,
       messages: [
-        { role: 'system', content: "Tu es directeur artistique et expert en prompts de génération d'images (esprit loveart.ai). Tu transformes une idée brève en un brief visuel détaillé : sujet, composition/cadrage, style artistique, lumière, palette de couleurs, ambiance et niveau de qualité (haute résolution, très détaillé). 2 à 3 phrases denses, en français, sans listes, sans guillemets, sans préambule." },
-        { role: 'user', content: `Objectif : ${guidedRecipe.title}. Idée de l'utilisateur : "${current}". Réécris-la en une description visuelle détaillée et inspirante${activeCompany() ? `, cohérente avec la marque ${activeCompany().name}` : ''}. Le texte affiché sur le visuel sera en ${LANG_LABEL[guidedLang()]}.` },
+        { role: 'system', content: "Tu es directeur de création expert en prompts de génération d'images. Tu transformes une idée brève en un brief visuel détaillé et PRO : accroche/texte clé, sujet, composition/cadrage, style artistique, lumière, palette (couleurs de marque), ambiance, haute qualité. 2 à 4 phrases denses, concrètes et exploitables, en français, sans listes, sans guillemets, sans préambule." },
+        { role: 'user', content: (() => { const c = activeCompany(); const ctx = c ? ` Marque « ${c.name} »${c.category ? ', secteur ' + c.category : ''}${c.colors && c.colors.length ? ', couleurs ' + c.colors.join(', ') : ''}.` : ''; return `Objectif : ${guidedRecipe.title}.${ctx} Idée de l'utilisateur : "${current}". Réécris-la en un brief visuel détaillé, inspirant et cohérent avec la marque. Le texte qui apparaîtra sur le visuel sera en ${LANG_LABEL[guidedLang()]}.`; })() },
       ],
     });
     if (f) f.value = text;
@@ -1630,6 +1662,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
   const useStyle = style && style.t && !r.needsImage; // on garde le prompt dédié pour "changer tenue/décor"
   let prompt = (useStyle ? buildStylePrompt(style, answers.subject) : r.build(answers) + ART_DIRECTION) + langDirective(guidedLang());
   if (document.getElementById('guidedUseBrand').checked && activeCompany()) prompt += brandSuffix(activeCompany());
+  if (document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
 
   const eff = effectiveRecipe(r, document.getElementById('guidedQuality').value);
   const btn = document.getElementById('guidedGenerate');
