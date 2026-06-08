@@ -371,7 +371,10 @@ document.getElementById('companyFetch').onclick = async () => {
     set('companyWhatsapp', d.whatsapp);
     set('companyFacebook', d.facebook);
     set('companyInstagram', d.instagram);
-    if (d.color) { const n = normalizeHex(d.color); if (n && !formColors.includes(n)) { formColors.push(n); renderFormColors(); } }
+    const cols = d.colors && d.colors.length ? d.colors : d.color ? [d.color] : [];
+    let addedCol = 0;
+    cols.forEach((col) => { const n = normalizeHex(col); if (n && !formColors.includes(n)) { formColors.push(n); addedCol++; } });
+    if (addedCol) renderFormColors();
     if (d.logo) {
       formLogoUrl = d.logo;
       formRemoveLogo = false;
@@ -381,7 +384,7 @@ document.getElementById('companyFetch').onclick = async () => {
       document.getElementById('companyLogoClear').classList.remove('hidden');
     }
     const n = ['name', 'email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
-    status.textContent = n ? `✅ Infos récupérées (${n} champ(s) + ${d.logo ? 'logo' : 'sans logo'}). Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+    status.textContent = (n || addedCol) ? `✅ Récupéré : ${n} champ(s), ${addedCol} couleur(s), ${d.logo ? 'logo ✓' : 'pas de logo'}. Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
   } catch (e) {
     status.textContent = '❌ ' + e.message;
   } finally {

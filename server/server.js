@@ -140,6 +140,36 @@ function metaContent(html, name) {
 }
 function firstMatch(re, html) { const m = re.exec(html); return m ? m[0] : ''; }
 
+// Extrait les couleurs de marque dominantes (hors blanc/noir/gris) du HTML + CSS.
+function extractColors(text) {
+  const counts = {};
+  const add = (hex) => { counts[hex] = (counts[hex] || 0) + 1; };
+  for (const m of text.matchAll(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g)) {
+    let h = m[1].toLowerCase();
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    add('#' + h);
+  }
+  for (const m of text.matchAll(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/g)) {
+    add('#' + [m[1], m[2], m[3]].map((n) => Math.min(255, +n).toString(16).padStart(2, '0')).join(''));
+  }
+  const isBrand = (hex) => {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    if (max > 235 && min > 235) return false; // blanc
+    if (max < 25) return false;                // noir
+    if (max - min < 28) return false;          // gris
+    return true;
+  };
+  return Object.entries(counts).filter(([h]) => isBrand(h)).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([h]) => h);
+}
+async function fetchText(url, ms) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms || 7000);
+  try { const r = await fetch(url, { signal: c.signal, headers: { 'User-Agent': 'Mozilla/5.0 (SnapFiche)' } }); return await r.text(); }
+  catch (_) { return ''; }
+  finally { clearTimeout(t); }
+}
+
 app.post('/api/fetch-site', auth, async (req, res) => {
   let url = clean(req.body.url);
   if (!url) return res.status(400).json({ error: 'URL manquante.' });
@@ -179,7 +209,18 @@ app.post('/api/fetch-site', auth, async (req, res) => {
     const instagram = firstMatch(/https?:\/\/(?:www\.)?instagram\.com\/[^"'\s<)]+/i, html);
     const whatsapp = firstMatch(/https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[^"'\s<)]+/i, html);
 
-    res.json({ name, info, email, phone, whatsapp, facebook, instagram, color, logo });
+    // Couleurs de marque : on analyse le HTML + les 1ères feuilles CSS du site.
+    const cssLinks = [...html.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
+      .map((m) => m[1]).slice(0, 4);
+    let cssText = '';
+    for (const href of cssLinks) {
+      try { cssText += '\n' + (await fetchText(new URL(href, base).href, 6000)).slice(0, 250000); } catch (_) {}
+    }
+    let colors = extractColors(html + cssText);
+    if (color) { const tc = color.toLowerCase(); colors = [tc, ...colors.filter((c) => c !== tc)]; }
+    colors = colors.slice(0, 4);
+
+    res.json({ name, info, email, phone, whatsapp, facebook, instagram, color, colors, logo });
   } catch (e) {
     res.status(502).json({ error: 'Impossible de lire le site : ' + e.message });
   }
