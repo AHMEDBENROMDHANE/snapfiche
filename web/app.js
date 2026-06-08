@@ -845,6 +845,39 @@ function showImageResult(container, url, prompt) {
   actions.appendChild(saveBtn);
   actions.appendChild(editBtn);
   container.appendChild(actions);
+
+  // ---- Édition par IA (langage naturel) ----
+  const edit = document.createElement('div');
+  edit.className = 'edit-ai';
+  edit.innerHTML =
+    '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
+    '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" /><button class="edit-btn">Modifier</button></div>' +
+    '<div class="edit-status"></div>';
+  const input = edit.querySelector('.edit-input');
+  const ebtn = edit.querySelector('.edit-btn');
+  const estatus = edit.querySelector('.edit-status');
+  const runEdit = async () => {
+    const instr = input.value.trim();
+    if (!instr) return;
+    ebtn.disabled = true;
+    estatus.className = 'edit-status';
+    estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
+    try {
+      const descriptor = { api: 'jobs', model: 'google/nano-banana', input: { prompt: instr, image_urls: [url], output_format: 'png' } };
+      const { taskId } = await window.api.generate(descriptor);
+      const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
+      refreshBalance();
+      // ré-affiche le résultat modifié (édition itérative possible)
+      showImageResult(container, res.resultUrl, prompt);
+    } catch (e) {
+      estatus.textContent = '❌ ' + e.message;
+      estatus.className = 'edit-status error';
+      ebtn.disabled = false;
+    }
+  };
+  ebtn.onclick = runEdit;
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runEdit(); });
+  container.appendChild(edit);
 }
 
 // ============ Génération de VIDÉO ============
