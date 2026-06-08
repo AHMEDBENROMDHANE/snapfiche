@@ -3,8 +3,8 @@
 // Auth : Supabase (GoTrue).  Base : PostgreSQL direct (pg) -> fiable + atomique.
 // Rôle : détenir la clé kie.ai, vérifier l'utilisateur, relayer kie.ai, débiter les crédits.
 // ============================================================
-require('dotenv').config();
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
