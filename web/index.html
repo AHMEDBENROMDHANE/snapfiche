@@ -2,11 +2,25 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>SnapFiche</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#d72d5b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SnapFiche" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   </head>
   <body>
+    <!-- Barre mobile (menu hamburger) -->
+    <div class="mobile-bar">
+      <button id="menuToggle" class="menu-toggle" aria-label="Menu">☰</button>
+      <span class="mobile-brand">Snap<b>Fiche</b></span>
+    </div>
+    <div id="navBackdrop" class="nav-backdrop"></div>
+
     <!-- ÉCRAN DE CONNEXION -->
     <div id="loginGate" class="auth-gate hidden">
       <div class="auth-box">

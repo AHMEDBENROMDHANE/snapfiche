@@ -3,6 +3,11 @@
 // ============================================================
 window.SB = supabase.createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON);
 
+// PWA : enregistre le service worker (rend l'app installable)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 let appLoaded = false;
 function loadApp() {
   if (appLoaded) return;

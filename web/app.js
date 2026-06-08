@@ -107,6 +107,16 @@ const findModel = (type, id) => MODELS[type].find((m) => m.id === id);
 // ============ Navigation ============
 const navButtons = document.querySelectorAll('.nav-btn');
 const views = document.querySelectorAll('.view');
+
+// Menu hamburger (mobile) : ouverture/fermeture du tiroir
+const _sidebar = document.querySelector('.sidebar');
+const _backdrop = document.getElementById('navBackdrop');
+function closeNav() { if (_sidebar) _sidebar.classList.remove('open'); if (_backdrop) _backdrop.classList.remove('show'); }
+function openNav() { if (_sidebar) _sidebar.classList.add('open'); if (_backdrop) _backdrop.classList.add('show'); }
+const _menuToggle = document.getElementById('menuToggle');
+if (_menuToggle) _menuToggle.onclick = () => (_sidebar.classList.contains('open') ? closeNav() : openNav());
+if (_backdrop) _backdrop.onclick = closeNav;
+
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     navButtons.forEach((b) => b.classList.remove('active'));
@@ -114,6 +124,7 @@ navButtons.forEach((btn) => {
     btn.classList.add('active');
     document.getElementById(`view-${btn.dataset.view}`).classList.add('active');
     if (btn.dataset.view === 'gallery') loadGallery();
+    closeNav(); // referme le tiroir sur mobile après navigation
   });
 });
 
