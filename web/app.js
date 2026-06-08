@@ -88,12 +88,11 @@ const usd = (c) => (c * CREDIT_USD).toFixed(2);
 // Le solde réel (affiché en bas à gauche) fait foi.
 const MODELS = {
   image: [
-    { id: 'flux-kontext-pro', label: 'Flux Kontext Pro', api: 'flux', edit: true, ratio: true, credits: 8 },
-    { id: 'flux-kontext-max', label: 'Flux Kontext Max', api: 'flux', edit: true, ratio: true, credits: 12 },
-    { id: 'google/nano-banana', label: 'Nano Banana (Gemini Flash)', api: 'jobs', edit: true, ratio: true, imageField: 'image_urls', credits: 4 },
-    { id: 'nano-banana-pro', label: 'Nano Banana Pro (Gemini 3 Pro)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
-    { id: 'seedream/4.5-text-to-image', label: 'Seedream 4.5 (éco, bon texte)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
-    { id: 'ideogram/v3-text-to-image', label: 'Ideogram V3 (typographie)', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
+    { id: 'nano-banana-pro', label: '🔥 Apex — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
+    { id: 'seedream/4.5-text-to-image', label: '✨ Lumina — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
+    { id: 'ideogram/v3-text-to-image', label: '🔤 Prisme — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
+    { id: 'flux-kontext-pro', label: '🎨 Studio', api: 'flux', edit: true, ratio: true, credits: 8 },
+    { id: 'flux-kontext-max', label: '🎨 Studio Max', api: 'flux', edit: true, ratio: true, credits: 12 },
   ],
   video: [
     { id: 'veo3_fast', label: 'Veo 3 Fast', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
@@ -871,9 +870,9 @@ function showImageResult(container, url, prompt, history) {
     '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
     '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" />' +
     '<select class="edit-model">' +
-      '<option value="bytedance/seedream-v4-edit">Recommandé · comprend mieux (Seedream V4 · ~5 cr)</option>' +
-      '<option value="google/nano-banana">Qualité (Nano Banana · ~4 cr)</option>' +
-      '<option value="qwen/image-edit">Économique (Qwen · ~2 cr)</option>' +
+      '<option value="bytedance/seedream-v4-edit">✨ Lumina — Retouche fidèle (recommandé · ~5 cr)</option>' +
+      '<option value="nano-banana-pro">🔥 Apex — Ultra HD (qualité max · ~30 cr)</option>' +
+      '<option value="qwen/image-edit">⚡ Express — Éco (~2 cr)</option>' +
     '</select>' +
     '<button class="edit-btn">Modifier</button></div>' +
     '<div class="edit-hint">Seul le changement demandé est appliqué — le format, la mise en page et le reste sont conservés.</div>' +
@@ -895,11 +894,11 @@ function showImageResult(container, url, prompt, history) {
       const guarded = editGuardPrompt(instr, ar);
       let payload;
       if (model === 'qwen/image-edit') {
-        payload = { prompt: guarded, image_url: url };                       // Qwen : conserve la toile source
-      } else if (model === 'bytedance/seedream-v4-edit') {
-        payload = { prompt: guarded, image_urls: [url] };                    // Seedream : éditeur fidèle, garde les dims source
+        payload = { prompt: guarded, image_url: url };                                       // Express : conserve la toile source
+      } else if (model === 'nano-banana-pro') {
+        payload = { prompt: guarded, image_input: [url], aspect_ratio: ar, resolution: '2K', output_format: 'png' }; // Apex : ratio forcé
       } else {
-        payload = { prompt: guarded, image_urls: [url], aspect_ratio: ar, output_format: 'png' }; // Nano Banana : forcer le ratio
+        payload = { prompt: guarded, image_urls: [url] };                                    // Lumina : éditeur fidèle, garde les dims source
       }
       const descriptor = { api: 'jobs', model, input: payload };
       const { taskId } = await window.api.generate(descriptor);
@@ -1348,14 +1347,14 @@ const RECIPES = [
   {
     id: 'social-post', icon: 'smartphone', title: 'Post réseaux sociaux',
     desc: 'Visuel carré pour Instagram, Facebook, LinkedIn.',
-    kind: 'image', model: 'google/nano-banana', params: { aspect_ratio: '1:1' },
+    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '1:1', resolution: '2K' },
     ask: [{ key: 'subject', label: 'Quel message / sujet du post ?', ph: 'Ex : promotion -20% sur toute la boutique ce week-end' }],
     build: (a) => `Visuel carré pour les réseaux sociaux, moderne et accrocheur. Message : ${a.subject}. Composition claire, texte court bien lisible, couleurs vives, optimisé pour le mobile.`,
   },
   {
     id: 'story', icon: 'smartphone', title: 'Story / Reel',
     desc: 'Visuel vertical plein écran (Stories, TikTok, Shorts).',
-    kind: 'image', model: 'google/nano-banana', params: { aspect_ratio: '9:16' },
+    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '9:16', resolution: '2K' },
     ask: [{ key: 'subject', label: 'Quel message de la story ?', ph: 'Ex : nouvelle collection été disponible en ligne' }],
     build: (a) => `Visuel vertical plein écran (story / reel), dynamique et impactant. Message : ${a.subject}. Accroche en haut, appel à l'action en bas, style tendance réseaux sociaux.`,
   },
