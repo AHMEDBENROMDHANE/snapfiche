@@ -26,7 +26,10 @@ const app = express();
 app.use(express.json({ limit: '12mb' }));
 app.use(cors({ origin: ALLOWED_ORIGIN ? ALLOWED_ORIGIN.split(',') : true }));
 // Sert le frontend SnapFiche (web/) depuis le même serveur (même origine).
-app.use(express.static(path.join(__dirname, '..', 'web')));
+// no-cache : le navigateur revérifie à chaque fois -> plus de version périmée après déploiement.
+app.use(express.static(path.join(__dirname, '..', 'web'), {
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}));
 
 // ---- Authentification + garantie du profil ----
 async function auth(req, res, next) {
