@@ -1521,7 +1521,10 @@ document.getElementById('aiIdeas').onclick = async () => {
   statusEl.innerHTML = '<span class="spinner"></span>L\'IA réfléchit…';
   try {
     const c = activeCompany();
-    const colors = c && c.colors && c.colors.length ? ` Couleurs de marque à respecter : ${c.colors.join(', ')}.` : '';
+    const cat = c && c.category ? `, secteur : ${c.category}` : '';
+    const cols = c && c.colors && c.colors.length ? `, couleurs de marque : ${c.colors.join(', ')}` : '';
+    const inf = c && c.info ? `, infos : ${c.info}` : '';
+    const subjectNow = (subjectField() && subjectField().value.trim()) || '';
     // Si l'entreprise a un logo, on le fait "voir" à l'IA pour des idées cohérentes avec la marque.
     let logoDataUrl = null;
     if (c && c.logoFile) {
@@ -1529,13 +1532,21 @@ document.getElementById('aiIdeas').onclick = async () => {
         logoDataUrl = await downscaleDataUrl(await window.api.mediaDataUrl(c.logoFile), 384, 'image/png');
       } catch (_) {}
     }
+    const SYS =
+      "Tu es directeur de création senior dans une agence de design primée. Tu génères des concepts d'affiches PRÉCIS, originaux et directement exploitables — jamais de banalités ni de descriptions vagues. " +
+      "Chaque concept combine une ACCROCHE percutante (vrai texte d'affiche) ET une description visuelle concrète : sujet, composition/cadrage, style artistique, lumière, palette. " +
+      "Tu exploites l'identité de marque (secteur, couleurs, logo) et tu varies RADICALEMENT les directions artistiques d'un concept à l'autre.";
     const userText =
-      `Propose 5 concepts d'affiche DISTINCTS et originaux pour : ${guidedRecipe.title}${companyContext()}.${colors}` +
-      (logoDataUrl ? " Le logo de la marque est joint : propose des concepts cohérents avec son style, ses formes et ses couleurs, et prévois où l'intégrer." : '') +
-      `\nVarie franchement les directions artistiques (minimaliste éditorial, rendu 3D moderne, collage, typographie XXL, photo cinématographique, dégradés/néons, rétro...).` +
-      `\nLe texte qui apparaîtra sur l'affiche sera en ${LANG_LABEL[guidedLang()]} : tiens-en compte.` +
-      `\nUne idée par ligne, une phrase riche et concrète chacune, sans numéro ni puce.`;
-    const SYS = "Tu es directeur artistique senior dans un studio de design haut de gamme (esprit loveart.ai). Tu proposes des concepts d'affiches modernes, audacieux et mémorables, cohérents avec l'identité de marque fournie (logo, couleurs). Pour chaque idée, précise le concept visuel, le style/esthétique, l'ambiance et la palette. Concis mais évocateur, en français.";
+      `Objectif : ${guidedRecipe.title}.` +
+      `\nMarque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${cols}${inf}.` +
+      (subjectNow ? `\nDemande de l'utilisateur : ${subjectNow}.` : '') +
+      (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
+      `\nLangue du texte affiché : ${LANG_LABEL[guidedLang()]}.` +
+      `\n\nDonne 5 concepts d'affiche RADICALEMENT différents et mémorables, SPÉCIFIQUES à ce secteur (pas génériques).` +
+      `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
+      `\n"Accroche courte et percutante" — concept visuel précis (sujet + composition + style + lumière + palette).` +
+      `\nVarie les directions (minimaliste éditorial, rendu 3D, photo cinématographique, typographie géante, collage, néon, rétro, dégradé aurora...).` +
+      `\nPas de numéro, pas de puce, pas d'introduction ni de conclusion.`;
     // Essai avec le logo (vision) ; repli en texte seul si l'image échoue.
     let text;
     try {
