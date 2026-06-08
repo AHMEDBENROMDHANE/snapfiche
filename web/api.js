@@ -1,0 +1,141 @@
+// ============================================================
+// SnapFiche — couche window.api pour le web.
+// Reproduit l'API de l'app de bureau, mais via :
+//   • le BACKEND (proxy kie.ai + crédits)        -> generate/poll/chat/upload/credits
+//   • Supabase directement (RLS)                 -> entreprises, galerie, stockage
+// window.SB (client Supabase) est défini dans supabase.js.
+// ============================================================
+(function () {
+  const BASE = window.CONFIG.BACKEND_URL;
+
+  async function token() {
+    const { data } = await window.SB.auth.getSession();
+    return data.session ? data.session.access_token : null;
+  }
+  async function backend(path, opts = {}) {
+    const t = await token();
+    const res = await fetch(BASE + path, {
+      method: opts.method || 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `Erreur (HTTP ${res.status})`);
+    return json;
+  }
+  async function uid() {
+    const { data } = await window.SB.auth.getUser();
+    return data.user ? data.user.id : null;
+  }
+  function dataUrlToBlob(dataUrl) {
+    const [head, b64] = dataUrl.split(',');
+    const mime = (head.match(/data:(.*?);/) || [])[1] || 'image/png';
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function rid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  async function uploadToStorage(dataUrl, folder) {
+    const u = await uid();
+    const blob = dataUrlToBlob(dataUrl);
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const path = `${u}/${folder}/${rid()}.${ext}`;
+    const { error } = await window.SB.storage.from('media').upload(path, blob, { contentType: blob.type, upsert: true });
+    if (error) throw new Error(error.message);
+    return window.SB.storage.from('media').getPublicUrl(path).data.publicUrl;
+  }
+  function triggerDownload(href, name) {
+    const a = document.createElement('a');
+    a.href = href; a.download = name || 'snapfiche'; a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  window.api = {
+    // ---- Auth / config ----
+    configStatus: async () => ({ hasKey: true, fromEnv: true, activeCompanyId: localStorage.getItem('activeCompanyId') || null }),
+    setApiKey: async () => ({ ok: true }), // la clé est côté serveur
+    setActiveCompany: async (id) => { if (id) localStorage.setItem('activeCompanyId', id); else localStorage.removeItem('activeCompanyId'); return { ok: true }; },
+
+    // ---- Solde ----
+    getCredits: async () => { const j = await backend('/api/credits'); return { credits: j.credits, usd: +(j.credits * 0.005).toFixed(2) }; },
+
+    // ---- Génération (via backend) ----
+    generate: (descriptor) => backend('/api/generate', { method: 'POST', body: descriptor }),
+    poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),
+    aiChat: (payload) => backend('/api/chat', { method: 'POST', body: payload }),
+    uploadFile: (payload) => backend('/api/upload', { method: 'POST', body: payload }),
+
+    // ---- Entreprises (Supabase + stockage) ----
+    companyList: async () => {
+      const { data, error } = await window.SB.from('companies').select('*').order('created_at', { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data || []).map((c) => ({ id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '', logoFile: c.logo_url || null, createdAt: c.created_at }));
+    },
+    companySave: async (company) => {
+      const u = await uid();
+      const row = { user_id: u, name: company.name || 'Sans nom', colors: company.colors || [], website: company.website || '', info: company.info || '' };
+      if (company.logoDataUrl) row.logo_url = await uploadToStorage(company.logoDataUrl, 'logos');
+      else if (company.removeLogo) row.logo_url = null;
+      let res;
+      if (company.id) res = await window.SB.from('companies').update(row).eq('id', company.id).select().single();
+      else res = await window.SB.from('companies').insert(row).select().single();
+      if (res.error) throw new Error(res.error.message);
+      const c = res.data;
+      return { id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '', logoFile: c.logo_url || null };
+    },
+    companyDelete: async (id) => { const { error } = await window.SB.from('companies').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
+
+    // ---- Galerie (Supabase) ----
+    galleryAdd: async (item) => {
+      const u = await uid();
+      const row = { user_id: u, type: item.type, prompt: item.prompt || '', url: item.url, company_id: item.companyId || null };
+      const { data, error } = await window.SB.from('gallery').insert(row).select().single();
+      if (error) throw new Error(error.message);
+      return { id: data.id, type: data.type, prompt: data.prompt, companyId: data.company_id, file: data.url, url: data.url, createdAt: data.created_at };
+    },
+    galleryList: async () => {
+      const { data, error } = await window.SB.from('gallery').select('*').order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return (data || []).map((g) => ({ id: g.id, type: g.type, prompt: g.prompt || '', companyId: g.company_id, file: g.url, url: g.url, createdAt: g.created_at }));
+    },
+    galleryDelete: async (id) => { const { error } = await window.SB.from('gallery').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
+
+    // ---- Médias ----
+    // Sur le web, les "fichiers" sont déjà des URLs publiques -> on les renvoie telles quelles.
+    mediaDataUrl: async (x) => x,
+    fetchDataUrl: async (url) => {
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        const blob = await res.blob();
+        return await new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob); });
+      } catch (_) {
+        return url; // repli : utilisable comme src d'image
+      }
+    },
+
+    // ---- Export (téléchargement navigateur) ----
+    exportSave: async ({ dataUrl, defaultName }) => { triggerDownload(dataUrl, defaultName); return { canceled: false, filePath: defaultName }; },
+    exportSaveFile: async ({ srcPath, defaultName }) => { triggerDownload(srcPath, defaultName); return { canceled: false, filePath: defaultName }; },
+    openInFolder: async () => ({ ok: true }),
+
+    // ---- Import / Export entreprises ----
+    dataExport: async () => {
+      const companies = await window.api.companyList();
+      const out = { app: 'snapfiche', version: 1, companies: companies.map((c) => ({ name: c.name, colors: c.colors, website: c.website, info: c.info, logo_url: c.logoFile })) };
+      triggerDownload('data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(out, null, 2)), 'snapfiche-entreprises.json');
+      return { canceled: false, count: companies.length };
+    },
+    dataImport: async (data) => {
+      if (!data || !Array.isArray(data.companies)) throw new Error('Fichier invalide.');
+      let added = 0;
+      for (const c of data.companies) {
+        await window.api.companySave({ name: c.name, colors: c.colors, website: c.website, info: c.info });
+        added++;
+      }
+      return { added };
+    },
+  };
+})();
