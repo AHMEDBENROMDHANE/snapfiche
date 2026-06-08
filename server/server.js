@@ -130,4 +130,59 @@ app.post('/api/upload', auth, async (req, res) => {
   }
 });
 
+// ---- Récupération auto des infos d'un site web ----
+const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
+function metaContent(html, name) {
+  const re1 = new RegExp('<meta[^>]+(?:name|property)=["\']' + name + '["\'][^>]*content=["\']([^"\']+)["\']', 'i');
+  const re2 = new RegExp('<meta[^>]+content=["\']([^"\']+)["\'][^>]*(?:name|property)=["\']' + name + '["\']', 'i');
+  const m = re1.exec(html) || re2.exec(html);
+  return m ? m[1] : '';
+}
+function firstMatch(re, html) { const m = re.exec(html); return m ? m[0] : ''; }
+
+app.post('/api/fetch-site', auth, async (req, res) => {
+  let url = clean(req.body.url);
+  if (!url) return res.status(400).json({ error: 'URL manquante.' });
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const resp = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (SnapFiche)' } });
+    clearTimeout(timer);
+    const html = await resp.text();
+    const base = new URL(resp.url || url);
+
+    const title = clean((/<title[^>]*>([^<]*)<\/title>/i.exec(html) || [])[1]);
+    const name = clean(metaContent(html, 'og:site_name')) || (title.split(/[|\-–—·•]/)[0] || '').trim() || base.hostname.replace(/^www\./, '');
+    const info = clean(metaContent(html, 'og:description') || metaContent(html, 'description'));
+    const color = clean(metaContent(html, 'theme-color'));
+
+    // logo (og:image -> sinon favicon)
+    let logo = clean(metaContent(html, 'og:image') || metaContent(html, 'og:image:url'));
+    if (!logo) {
+      const fav = /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]*href=["']([^"']+)["']/i.exec(html);
+      if (fav) logo = fav[1];
+    }
+    if (logo && !/^https?:\/\//i.test(logo)) { try { logo = new URL(logo, base).href; } catch (_) {} }
+
+    // email
+    const mailto = (/mailto:([^"'?>\s]+)/i.exec(html) || [])[1];
+    const emailTxt = (html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []).find((e) => !/\.(png|jpe?g|gif|webp|svg)$/i.test(e));
+    const email = clean(mailto || emailTxt || '').toLowerCase();
+
+    // téléphone
+    const tel = (/tel:([+0-9 ().\-]{6,})/i.exec(html) || [])[1];
+    const phone = clean(tel || '');
+
+    // réseaux
+    const facebook = firstMatch(/https?:\/\/(?:www\.)?(?:facebook|fb)\.com\/[^"'\s<)]+/i, html);
+    const instagram = firstMatch(/https?:\/\/(?:www\.)?instagram\.com\/[^"'\s<)]+/i, html);
+    const whatsapp = firstMatch(/https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[^"'\s<)]+/i, html);
+
+    res.json({ name, info, email, phone, whatsapp, facebook, instagram, color, logo });
+  } catch (e) {
+    res.status(502).json({ error: 'Impossible de lire le site : ' + e.message });
+  }
+});
+
 app.listen(PORT || 3000, () => console.log(`SnapFiche API en écoute sur :${PORT || 3000}`));

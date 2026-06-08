@@ -47,6 +47,13 @@
     if (error) throw new Error(error.message);
     return window.SB.storage.from('media').getPublicUrl(path).data.publicUrl;
   }
+  function mapCompany(c) {
+    return {
+      id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '',
+      email: c.email || '', phone: c.phone || '', whatsapp: c.whatsapp || '', facebook: c.facebook || '', instagram: c.instagram || '',
+      logoFile: c.logo_url || null, createdAt: c.created_at,
+    };
+  }
   function triggerDownload(href, name) {
     const a = document.createElement('a');
     a.href = href; a.download = name || 'snapfiche'; a.target = '_blank';
@@ -72,20 +79,33 @@
     companyList: async () => {
       const { data, error } = await window.SB.from('companies').select('*').order('created_at', { ascending: true });
       if (error) throw new Error(error.message);
-      return (data || []).map((c) => ({ id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '', logoFile: c.logo_url || null, createdAt: c.created_at }));
+      return (data || []).map(mapCompany);
     },
     companySave: async (company) => {
       const u = await uid();
-      const row = { user_id: u, name: company.name || 'Sans nom', colors: company.colors || [], website: company.website || '', info: company.info || '' };
+      const row = {
+        user_id: u,
+        name: company.name || 'Sans nom',
+        colors: company.colors || [],
+        website: company.website || '',
+        info: company.info || '',
+        email: company.email || '',
+        phone: company.phone || '',
+        whatsapp: company.whatsapp || '',
+        facebook: company.facebook || '',
+        instagram: company.instagram || '',
+      };
       if (company.logoDataUrl) row.logo_url = await uploadToStorage(company.logoDataUrl, 'logos');
+      else if (company.logoUrl) row.logo_url = company.logoUrl; // logo récupéré depuis le site
       else if (company.removeLogo) row.logo_url = null;
       let res;
       if (company.id) res = await window.SB.from('companies').update(row).eq('id', company.id).select().single();
       else res = await window.SB.from('companies').insert(row).select().single();
       if (res.error) throw new Error(res.error.message);
-      const c = res.data;
-      return { id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '', logoFile: c.logo_url || null };
+      return mapCompany(res.data);
     },
+    // Récupère les infos d'un site web (via le backend)
+    fetchSite: (url) => backend('/api/fetch-site', { method: 'POST', body: { url } }),
     companyDelete: async (id) => { const { error } = await window.SB.from('companies').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
 
     // ---- Galerie (Supabase) ----

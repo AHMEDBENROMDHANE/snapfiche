@@ -257,6 +257,7 @@ async function loadCompanies() {
 let formColors = [];
 let formLogoDataUrl = null;
 let formRemoveLogo = false;
+let formLogoUrl = null; // logo récupéré depuis le site web (URL distante)
 
 function renderFormColors() {
   const el = document.getElementById('colorChips');
@@ -326,6 +327,7 @@ document.getElementById('companyLogo').addEventListener('change', (e) => {
 });
 document.getElementById('companyLogoClear').onclick = () => {
   formLogoDataUrl = null;
+  formLogoUrl = null;
   formRemoveLogo = true;
   document.getElementById('companyLogo').value = '';
   document.getElementById('companyLogoPreview').classList.add('hidden');
@@ -337,16 +339,55 @@ function resetCompanyForm() {
   document.getElementById('companyName').value = '';
   document.getElementById('companyWebsite').value = '';
   document.getElementById('companyInfo').value = '';
+  ['companyEmail', 'companyPhone', 'companyWhatsapp', 'companyFacebook', 'companyInstagram'].forEach((id) => (document.getElementById(id).value = ''));
+  document.getElementById('companyFetchStatus').textContent = '';
   formColors = [];
   renderFormColors();
   formLogoDataUrl = null;
   formRemoveLogo = false;
+  formLogoUrl = null;
   document.getElementById('companyLogo').value = '';
   document.getElementById('companyLogoPreview').classList.add('hidden');
   document.getElementById('companyLogoClear').classList.add('hidden');
   document.getElementById('companyFormTitle').textContent = 'Nouvelle entreprise';
 }
 document.getElementById('companyReset').onclick = resetCompanyForm;
+
+// --- Récupération auto des infos depuis le site web ---
+document.getElementById('companyFetch').onclick = async () => {
+  const status = document.getElementById('companyFetchStatus');
+  const url = document.getElementById('companyWebsite').value.trim();
+  if (!url) { status.textContent = "Entre d'abord l'adresse du site web."; return; }
+  const btn = document.getElementById('companyFetch');
+  btn.disabled = true;
+  status.textContent = '⏳ Lecture du site en cours…';
+  try {
+    const d = await window.api.fetchSite(url);
+    const set = (id, v) => { if (v) document.getElementById(id).value = v; };
+    set('companyName', d.name);
+    set('companyInfo', d.info);
+    set('companyEmail', d.email);
+    set('companyPhone', d.phone);
+    set('companyWhatsapp', d.whatsapp);
+    set('companyFacebook', d.facebook);
+    set('companyInstagram', d.instagram);
+    if (d.color) { const n = normalizeHex(d.color); if (n && !formColors.includes(n)) { formColors.push(n); renderFormColors(); } }
+    if (d.logo) {
+      formLogoUrl = d.logo;
+      formRemoveLogo = false;
+      const p = document.getElementById('companyLogoPreview');
+      p.src = d.logo;
+      p.classList.remove('hidden');
+      document.getElementById('companyLogoClear').classList.remove('hidden');
+    }
+    const n = ['name', 'email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
+    status.textContent = n ? `✅ Infos récupérées (${n} champ(s) + ${d.logo ? 'logo' : 'sans logo'}). Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
 
 // --- Import / Export des entreprises ---
 document.getElementById('dataExport').onclick = async () => {
@@ -381,10 +422,16 @@ function editCompany(c) {
   document.getElementById('companyName').value = c.name || '';
   document.getElementById('companyWebsite').value = c.website || '';
   document.getElementById('companyInfo').value = c.info || '';
+  document.getElementById('companyEmail').value = c.email || '';
+  document.getElementById('companyPhone').value = c.phone || '';
+  document.getElementById('companyWhatsapp').value = c.whatsapp || '';
+  document.getElementById('companyFacebook').value = c.facebook || '';
+  document.getElementById('companyInstagram').value = c.instagram || '';
   formColors = [...(c.colors || [])];
   renderFormColors();
   formLogoDataUrl = null;
   formRemoveLogo = false;
+  formLogoUrl = null;
   document.getElementById('companyLogo').value = ''; // permet de re-choisir le même fichier
   const p = document.getElementById('companyLogoPreview');
   const clr = document.getElementById('companyLogoClear');
@@ -413,9 +460,15 @@ document.getElementById('companySave').onclick = async () => {
     name,
     website: document.getElementById('companyWebsite').value.trim(),
     info: document.getElementById('companyInfo').value.trim(),
+    email: document.getElementById('companyEmail').value.trim(),
+    phone: document.getElementById('companyPhone').value.trim(),
+    whatsapp: document.getElementById('companyWhatsapp').value.trim(),
+    facebook: document.getElementById('companyFacebook').value.trim(),
+    instagram: document.getElementById('companyInstagram').value.trim(),
     colors: formColors,
   };
   if (formLogoDataUrl) payload.logoDataUrl = formLogoDataUrl;
+  else if (formLogoUrl) payload.logoUrl = formLogoUrl;
   if (formRemoveLogo) payload.removeLogo = true;
   const btn = document.getElementById('companySave');
   btn.disabled = true;
