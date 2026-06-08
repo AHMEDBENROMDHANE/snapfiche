@@ -850,7 +850,7 @@ function showImageResult(container, url, prompt) {
   const edit = document.createElement('div');
   edit.className = 'edit-ai';
   edit.innerHTML =
-    '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
+    '<div class="edit-title">✏️ Modifier avec l\'IA (≈ 2 crédits / modif)</div>' +
     '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" /><button class="edit-btn">Modifier</button></div>' +
     '<div class="edit-status"></div>';
   const input = edit.querySelector('.edit-input');
@@ -863,7 +863,8 @@ function showImageResult(container, url, prompt) {
     estatus.className = 'edit-status';
     estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
     try {
-      const descriptor = { api: 'jobs', model: 'google/nano-banana', input: { prompt: instr, image_urls: [url], output_format: 'png' } };
+      // Qwen image edit = le modèle d'édition le moins cher (≈2 crédits)
+      const descriptor = { api: 'jobs', model: 'qwen/image-edit', input: { prompt: instr, image_url: url } };
       const { taskId } = await window.api.generate(descriptor);
       const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
       refreshBalance();
