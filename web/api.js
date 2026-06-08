@@ -49,7 +49,7 @@
   }
   function mapCompany(c) {
     return {
-      id: c.id, name: c.name, colors: c.colors || [], website: c.website || '', info: c.info || '',
+      id: c.id, name: c.name, category: c.category || '', colors: c.colors || [], website: c.website || '', info: c.info || '',
       email: c.email || '', phone: c.phone || '', whatsapp: c.whatsapp || '', facebook: c.facebook || '', instagram: c.instagram || '',
       logoFile: c.logo_url || null, createdAt: c.created_at,
     };
@@ -86,6 +86,7 @@
       const row = {
         user_id: u,
         name: company.name || 'Sans nom',
+        category: company.category || '',
         colors: company.colors || [],
         website: company.website || '',
         info: company.info || '',

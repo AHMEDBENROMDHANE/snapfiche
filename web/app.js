@@ -163,6 +163,7 @@ const activeCompany = () => companies.find((c) => c.id === activeCompanyId) || n
 function brandSuffix(c) {
   if (!c) return '';
   const parts = [`respecte l'identité de marque de « ${c.name} »`];
+  if (c.category) parts.push(`secteur d'activité : ${c.category}`);
   if (c.colors && c.colors.length) parts.push(`palette de couleurs ${c.colors.join(', ')}`);
   if (c.website) parts.push(`style visuel cohérent avec le site ${c.website}`);
   if (c.info) parts.push(c.info);
@@ -339,7 +340,7 @@ function resetCompanyForm() {
   document.getElementById('companyName').value = '';
   document.getElementById('companyWebsite').value = '';
   document.getElementById('companyInfo').value = '';
-  ['companyEmail', 'companyPhone', 'companyWhatsapp', 'companyFacebook', 'companyInstagram'].forEach((id) => (document.getElementById(id).value = ''));
+  ['companyCategory', 'companyEmail', 'companyPhone', 'companyWhatsapp', 'companyFacebook', 'companyInstagram'].forEach((id) => (document.getElementById(id).value = ''));
   document.getElementById('companyFetchStatus').textContent = '';
   formColors = [];
   renderFormColors();
@@ -430,6 +431,7 @@ function editCompany(c) {
   document.getElementById('companyWhatsapp').value = c.whatsapp || '';
   document.getElementById('companyFacebook').value = c.facebook || '';
   document.getElementById('companyInstagram').value = c.instagram || '';
+  document.getElementById('companyCategory').value = c.category || '';
   formColors = [...(c.colors || [])];
   renderFormColors();
   formLogoDataUrl = null;
@@ -461,6 +463,7 @@ document.getElementById('companySave').onclick = async () => {
   const payload = {
     id: document.getElementById('companyId').value || undefined,
     name,
+    category: document.getElementById('companyCategory').value.trim(),
     website: document.getElementById('companyWebsite').value.trim(),
     info: document.getElementById('companyInfo').value.trim(),
     email: document.getElementById('companyEmail').value.trim(),
@@ -1475,6 +1478,7 @@ function companyContext() {
   const c = activeCompany();
   if (!c) return '';
   let ctx = ` pour l'entreprise « ${c.name} »`;
+  if (c.category) ctx += `, secteur : ${c.category}`;
   if (c.info) ctx += ` (${c.info})`;
   if (c.website) ctx += `, site ${c.website}`;
   return ctx;
