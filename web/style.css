@@ -303,3 +303,4 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .edit-ai .edit-btn:disabled { opacity: .5; cursor: not-allowed; }
 .edit-ai .edit-status { font-size: 13px; color: var(--muted); min-height: 16px; margin-top: 8px; }
 .edit-ai .edit-status.error { color: var(--danger); }
+.edit-ai .edit-model { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 0 8px; border-radius: 9px; font-size: 13px; }
