@@ -107,6 +107,8 @@
     },
     // Récupère les infos d'un site web (via le backend)
     fetchSite: (url) => backend('/api/fetch-site', { method: 'POST', body: { url } }),
+    // Incruste le VRAI logo (exact) sur une image générée -> renvoie l'URL de l'image finale
+    overlayLogo: (payload) => backend('/api/overlay-logo', { method: 'POST', body: payload }),
     companyDelete: async (id) => { const { error } = await window.SB.from('companies').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
 
     // ---- Galerie (Supabase) ----

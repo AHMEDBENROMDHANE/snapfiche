@@ -756,19 +756,20 @@ imgGenerate.onclick = async () => {
     const sourceUrl = await uploadSource(imgSrc, statusEl);
     if (sourceUrl) images.push(sourceUrl);
     let prompt2 = applyBrand('img', applyStyleManual('img', prompt));
-    if (document.getElementById('imgUseLogo').checked) {
-      const logoUrl = await uploadCompanyLogo(statusEl);
-      if (logoUrl) {
-        images.push(logoUrl);
-        prompt2 += LOGO_DIRECTIVE;
-      }
-    }
+    const c = activeCompany();
+    const overlayLogoAfter = c && c.logoFile && document.getElementById('imgUseLogo').checked;
     const descriptor = buildImageDescriptor(m, prompt2, images);
     statusEl.innerHTML = '<span class="spinner"></span>Envoi de la requête…';
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, "Génération de l'image", imgGenToken);
     statusEl.textContent = res.credits != null ? `✅ Image générée. (−${res.credits} crédits)` : '✅ Image générée.';
-    showImageResult(resultEl, res.resultUrl, prompt);
+    let finalUrl = res.resultUrl;
+    if (overlayLogoAfter) {
+      statusEl.innerHTML = '<span class="spinner"></span>Incrustation du logo…';
+      try { finalUrl = (await window.api.overlayLogo({ imageUrl: res.resultUrl, logoUrl: c.logoFile, position: 'tr' })).url; statusEl.textContent = '✅ Image générée (logo ajouté).'; }
+      catch (_) { statusEl.textContent = '✅ Image générée (logo non ajouté).'; }
+    }
+    showImageResult(resultEl, finalUrl, prompt);
     refreshBalance();
   } catch (e) {
     statusEl.textContent = (e.message === 'Génération annulée.' ? '⏹️ ' : '❌ ') + e.message;
@@ -1643,16 +1644,8 @@ document.getElementById('guidedGenerate').onclick = async () => {
       prompt += " Garde la même direction artistique que l'image de style fournie (même palette, même ambiance, même traitement graphique).";
     }
 
-    // 3) Logo de l'entreprise — intégré par l'IA (placement automatique, lisible, non déformé)
-    if (eff.kind === 'image' && c && c.logoFile && document.getElementById('guidedUseLogo').checked) {
-      statusEl.innerHTML = '<span class="spinner"></span>Préparation du logo…';
-      try {
-        const logoDataUrl = await window.api.mediaDataUrl(c.logoFile);
-        const upLogo = await window.api.uploadFile({ base64DataUrl: logoDataUrl, fileName: 'logo.png' });
-        images.push(upLogo.url);
-        prompt += " Intègre le logo de marque fourni de façon naturelle, bien visible et lisible dans la composition (par ex. en en-tête ou dans un coin), sans le déformer, le recadrer ni le recouvrir.";
-      } catch (_) {}
-    }
+    // 3) Logo : on incruste le VRAI logo APRÈS génération (exact), pas via l'IA.
+    const overlayLogoAfter = eff.kind === 'image' && c && c.logoFile && document.getElementById('guidedUseLogo').checked;
 
     const descriptor =
       eff.kind === 'image'
@@ -1663,9 +1656,21 @@ document.getElementById('guidedGenerate').onclick = async () => {
     const res = await pollUntilDone({ api: descriptor.api, taskId }, statusEl, r.kind === 'video' ? 'Génération de la vidéo' : "Génération de l'image", guidedGenToken);
     statusEl.textContent = res.credits != null ? `✅ Terminé. (−${res.credits} crédits)` : '✅ Terminé.';
     if (eff.kind === 'image') {
-      lastStyleUrl = res.resultUrl; // mémorise le style pour la prochaine création
+      lastStyleUrl = res.resultUrl; // mémorise le style (image sans logo)
       document.getElementById('guidedStyleHint').textContent = '✓ style mémorisé';
-      showImageResult(resultEl, res.resultUrl, answers.subject);
+      let finalUrl = res.resultUrl;
+      if (overlayLogoAfter) {
+        statusEl.innerHTML = '<span class="spinner"></span>Incrustation du logo…';
+        try {
+          const posEl = document.getElementById('guidedLogoPos');
+          const o = await window.api.overlayLogo({ imageUrl: res.resultUrl, logoUrl: c.logoFile, position: posEl ? posEl.value : 'tr' });
+          finalUrl = o.url;
+          statusEl.textContent = '✅ Terminé (logo ajouté).';
+        } catch (_) {
+          statusEl.textContent = '✅ Terminé (logo non ajouté).';
+        }
+      }
+      showImageResult(resultEl, finalUrl, answers.subject);
     } else {
       showVideoResult(resultEl, res.resultUrl, answers.subject);
     }

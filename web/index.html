@@ -125,7 +125,15 @@
             <select id="guidedQuality"></select>
           </div>
           <label class="brand-toggle"><input type="checkbox" id="guidedUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="guidedBrandHint" class="brand-hint"></span></label>
-          <label class="brand-toggle"><input type="checkbox" id="guidedUseLogo" checked /> Utiliser le logo de l'entreprise (intégré par l'IA)</label>
+          <label class="brand-toggle"><input type="checkbox" id="guidedUseLogo" checked /> Incruster le vrai logo de l'entreprise
+            <select id="guidedLogoPos" class="logo-pos">
+              <option value="tr">en haut à droite</option>
+              <option value="tl">en haut à gauche</option>
+              <option value="tc">en haut au centre</option>
+              <option value="br">en bas à droite</option>
+              <option value="bl">en bas à gauche</option>
+            </select>
+          </label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
           <div id="guidedSummary" class="guided-summary"></div>
           <div class="row">

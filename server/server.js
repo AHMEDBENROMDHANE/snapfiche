@@ -9,6 +9,7 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { Pool } = require('pg');
+const Jimp = require('jimp');
 const kie = require('./kie');
 
 const { SUPABASE_URL, SUPABASE_SERVICE_ROLE, DATABASE_URL, KIE_API_KEY, ALLOWED_ORIGIN, PORT } = process.env;
@@ -237,6 +238,38 @@ app.post('/api/fetch-site', auth, async (req, res) => {
     res.json({ name, info, email, phone, whatsapp, facebook, instagram, color, colors, logo });
   } catch (e) {
     res.status(502).json({ error: 'Impossible de lire le site : ' + e.message });
+  }
+});
+
+// ---- Incrustation du VRAI logo (exact, pixel-perfect) sur l'affiche générée ----
+async function fetchBuf(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Image HTTP ' + r.status);
+  return Buffer.from(await r.arrayBuffer());
+}
+app.post('/api/overlay-logo', auth, async (req, res) => {
+  try {
+    const { imageUrl, logoUrl, position = 'tr' } = req.body;
+    const base = await Jimp.read(await fetchBuf(imageUrl));
+    const logo = await Jimp.read(await fetchBuf(logoUrl));
+    const W = base.bitmap.width, H = base.bitmap.height;
+    const lw = Math.max(60, Math.round(W * 0.20));
+    logo.resize(lw, Jimp.AUTO);
+    const lh = logo.bitmap.height;
+    const pad = Math.round(lw * 0.08);
+    const cardW = lw + pad * 2, cardH = lh + pad * 2;
+    const card = new Jimp(cardW, cardH, 0xffffffff); // carte blanche (logo visible sur tout fond)
+    const m = Math.round(W * 0.035);
+    const p = String(position);
+    const left = p.includes('l') ? m : p.includes('c') ? Math.round((W - cardW) / 2) : W - cardW - m;
+    const top = p.includes('b') ? H - cardH - m : m;
+    base.composite(card, left, top);
+    base.composite(logo, left + pad, top + pad);
+    const out = await base.getBufferAsync(Jimp.MIME_PNG);
+    const url = await kie.uploadBase64(KIE_API_KEY, 'data:image/png;base64,' + out.toString('base64'), 'poster.png');
+    res.json({ url });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
   }
 });
 
