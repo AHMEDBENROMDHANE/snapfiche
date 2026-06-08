@@ -870,8 +870,13 @@ function showImageResult(container, url, prompt, history) {
   edit.innerHTML =
     '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
     '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" />' +
-    '<select class="edit-model"><option value="qwen/image-edit">Économique (Qwen · ~2 cr)</option><option value="google/nano-banana">Qualité (Nano Banana · ~4 cr)</option></select>' +
+    '<select class="edit-model">' +
+      '<option value="bytedance/seedream-v4-edit">Recommandé · comprend mieux (Seedream V4 · ~5 cr)</option>' +
+      '<option value="google/nano-banana">Qualité (Nano Banana · ~4 cr)</option>' +
+      '<option value="qwen/image-edit">Économique (Qwen · ~2 cr)</option>' +
+    '</select>' +
     '<button class="edit-btn">Modifier</button></div>' +
+    '<div class="edit-hint">Seul le changement demandé est appliqué — le format, la mise en page et le reste sont conservés.</div>' +
     '<div class="edit-status"></div>';
   const input = edit.querySelector('.edit-input');
   const ebtn = edit.querySelector('.edit-btn');
@@ -884,10 +889,19 @@ function showImageResult(container, url, prompt, history) {
     estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
     try {
       const model = edit.querySelector('.edit-model').value;
-      const input = model === 'qwen/image-edit'
-        ? { prompt: instr, image_url: url } // Qwen : 1 image (le moins cher)
-        : { prompt: instr, image_urls: [url], output_format: 'png' }; // Nano Banana : qualité
-      const descriptor = { api: 'jobs', model, input };
+      // Ratio de l'affiche source -> on le force pour éviter tout recadrage / changement de taille
+      const ar = nearestAspect(img.naturalWidth, img.naturalHeight);
+      // Consigne de préservation : le modèle ne touche QUE ce qui est demandé
+      const guarded = editGuardPrompt(instr, ar);
+      let payload;
+      if (model === 'qwen/image-edit') {
+        payload = { prompt: guarded, image_url: url };                       // Qwen : conserve la toile source
+      } else if (model === 'bytedance/seedream-v4-edit') {
+        payload = { prompt: guarded, image_urls: [url] };                    // Seedream : éditeur fidèle, garde les dims source
+      } else {
+        payload = { prompt: guarded, image_urls: [url], aspect_ratio: ar, output_format: 'png' }; // Nano Banana : forcer le ratio
+      }
+      const descriptor = { api: 'jobs', model, input: payload };
       const { taskId } = await window.api.generate(descriptor);
       const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
       refreshBalance();
@@ -902,6 +916,33 @@ function showImageResult(container, url, prompt, history) {
   ebtn.onclick = runEdit;
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runEdit(); });
   container.appendChild(edit);
+}
+
+// Ratio standard le plus proche des dimensions source (pour ne pas déformer/recadrer).
+function nearestAspect(w, h) {
+  if (!w || !h) return '1:1';
+  const r = w / h;
+  const opts = [
+    ['1:1', 1], ['4:5', 0.8], ['5:4', 1.25], ['3:4', 0.75], ['4:3', 1.333],
+    ['2:3', 0.667], ['3:2', 1.5], ['9:16', 0.5625], ['16:9', 1.777],
+  ];
+  let best = opts[0], diff = Infinity;
+  for (const o of opts) { const d = Math.abs(o[1] - r); if (d < diff) { diff = d; best = o; } }
+  return best[0];
+}
+
+// Encadre l'instruction de l'utilisateur pour que le modèle ne modifie QUE le demandé.
+function editGuardPrompt(instr, ratio) {
+  return (
+    'You are editing an existing finished marketing poster. ' +
+    'Apply ONLY the following change requested by the user. ' +
+    'Keep absolutely everything else identical: same ' + ratio + ' aspect ratio and pixel dimensions, ' +
+    'same overall layout and composition, same other text content and wording, same fonts, same colors, ' +
+    'same logo, same background and graphic elements, same positions. ' +
+    'Do NOT crop, zoom, resize, re-frame, re-render, or restyle anything that the request does not explicitly mention. ' +
+    'The result must look like the same poster with only the requested change applied.\n\n' +
+    'Requested change (may be in French): ' + instr
+  );
 }
 
 // ============ Génération de VIDÉO ============
