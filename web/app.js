@@ -907,11 +907,11 @@ function showImageResult(container, url, prompt, history) {
       const guarded = editGuardPrompt(instr, ar);
       let payload;
       if (model === 'qwen/image-edit') {
-        payload = { prompt: guarded, image_url: url };                                       // Express : conserve la toile source
+        payload = { prompt: guarded, image_url: url };                                       // Snap (éco) : conserve la toile source
       } else if (model === 'nano-banana-pro') {
-        payload = { prompt: guarded, image_input: [url], aspect_ratio: ar, resolution: '2K', output_format: 'png' }; // Apex : ratio forcé
+        payload = { prompt: guarded, image_input: [url], aspect_ratio: ar, resolution: '2K', output_format: 'png' }; // Snap Max : ratio forcé
       } else {
-        payload = { prompt: guarded, image_urls: [url] };                                    // Lumina : éditeur fidèle, garde les dims source
+        payload = { prompt: guarded, image_urls: [url] };                                    // Snap Plus : éditeur fidèle, garde les dims source
       }
       const descriptor = { api: 'jobs', model, input: payload };
       const { taskId } = await window.api.generate(descriptor);
