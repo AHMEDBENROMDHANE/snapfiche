@@ -123,7 +123,18 @@ app.post('/api/chat', auth, async (req, res) => {
 
 app.post('/api/upload', auth, async (req, res) => {
   try {
-    const url = await kie.uploadBase64(KIE_API_KEY, req.body.base64DataUrl, req.body.fileName);
+    let dataUrl = req.body.base64DataUrl;
+    // Si on reçoit une URL distante (ex : logo stocké sur Supabase), on télécharge l'image
+    // et on la ré-héberge chez kie en vraie image (le modèle a besoin de l'image, pas juste d'un lien).
+    if (!dataUrl && req.body.remoteUrl) {
+      const r = await fetch(req.body.remoteUrl);
+      if (!r.ok) throw new Error('Téléchargement image HTTP ' + r.status);
+      const ct = r.headers.get('content-type') || 'image/png';
+      const buf = Buffer.from(await r.arrayBuffer());
+      dataUrl = `data:${ct};base64,` + buf.toString('base64');
+    }
+    if (!dataUrl) throw new Error('Aucune image fournie.');
+    const url = await kie.uploadBase64(KIE_API_KEY, dataUrl, req.body.fileName || 'image.png');
     res.json({ url });
   } catch (e) {
     res.status(502).json({ error: e.message });

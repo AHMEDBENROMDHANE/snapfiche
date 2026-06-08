@@ -619,8 +619,8 @@ async function uploadCompanyLogo(statusEl) {
   if (!c || !c.logoFile) return null;
   statusEl.innerHTML = '<span class="spinner"></span>Préparation du logo…';
   try {
-    const logoDataUrl = await window.api.mediaDataUrl(c.logoFile);
-    const up = await window.api.uploadFile({ base64DataUrl: logoDataUrl, fileName: 'logo.png' });
+    // Le logo est une URL (Supabase) -> le backend la télécharge et la ré-héberge en vraie image chez kie.
+    const up = await window.api.uploadFile({ remoteUrl: c.logoFile, fileName: 'logo.png' });
     return up.url;
   } catch (_) {
     return null;
