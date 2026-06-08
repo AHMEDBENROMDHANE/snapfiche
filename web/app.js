@@ -88,11 +88,11 @@ const usd = (c) => (c * CREDIT_USD).toFixed(2);
 // Le solde réel (affiché en bas à gauche) fait foi.
 const MODELS = {
   image: [
-    { id: 'nano-banana-pro', label: '🔥 Apex — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
-    { id: 'seedream/4.5-text-to-image', label: '✨ Lumina — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
-    { id: 'ideogram/v3-text-to-image', label: '🔤 Prisme — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
-    { id: 'flux-kontext-pro', label: '🎨 Studio', api: 'flux', edit: true, ratio: true, credits: 8 },
-    { id: 'flux-kontext-max', label: '🎨 Studio Max', api: 'flux', edit: true, ratio: true, credits: 12 },
+    { id: 'nano-banana-pro', label: '🔥 Snap Max — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
+    { id: 'seedream/4.5-text-to-image', label: '✨ Snap — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
+    { id: 'ideogram/v3-text-to-image', label: '🔤 Snap Texte — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
+    { id: 'flux-kontext-pro', label: '🎨 Snap Plus', api: 'flux', edit: true, ratio: true, credits: 8 },
+    { id: 'flux-kontext-max', label: '🎨 Snap Pro', api: 'flux', edit: true, ratio: true, credits: 12 },
   ],
   video: [
     { id: 'veo3_fast', label: 'Veo 3 Fast', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
@@ -883,9 +883,9 @@ function showImageResult(container, url, prompt, history) {
     '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
     '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" />' +
     '<select class="edit-model">' +
-      '<option value="bytedance/seedream-v4-edit">✨ Lumina — Retouche fidèle (recommandé · ~5 cr)</option>' +
-      '<option value="nano-banana-pro">🔥 Apex — Ultra HD (qualité max · ~30 cr)</option>' +
-      '<option value="qwen/image-edit">⚡ Express — Éco (~2 cr)</option>' +
+      '<option value="bytedance/seedream-v4-edit">✨ Snap Plus — Retouche fidèle (recommandé · ~5 cr)</option>' +
+      '<option value="nano-banana-pro">🔥 Snap Max — Ultra HD (qualité max · ~30 cr)</option>' +
+      '<option value="qwen/image-edit">⚡ Snap — Éco (~2 cr)</option>' +
     '</select>' +
     '<button class="edit-btn">Modifier</button></div>' +
     '<div class="edit-hint">Seul le changement demandé est appliqué — le format, la mise en page et le reste sont conservés.</div>' +
