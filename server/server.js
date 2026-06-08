@@ -64,6 +64,8 @@ function estimateCost(d) {
     const m = d.model || '';
     if (m === 'google/nano-banana') return 4;
     if (m === 'nano-banana-pro') return ({ '1K': 24, '2K': 30, '4K': 40 })[input.resolution || '1K'] || 24;
+    if (m === 'seedream/4.5-text-to-image') return input.quality === 'high' ? 13 : 7;
+    if (m === 'ideogram/v3-text-to-image') return 10;
     if (m.startsWith('bytedance/seedance')) {
       const fast = m.includes('fast');
       const table = fast ? { '480p': 9, '720p': 20, '1080p': 40 } : { '480p': 11.5, '720p': 25, '1080p': 50 };

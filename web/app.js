@@ -92,6 +92,8 @@ const MODELS = {
     { id: 'flux-kontext-max', label: 'Flux Kontext Max', api: 'flux', edit: true, ratio: true, credits: 12 },
     { id: 'google/nano-banana', label: 'Nano Banana (Gemini Flash)', api: 'jobs', edit: true, ratio: true, imageField: 'image_urls', credits: 4 },
     { id: 'nano-banana-pro', label: 'Nano Banana Pro (Gemini 3 Pro)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
+    { id: 'seedream/4.5-text-to-image', label: 'Seedream 4.5 (éco, bon texte)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
+    { id: 'ideogram/v3-text-to-image', label: 'Ideogram V3 (typographie)', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
   ],
   video: [
     { id: 'veo3_fast', label: 'Veo 3 Fast', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
@@ -727,9 +729,12 @@ function buildImageDescriptor(m, prompt, images) {
     if (imgs.length) input.inputImage = imgs[0]; // Flux : une seule image
     return { api: 'flux', model: m.id, input };
   }
-  // API unifiée (Nano Banana) : plusieurs images possibles
-  const input = { prompt, aspect_ratio: document.getElementById('imgRatio').value, output_format: 'png' };
-  if (m.res) input.resolution = document.getElementById('imgRes').value;
+  // API unifiée (jobs). Certains modèles ont leur propre format d'entrée (jobsInput).
+  const ratio = document.getElementById('imgRatio').value;
+  const input = m.jobsInput
+    ? m.jobsInput(prompt, { aspect_ratio: ratio, resolution: m.res ? document.getElementById('imgRes').value : undefined })
+    : { prompt, aspect_ratio: ratio, output_format: 'png' };
+  if (!m.jobsInput && m.res) input.resolution = document.getElementById('imgRes').value;
   if (imgs.length && m.imageField) input[m.imageField] = imgs;
   return { api: 'jobs', model: m.id, input };
 }
