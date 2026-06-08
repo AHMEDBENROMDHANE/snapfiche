@@ -613,7 +613,7 @@ async function uploadSource(holder, statusEl) {
 
 // Consigne ajoutée au prompt quand on intègre le logo, et upload du logo de l'entreprise active.
 const LOGO_DIRECTIVE =
-  " Intègre le logo de marque fourni de façon naturelle, bien visible et lisible dans la composition (en-tête ou coin), sans le déformer, le recadrer ni le recouvrir.";
+  " IMPORTANT : utilise le logo de marque fourni EXACTEMENT tel quel — ne le redessine pas, ne ré-écris pas son texte, ne change pas ses couleurs ni ses formes. Garde-le identique, net et lisible, et place-le élégamment dans la composition (en-tête ou un coin).";
 async function uploadCompanyLogo(statusEl) {
   const c = activeCompany();
   if (!c || !c.logoFile) return null;
@@ -757,19 +757,19 @@ imgGenerate.onclick = async () => {
     if (sourceUrl) images.push(sourceUrl);
     let prompt2 = applyBrand('img', applyStyleManual('img', prompt));
     const c = activeCompany();
-    const overlayLogoAfter = c && c.logoFile && document.getElementById('imgUseLogo').checked;
+    if (c && c.logoFile && document.getElementById('imgUseLogo').checked) {
+      const logoKie = await uploadCompanyLogo(statusEl); // logo placé par l'IA
+      if (logoKie) {
+        images.push(logoKie);
+        prompt2 += LOGO_DIRECTIVE;
+      }
+    }
     const descriptor = buildImageDescriptor(m, prompt2, images);
     statusEl.innerHTML = '<span class="spinner"></span>Envoi de la requête…';
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, "Génération de l'image", imgGenToken);
     statusEl.textContent = res.credits != null ? `✅ Image générée. (−${res.credits} crédits)` : '✅ Image générée.';
-    let finalUrl = res.resultUrl;
-    if (overlayLogoAfter) {
-      statusEl.innerHTML = '<span class="spinner"></span>Incrustation du logo…';
-      try { finalUrl = (await window.api.overlayLogo({ imageUrl: res.resultUrl, logoUrl: c.logoFile, position: 'tr' })).url; statusEl.textContent = '✅ Image générée (logo ajouté).'; }
-      catch (_) { statusEl.textContent = '✅ Image générée (logo non ajouté).'; }
-    }
-    showImageResult(resultEl, finalUrl, prompt);
+    showImageResult(resultEl, res.resultUrl, prompt);
     refreshBalance();
   } catch (e) {
     statusEl.textContent = (e.message === 'Génération annulée.' ? '⏹️ ' : '❌ ') + e.message;
@@ -1436,6 +1436,9 @@ document.getElementById('guidedBack').onclick = () => {
   guidedRecipe = null;
 };
 document.getElementById('guidedQuality').onchange = updateGuidedSummary;
+document.getElementById('guidedLogoMode').onchange = (e) => {
+  document.getElementById('guidedLogoPos').classList.toggle('hidden', e.target.value !== 'exact');
+};
 
 // ---- Image de référence (inspiration / personnage) ----
 let guidedRef = null;
@@ -1644,8 +1647,17 @@ document.getElementById('guidedGenerate').onclick = async () => {
       prompt += " Garde la même direction artistique que l'image de style fournie (même palette, même ambiance, même traitement graphique).";
     }
 
-    // 3) Logo : on incruste le VRAI logo APRÈS génération (exact), pas via l'IA.
-    const overlayLogoAfter = eff.kind === 'image' && c && c.logoFile && document.getElementById('guidedUseLogo').checked;
+    // 3) Logo : selon le mode choisi (placé par l'IA / incrusté exact / aucun)
+    const logoMode = document.getElementById('guidedLogoMode').value;
+    const hasLogo = eff.kind === 'image' && c && c.logoFile;
+    const overlayLogoAfter = hasLogo && logoMode === 'exact';
+    if (hasLogo && logoMode === 'ai') {
+      const logoKie = await uploadCompanyLogo(statusEl); // re-héberge le vrai logo et le donne au modèle
+      if (logoKie) {
+        images.push(logoKie);
+        prompt += LOGO_DIRECTIVE;
+      }
+    }
 
     const descriptor =
       eff.kind === 'image'
