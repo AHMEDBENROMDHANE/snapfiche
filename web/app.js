@@ -182,21 +182,34 @@ function brandSuffix(c) {
   return '\n\nConsignes de marque : ' + parts.join('. ') + '.';
 }
 // Coordonnées prêtes à afficher sur l'affiche (handles courts, pas d'URL complète).
+// Coordonnées « texte » (tél, e-mail, site) — reproduites caractère par caractère.
 function contactLine(c) {
   if (!c) return '';
   const parts = [];
   if (c.phone) parts.push('Tél : ' + c.phone);
   if (c.email) parts.push(c.email);
-  if (c.whatsapp) { const n = (c.whatsapp.match(/(\+?\d[\d ]{5,})/) || [])[1]; parts.push('WhatsApp' + (n ? ' ' + n.trim() : '')); }
-  if (c.instagram) { const h = (c.instagram.match(/instagram\.com\/([^/?#]+)/) || [])[1]; if (h) parts.push('@' + h); }
-  if (c.facebook) { const f = (c.facebook.match(/(?:facebook|fb)\.com\/([^/?#]+)/) || [])[1]; if (f) parts.push('fb : ' + f); }
   if (c.website) parts.push(c.website.replace(/^https?:\/\//, '').replace(/\/$/, ''));
   return parts.join('   ·   ');
 }
+// Réseaux sociaux — à représenter par leurs ICÔNES officielles, pas en toutes lettres.
+function socialItems(c) {
+  if (!c) return [];
+  const out = [];
+  if (c.whatsapp) { const n = (c.whatsapp.match(/(\+?\d[\d ]{5,})/) || [])[1]; out.push("l'icône WhatsApp" + (n ? ' suivie du numéro ' + n.trim() : '')); }
+  if (c.instagram) { const h = (c.instagram.match(/instagram\.com\/([^/?#]+)/) || [])[1]; out.push("l'icône Instagram" + (h ? ' suivie de @' + h : '')); }
+  if (c.facebook) { const f = (c.facebook.match(/(?:facebook|fb)\.com\/([^/?#]+)/) || [])[1]; out.push("l'icône Facebook" + (f ? ' suivie de ' + f : '')); }
+  return out;
+}
 function contactDirective(c) {
   const cl = contactLine(c);
-  if (!cl) return '';
-  return ` Affiche en bas de l'affiche, en petit mais parfaitement lisible, ces coordonnées EXACTES (reproduis-les caractère par caractère, ne modifie aucun chiffre ni lettre) : ${cl}.`;
+  const socials = socialItems(c);
+  if (!cl && !socials.length) return '';
+  let d = '';
+  if (cl) d += ` Affiche en bas de l'affiche, en petit mais parfaitement lisible, ces coordonnées EXACTES (reproduis-les caractère par caractère, ne modifie aucun chiffre ni lettre) : ${cl}.`;
+  if (socials.length) {
+    d += ` Pour les réseaux sociaux, n'écris SURTOUT PAS le nom du réseau en toutes lettres (pas de "Facebook", "Instagram", "WhatsApp" écrit en texte) : utilise UNIQUEMENT leurs icônes/logos officiels et reconnaissables, en petit, intégrés proprement dans le style et les couleurs de l'affiche, regroupés en une rangée nette en bas — ${socials.join(' ; ')}.`;
+  }
+  return d;
 }
 function applyBrand(prefix, prompt) {
   const useBrand = document.getElementById(prefix + 'UseBrand').checked;
