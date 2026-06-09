@@ -340,6 +340,19 @@ function applyAccountUI() {
   }
   // Particulier ayant déjà son entreprise : on masque « Nouveau » (édition de l'existante seulement)
   if (resetBtn) resetBtn.style.display = atCompanyLimit() ? 'none' : '';
+
+  // Particulier sans entreprise -> assistant pas-à-pas ; sinon -> formulaire classique.
+  const wizard = document.getElementById('companyWizard');
+  const layout = document.querySelector('.company-layout');
+  const useWizard = isParticulier() && companies.length === 0;
+  if (wizard && layout) {
+    layout.classList.toggle('hidden', useWizard);
+    if (useWizard) {
+      if (wizard.classList.contains('hidden')) startWizard(); // 1er affichage -> reset + étape 1
+    } else {
+      wizard.classList.add('hidden');
+    }
+  }
 }
 
 async function loadCompanies() {
@@ -503,6 +516,175 @@ document.getElementById('companyFetch').onclick = async () => {
     btn.disabled = false;
   }
 };
+
+// ===== Assistant pas-à-pas (compte Particulier) =====
+let wizStep = 1, wizColors = [], wizLogoDataUrl = null, wizLogoUrl = null, wizWired = false;
+const WIZ_FIELDS = ['wizName', 'wizWebsite', 'wizEmail', 'wizPhone', 'wizWhatsapp', 'wizFacebook', 'wizInstagram', 'wizCategory', 'wizInfo'];
+
+function renderWizColors() {
+  const el = document.getElementById('wizColorChips');
+  el.innerHTML = '';
+  wizColors.forEach((col, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'color-chip';
+    chip.style.background = col;
+    chip.title = col;
+    const x = document.createElement('span');
+    x.className = 'x';
+    x.textContent = '×';
+    x.onclick = () => { wizColors.splice(i, 1); renderWizColors(); };
+    chip.appendChild(x);
+    el.appendChild(chip);
+  });
+}
+function showWizStep(n) {
+  wizStep = n;
+  document.querySelectorAll('#companyWizard .wiz-step').forEach((s) => s.classList.toggle('hidden', +s.dataset.step !== n));
+  document.querySelectorAll('#companyWizard .wiz-dot').forEach((d) => {
+    const s = +d.dataset.s;
+    d.classList.toggle('active', s === n);
+    d.classList.toggle('done', s < n);
+  });
+  document.getElementById('wizBack').classList.toggle('hidden', n === 1);
+  document.getElementById('wizNext').textContent = n === 4 ? '✓ Terminer' : (n === 1 ? 'Analyser & continuer →' : 'Continuer →');
+  document.getElementById('wizError').textContent = '';
+}
+function startWizard() {
+  // reset état
+  wizStep = 1; wizColors = []; wizLogoDataUrl = null; wizLogoUrl = null;
+  WIZ_FIELDS.forEach((id) => { const e = document.getElementById(id); if (e) e.value = ''; });
+  renderWizColors();
+  document.getElementById('wizLogoPreview').classList.add('hidden');
+  document.getElementById('wizLogoClear').classList.add('hidden');
+  document.getElementById('wizFetchStatus').textContent = '';
+  document.querySelectorAll('#companyWizard .wiz-tag').forEach((t) => t.classList.add('hidden'));
+  document.getElementById('companyWizard').classList.remove('hidden');
+  showWizStep(1);
+  wireWizard();
+}
+function wireWizard() {
+  if (wizWired) return; wizWired = true;
+  // Logo
+  document.getElementById('wizLogo').addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = async () => {
+      wizLogoDataUrl = await downscaleDataUrl(r.result, 512, 'image/png');
+      wizLogoUrl = null;
+      const p = document.getElementById('wizLogoPreview');
+      p.src = wizLogoDataUrl; p.classList.remove('hidden');
+      document.getElementById('wizLogoClear').classList.remove('hidden');
+    };
+    r.readAsDataURL(f);
+  });
+  document.getElementById('wizLogoClear').onclick = () => {
+    wizLogoDataUrl = null; wizLogoUrl = null;
+    document.getElementById('wizLogo').value = '';
+    document.getElementById('wizLogoPreview').classList.add('hidden');
+    document.getElementById('wizLogoClear').classList.add('hidden');
+  };
+  // Couleurs
+  document.getElementById('wizAddColor').onclick = () => {
+    const hex = document.getElementById('wizNewColorHex');
+    const v = normalizeHex(hex.value) || document.getElementById('wizNewColor').value;
+    if (v && !wizColors.includes(v)) wizColors.push(v);
+    hex.value = ''; renderWizColors();
+  };
+  // Navigation
+  document.getElementById('wizBack').onclick = () => showWizStep(Math.max(1, wizStep - 1));
+  document.getElementById('wizNext').onclick = wizNext;
+}
+function wizTag(id, on) {
+  const t = document.querySelector(`#companyWizard .wiz-tag[data-for="${id}"]`);
+  if (t) t.classList.toggle('hidden', !on);
+}
+async function wizFetch() {
+  const url = document.getElementById('wizWebsite').value.trim();
+  const status = document.getElementById('wizFetchStatus');
+  if (!url) return; // pas de site -> rien à récupérer
+  status.textContent = '⏳ Analyse du site en cours…';
+  try {
+    const d = await window.api.fetchSite(url);
+    const set = (id, v) => { if (v && !document.getElementById(id).value.trim()) { document.getElementById(id).value = v; wizTag(id, true); } };
+    if (d.name && !document.getElementById('wizName').value.trim()) document.getElementById('wizName').value = d.name;
+    set('wizInfo', d.info); set('wizEmail', d.email); set('wizPhone', d.phone);
+    set('wizWhatsapp', d.whatsapp); set('wizFacebook', d.facebook); set('wizInstagram', d.instagram);
+    const cols = d.colors && d.colors.length ? d.colors : (d.color ? [d.color] : []);
+    let addedCol = 0;
+    cols.forEach((c) => { const n = normalizeHex(c); if (n && !wizColors.includes(n)) { wizColors.push(n); addedCol++; } });
+    if (addedCol) { renderWizColors(); wizTag('wizColors', true); }
+    if (d.logo && !wizLogoDataUrl) {
+      wizLogoUrl = d.logo;
+      const p = document.getElementById('wizLogoPreview');
+      p.src = d.logo; p.classList.remove('hidden');
+      document.getElementById('wizLogoClear').classList.remove('hidden');
+    }
+    // Détection du secteur via IA si non rempli
+    const catEl = document.getElementById('wizCategory');
+    if (!catEl.value.trim() && (d.name || d.info)) {
+      try {
+        const r2 = await window.api.aiChat({
+          model: AI_MODEL,
+          messages: [
+            { role: 'system', content: "Tu identifies le secteur d'activité d'une entreprise. Réponds UNIQUEMENT par 1 à 3 mots (ex : Restauration, Immobilier), sans phrase ni ponctuation finale." },
+            { role: 'user', content: `Entreprise : ${d.name || ''}. Description : ${d.info || ''}. Site : ${url}. Quel est son secteur ?` },
+          ],
+        });
+        if (r2.text) { catEl.value = r2.text.trim().replace(/[.\n]/g, '').slice(0, 40); wizTag('wizCategory', true); }
+      } catch (_) {}
+    }
+    const n = ['email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
+    status.textContent = (n || addedCol || d.logo) ? `✅ Infos récupérées — vérifie-les aux étapes suivantes.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+  } catch (e) {
+    status.textContent = 'ℹ️ Site illisible — complète les infos à la main.';
+  }
+}
+async function wizNext() {
+  const err = document.getElementById('wizError');
+  err.textContent = '';
+  if (wizStep === 1) {
+    if (!document.getElementById('wizName').value.trim()) { err.textContent = 'Le nom de la marque est requis.'; return; }
+    const btn = document.getElementById('wizNext');
+    btn.disabled = true; btn.textContent = 'Analyse…';
+    await wizFetch();
+    btn.disabled = false;
+    showWizStep(2);
+    return;
+  }
+  if (wizStep < 4) { showWizStep(wizStep + 1); return; }
+  // Étape 4 -> enregistrement
+  await wizFinish();
+}
+async function wizFinish() {
+  const btn = document.getElementById('wizNext');
+  const err = document.getElementById('wizError');
+  const val = (id) => document.getElementById(id).value.trim();
+  const payload = {
+    name: val('wizName'),
+    website: val('wizWebsite'),
+    info: val('wizInfo'),
+    email: val('wizEmail'),
+    phone: val('wizPhone'),
+    whatsapp: val('wizWhatsapp'),
+    facebook: val('wizFacebook'),
+    instagram: val('wizInstagram'),
+    category: val('wizCategory'),
+    colors: wizColors,
+  };
+  if (wizLogoDataUrl) payload.logoDataUrl = wizLogoDataUrl;
+  else if (wizLogoUrl) payload.logoUrl = wizLogoUrl;
+  btn.disabled = true; btn.textContent = 'Création…';
+  try {
+    const saved = await window.api.companySave(payload);
+    activeCompanyId = saved.id;
+    await window.api.setActiveCompany(saved.id);
+    await loadCompanies(); // companies.length=1 -> applyAccountUI masque l'assistant
+  } catch (e) {
+    const msg = /PARTICULIER_LIMIT/.test(e.message) ? 'Une entreprise existe déjà sur ce compte.' : e.message;
+    err.textContent = '❌ ' + msg;
+    btn.disabled = false; btn.textContent = '✓ Terminer';
+  }
+}
 
 // --- Import / Export des entreprises ---
 document.getElementById('dataExport').onclick = async () => {

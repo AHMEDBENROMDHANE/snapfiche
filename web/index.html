@@ -374,6 +374,96 @@
         <h1>Entreprises</h1>
         <p class="subtitle">Chaque entreprise a sa charte (logo, couleurs, site, infos). Elle guide l'IA et alimente l'éditeur.</p>
         <div id="accountBanner" class="account-banner hidden"></div>
+
+        <!-- ASSISTANT PAS-À-PAS (comptes Particulier, 1re marque) -->
+        <div id="companyWizard" class="wizard hidden">
+          <div class="wiz-progress">
+            <span class="wiz-dot active" data-s="1">1</span>
+            <span class="wiz-dot" data-s="2">2</span>
+            <span class="wiz-dot" data-s="3">3</span>
+            <span class="wiz-dot" data-s="4">4</span>
+          </div>
+
+          <!-- Étape 1 : Marque -->
+          <div class="wiz-step" data-step="1">
+            <h3>Ta marque</h3>
+            <p class="subtitle">Donne le nom, le logo et le site — on récupère le reste automatiquement.</p>
+            <label>Nom de la marque
+              <input type="text" id="wizName" placeholder="Ex : Studio Lumière" />
+            </label>
+            <div class="field">
+              <span>Logo</span>
+              <div class="row">
+                <label class="filebtn">Choisir un logo
+                  <input type="file" id="wizLogo" accept="image/*" hidden />
+                </label>
+                <img id="wizLogoPreview" class="logo-preview hidden" />
+                <button id="wizLogoClear" type="button" class="mini hidden">✕ Retirer</button>
+              </div>
+            </div>
+            <label>Site web (optionnel)
+              <input type="text" id="wizWebsite" placeholder="https://exemple.com" />
+            </label>
+            <div id="wizFetchStatus" class="hint"></div>
+          </div>
+
+          <!-- Étape 2 : Coordonnées -->
+          <div class="wiz-step hidden" data-step="2">
+            <h3>Coordonnées</h3>
+            <p class="subtitle">Vérifie ce qu'on a trouvé, complète ce qui manque.</p>
+            <label>Email <span class="wiz-tag hidden" data-for="wizEmail">récupéré ✓</span>
+              <input type="text" id="wizEmail" placeholder="contact@exemple.com" />
+            </label>
+            <label>Téléphone <span class="wiz-tag hidden" data-for="wizPhone">récupéré ✓</span>
+              <input type="text" id="wizPhone" placeholder="+216 ..." />
+            </label>
+            <label>WhatsApp <span class="wiz-tag hidden" data-for="wizWhatsapp">récupéré ✓</span>
+              <input type="text" id="wizWhatsapp" placeholder="https://wa.me/216..." />
+            </label>
+          </div>
+
+          <!-- Étape 3 : Réseaux & secteur -->
+          <div class="wiz-step hidden" data-step="3">
+            <h3>Réseaux sociaux & secteur</h3>
+            <p class="subtitle">Vérifie ou complète.</p>
+            <label>Facebook <span class="wiz-tag hidden" data-for="wizFacebook">récupéré ✓</span>
+              <input type="text" id="wizFacebook" placeholder="https://facebook.com/..." />
+            </label>
+            <label>Instagram <span class="wiz-tag hidden" data-for="wizInstagram">récupéré ✓</span>
+              <input type="text" id="wizInstagram" placeholder="https://instagram.com/..." />
+            </label>
+            <label>Catégorie / secteur d'activité <span class="wiz-tag hidden" data-for="wizCategory">détecté ✓</span>
+              <input type="text" id="wizCategory" list="sectorsList" placeholder="Ex : Restaurant, Immobilier…" />
+            </label>
+          </div>
+
+          <!-- Étape 4 : Identité visuelle -->
+          <div class="wiz-step hidden" data-step="4">
+            <h3>Identité visuelle</h3>
+            <p class="subtitle">Couleurs de marque et consignes pour l'IA.</p>
+            <div class="field">
+              <span>Couleurs de marque <span class="wiz-tag hidden" data-for="wizColors">récupéré ✓</span></span>
+              <div class="colors-editor">
+                <div id="wizColorChips" class="color-chips"></div>
+                <div class="row">
+                  <input type="color" id="wizNewColor" value="#d72d5b" />
+                  <input type="text" id="wizNewColorHex" placeholder="#d72d5b" maxlength="7" />
+                  <button id="wizAddColor" type="button" class="mini">+ Ajouter</button>
+                </div>
+              </div>
+            </div>
+            <label>Informations / consignes IA <span class="wiz-tag hidden" data-for="wizInfo">récupéré ✓</span>
+              <textarea id="wizInfo" rows="4" placeholder="Ton, style visuel, slogan, public cible, mentions à inclure/éviter…"></textarea>
+            </label>
+          </div>
+
+          <div class="wiz-nav">
+            <button id="wizBack" class="ghost hidden">← Précédent</button>
+            <button id="wizNext" class="primary">Continuer →</button>
+          </div>
+          <div id="wizError" class="auth-error"></div>
+        </div>
+
         <div class="company-layout">
           <div class="company-form">
             <h3 id="companyFormTitle">Nouvelle entreprise</h3>
