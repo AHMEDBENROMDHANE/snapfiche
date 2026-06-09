@@ -294,12 +294,13 @@ function isParticulier() { return ACCOUNT.type === 'particulier'; }
 function atCompanyLimit() { return isParticulier() && companies.length >= 1; }
 
 // Première connexion : si aucun type choisi, on affiche l'écran de choix (bloquant).
+// Renvoie true si l'utilisateur vient de choisir son type (pour démarrer le cycle de setup).
 async function ensureAccountType() {
   try { const me = await window.api.getMe(); ACCOUNT.type = me.accountType || null; } catch (_) {}
-  if (ACCOUNT.type) return;
+  if (ACCOUNT.type) return false;
   const gate = document.getElementById('typeGate');
-  if (!gate) return;
-  await new Promise((resolve) => {
+  if (!gate) return false;
+  return await new Promise((resolve) => {
     gate.classList.remove('hidden');
     const cards = gate.querySelectorAll('.type-card');
     cards.forEach((b) => {
@@ -309,7 +310,7 @@ async function ensureAccountType() {
           const r = await window.api.setAccountType(b.dataset.type);
           ACCOUNT.type = r.accountType;
           gate.classList.add('hidden');
-          resolve();
+          resolve(true); // type fraîchement choisi
         } catch (e) {
           document.getElementById('typeError').textContent = e.message;
           cards.forEach((x) => (x.disabled = false));
@@ -317,6 +318,12 @@ async function ensureAccountType() {
       };
     });
   });
+}
+
+// Bascule vers la vue Entreprises et démarre le cycle de configuration de la 1re marque.
+function goToCompanySetup() {
+  const btn = document.querySelector('.nav-btn[data-view="company"]');
+  if (btn) btn.click();
 }
 
 // Bannière + verrouillage de l'ajout d'entreprise selon le type de compte.
@@ -2127,7 +2134,10 @@ document.getElementById('guidedGenerate').onclick = async () => {
     const s = await window.api.configStatus();
     activeCompanyId = s.activeCompanyId || null;
   } catch (_) {}
-  await ensureAccountType();   // 1re connexion : choix Particulier / Entreprise
+  const justChose = await ensureAccountType(); // 1re connexion : choix Particulier / Entreprise
   renderGuidedCards();
   await loadCompanies();
+  // Après le choix du type, on démarre directement le cycle de configuration de la marque
+  // (assistant pas-à-pas pour Particulier, formulaire complet pour Entreprise).
+  if (justChose && companies.length === 0) goToCompanySetup();
 })();
