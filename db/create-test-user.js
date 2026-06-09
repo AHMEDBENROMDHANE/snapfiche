@@ -6,9 +6,9 @@ require('dotenv').config({ path: path.join(__dirname, '..', 'server', '.env') })
 const { createClient } = require('@supabase/supabase-js');
 const { Client } = require('pg');
 
-const EMAIL = 'test.particulier@snapfiche.com';
-const PASSWORD = 'Snap2026!';
-const CREDITS = 300;
+const EMAIL = process.argv[2] || 'test.particulier@snapfiche.com';
+const PASSWORD = process.argv[3] || 'Snap2026!';
+const CREDITS = +(process.argv[4] || 300);
 
 (async () => {
   const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE);
