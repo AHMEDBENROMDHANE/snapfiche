@@ -288,12 +288,67 @@ async function renderCompanyList() {
   });
 }
 
+// ===== Type de compte (particulier / entreprise) =====
+const ACCOUNT = { type: null };
+function isParticulier() { return ACCOUNT.type === 'particulier'; }
+function atCompanyLimit() { return isParticulier() && companies.length >= 1; }
+
+// Première connexion : si aucun type choisi, on affiche l'écran de choix (bloquant).
+async function ensureAccountType() {
+  try { const me = await window.api.getMe(); ACCOUNT.type = me.accountType || null; } catch (_) {}
+  if (ACCOUNT.type) return;
+  const gate = document.getElementById('typeGate');
+  if (!gate) return;
+  await new Promise((resolve) => {
+    gate.classList.remove('hidden');
+    const cards = gate.querySelectorAll('.type-card');
+    cards.forEach((b) => {
+      b.onclick = async () => {
+        cards.forEach((x) => (x.disabled = true));
+        try {
+          const r = await window.api.setAccountType(b.dataset.type);
+          ACCOUNT.type = r.accountType;
+          gate.classList.add('hidden');
+          resolve();
+        } catch (e) {
+          document.getElementById('typeError').textContent = e.message;
+          cards.forEach((x) => (x.disabled = false));
+        }
+      };
+    });
+  });
+}
+
+// Bannière + verrouillage de l'ajout d'entreprise selon le type de compte.
+function applyAccountUI() {
+  const banner = document.getElementById('accountBanner');
+  const resetBtn = document.getElementById('companyReset');
+  const sel = document.getElementById('accountTypeSelect');
+  if (sel && ACCOUNT.type) sel.value = ACCOUNT.type;
+  if (banner) {
+    if (isParticulier()) {
+      const locked = atCompanyLimit();
+      banner.className = 'account-banner' + (locked ? ' locked' : '');
+      banner.innerHTML = locked
+        ? '👤 Compte <b>Particulier</b> — limité à 1 entreprise. Pour en gérer plusieurs, passe en <b>Entreprise</b> dans les Réglages.'
+        : '👤 Compte <b>Particulier</b> — tu peux créer 1 entreprise.';
+    } else {
+      banner.className = 'account-banner';
+      banner.innerHTML = '🏢 Compte <b>Entreprise</b> — nombre d\'entreprises illimité.';
+    }
+    banner.classList.remove('hidden');
+  }
+  // Particulier ayant déjà son entreprise : on masque « Nouveau » (édition de l'existante seulement)
+  if (resetBtn) resetBtn.style.display = atCompanyLimit() ? 'none' : '';
+}
+
 async function loadCompanies() {
   companies = await window.api.companyList();
   renderCompanyList();
   populateCompanySelectors();
   updateBrandHints();
   updateEditorBrand();
+  applyAccountUI();
 }
 
 // --- Formulaire entreprise ---
@@ -516,8 +571,14 @@ document.getElementById('companySave').onclick = async () => {
     alert('Le nom de l\'entreprise est requis.');
     return;
   }
+  const editingId = document.getElementById('companyId').value || undefined;
+  // Particulier : pas de 2e entreprise (on autorise seulement la modification de l'existante).
+  if (!editingId && atCompanyLimit()) {
+    alert('Compte Particulier : une seule entreprise autorisée.\nPasse en Entreprise dans les Réglages pour en ajouter d\'autres.');
+    return;
+  }
   const payload = {
-    id: document.getElementById('companyId').value || undefined,
+    id: editingId,
     name,
     category: document.getElementById('companyCategory').value.trim(),
     website: document.getElementById('companyWebsite').value.trim(),
@@ -545,10 +606,31 @@ document.getElementById('companySave').onclick = async () => {
     }
     await loadCompanies(); // un seul rendu -> plus de doublon
   } catch (e) {
-    alert('Échec de l\'enregistrement : ' + e.message);
+    const msg = /PARTICULIER_LIMIT/.test(e.message)
+      ? 'Compte Particulier : une seule entreprise autorisée. Passe en Entreprise dans les Réglages.'
+      : e.message;
+    alert('Échec de l\'enregistrement : ' + msg);
   } finally {
     btn.disabled = false;
     btn.textContent = oldLabel;
+  }
+};
+
+// Changer de type de compte depuis les Réglages.
+document.getElementById('saveAccountType').onclick = async () => {
+  const sel = document.getElementById('accountTypeSelect');
+  const hint = document.getElementById('accountTypeHint');
+  const btn = document.getElementById('saveAccountType');
+  btn.disabled = true;
+  try {
+    const r = await window.api.setAccountType(sel.value);
+    ACCOUNT.type = r.accountType;
+    applyAccountUI();
+    hint.textContent = '✅ Type de compte mis à jour : ' + (r.accountType === 'entreprise' ? 'Entreprise' : 'Particulier') + '.';
+  } catch (e) {
+    hint.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false;
   }
 };
 
@@ -1863,6 +1945,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
     const s = await window.api.configStatus();
     activeCompanyId = s.activeCompanyId || null;
   } catch (_) {}
+  await ensureAccountType();   // 1re connexion : choix Particulier / Entreprise
   renderGuidedCards();
   await loadCompanies();
 })();

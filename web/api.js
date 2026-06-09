@@ -69,6 +69,10 @@
     // ---- Solde ----
     getCredits: async () => { const j = await backend('/api/credits'); return { credits: j.credits, usd: +(j.credits * 0.005).toFixed(2) }; },
 
+    // ---- Compte (type particulier / entreprise) ----
+    getMe: async () => backend('/api/me'),
+    setAccountType: async (type) => backend('/api/account-type', { method: 'POST', body: { type } }),
+
     // ---- Génération (via backend) ----
     generate: (descriptor) => backend('/api/generate', { method: 'POST', body: descriptor }),
     poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),

@@ -35,6 +35,29 @@
       </div>
     </div>
 
+    <!-- ÉCRAN DE CHOIX DU TYPE DE COMPTE (1re connexion) -->
+    <div id="typeGate" class="auth-gate hidden">
+      <div class="auth-box type-box">
+        <img src="assets/logo.png" alt="SnapFiche" class="auth-logo" />
+        <h2>Bienvenue sur Snap<b>Fiche</b></h2>
+        <p>Choisis ton type de compte pour commencer.</p>
+        <div class="type-cards">
+          <button class="type-card" data-type="particulier">
+            <span class="tc-ico">👤</span>
+            <span class="tc-title">Particulier</span>
+            <span class="tc-desc">Une seule entreprise / marque. Idéal pour un usage personnel.</span>
+          </button>
+          <button class="type-card" data-type="entreprise">
+            <span class="tc-ico">🏢</span>
+            <span class="tc-title">Entreprise</span>
+            <span class="tc-desc">Gérez plusieurs entreprises / marques sous un même compte.</span>
+          </button>
+        </div>
+        <p class="hint">Tu pourras changer ce choix plus tard dans les Réglages.</p>
+        <div id="typeError" class="auth-error"></div>
+      </div>
+    </div>
+
     <aside class="sidebar">
       <div class="brand">
         <img src="assets/logo.png" alt="SnapFiche" class="brand-logo" />
@@ -350,6 +373,7 @@
       <section id="view-company" class="view">
         <h1>Entreprises</h1>
         <p class="subtitle">Chaque entreprise a sa charte (logo, couleurs, site, infos). Elle guide l'IA et alimente l'éditeur.</p>
+        <div id="accountBanner" class="account-banner hidden"></div>
         <div class="company-layout">
           <div class="company-form">
             <h3 id="companyFormTitle">Nouvelle entreprise</h3>
@@ -458,6 +482,18 @@
     <div id="settingsModal" class="modal hidden">
       <div class="modal-box">
         <h2>Réglages</h2>
+        <div class="field">
+          <span>Type de compte</span>
+          <div class="row">
+            <select id="accountTypeSelect">
+              <option value="particulier">👤 Particulier — 1 entreprise</option>
+              <option value="entreprise">🏢 Entreprise — plusieurs</option>
+            </select>
+            <button id="saveAccountType" class="mini">Changer</button>
+          </div>
+          <div id="accountTypeHint" class="hint">Le type de compte détermine le nombre d'entreprises et, bientôt, les packs disponibles.</div>
+        </div>
+        <hr class="sep" />
         <label>Clé API kie.ai
           <input type="password" id="apiKeyInput" placeholder="Collez votre clé API" />
         </label>

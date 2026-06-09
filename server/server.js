@@ -85,6 +85,22 @@ app.get('/api/credits', auth, async (req, res) => {
   res.json({ credits: await getCredits(req.user.id) });
 });
 
+// Profil de l'utilisateur : type de compte (particulier/entreprise) + nb d'entreprises.
+app.get('/api/me', auth, async (req, res) => {
+  const p = await q('select account_type, credits from profiles where id=$1', [req.user.id]);
+  const cc = await q('select count(*)::int as n from companies where user_id=$1', [req.user.id]);
+  const row = p.rows[0] || {};
+  res.json({ accountType: row.account_type || null, credits: row.credits || 0, companyCount: cc.rows[0].n });
+});
+
+// Choix / changement du type de compte. Particulier = 1 entreprise ; Entreprise = plusieurs.
+app.post('/api/account-type', auth, async (req, res) => {
+  const t = ((req.body && req.body.type) || '').trim();
+  if (!['particulier', 'entreprise'].includes(t)) return res.status(400).json({ error: 'Type de compte invalide.' });
+  await q('update profiles set account_type=$2 where id=$1', [req.user.id, t]);
+  res.json({ ok: true, accountType: t });
+});
+
 app.post('/api/generate', auth, async (req, res) => {
   const descriptor = req.body;
   const cost = estimateCost(descriptor);
