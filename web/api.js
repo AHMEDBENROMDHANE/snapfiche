@@ -154,6 +154,36 @@
     },
     galleryDelete: async (id) => { const { error } = await window.SB.from('gallery').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
 
+    // ---- Affiches composées (fond IA + calques rééditables) ----
+    designSave: async (d) => {
+      const u = await uid();
+      let bg = d.bgUrl;
+      if (bg && bg.startsWith('data:')) bg = await uploadToStorage(bg, 'designs'); // fond importé -> hébergé
+      let preview = null;
+      if (d.previewDataUrl) { try { preview = await uploadToStorage(d.previewDataUrl, 'designs'); } catch (_) {} }
+      const row = {
+        user_id: u, name: d.name || 'Affiche', bg_url: bg,
+        layers: d.layers || [], company_id: d.companyId || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (preview) row.preview_url = preview;
+      let res;
+      if (d.id) res = await window.SB.from('designs').update(row).eq('id', d.id).select().single();
+      else res = await window.SB.from('designs').insert(row).select().single();
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    },
+    designList: async () => {
+      const { data, error } = await window.SB.from('designs').select('*').order('updated_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    designDelete: async (id) => {
+      const { error } = await window.SB.from('designs').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    },
+
     // ---- Médias ----
     // Sur le web, les "fichiers" sont déjà des URLs publiques -> on les renvoie telles quelles.
     mediaDataUrl: async (x) => x,

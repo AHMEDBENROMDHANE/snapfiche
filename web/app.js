@@ -1696,8 +1696,10 @@ function showVideoResult(container, url, prompt) {
 // ============ ÉDITEUR D'AFFICHE (canvas) ============
 const canvas = document.getElementById('posterCanvas');
 const ctx = canvas.getContext('2d');
-let layers = []; // { type:'text'|'image', ... }
+let layers = []; // { type:'text'|'image'|'icon'|'rect', ... }
 let bgImage = null;
+let bgUrl = null;                    // URL (ou data URL) du fond — pour sauvegarder le design
+let currentDesign = { id: null };    // design ouvert (null = nouveau)
 let selected = null;
 let drag = null;
 
@@ -1833,6 +1835,7 @@ function setBgImage(imgEl) {
 }
 
 function loadBackgroundFromUrl(url) {
+  bgUrl = url;
   const apply = (dataUrl) => {
     const img = new Image();
     img.onload = () => setBgImage(img);
@@ -1848,6 +1851,7 @@ document.getElementById('bgFile').addEventListener('change', (e) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
+    bgUrl = reader.result; // data URL — hébergé au moment de l'enregistrement du design
     const img = new Image();
     img.onload = () => setBgImage(img);
     img.src = reader.result;
@@ -1863,10 +1867,7 @@ document.getElementById('bgFromGallery').onclick = async () => {
   }
   const choice = items.length === 1 ? 0 : promptGalleryChoice(items);
   if (choice === null) return;
-  const dataUrl = await window.api.mediaDataUrl(items[choice].file);
-  const img = new Image();
-  img.onload = () => setBgImage(img);
-  img.src = dataUrl;
+  loadBackgroundFromUrl(items[choice].url);
 };
 
 function promptGalleryChoice(items) {
@@ -1892,10 +1893,10 @@ function contactItems(c) {
 
 // Compose l'affiche : fond généré par l'IA + titre, description, logo et barre de
 // contact (icônes vectorielles) en CALQUES — tout reste modifiable/déplaçable.
-async function composeProPoster(bgUrl, a) {
+async function composeProPoster(srcUrl, a) {
   const c = activeCompany();
   try { await document.fonts.ready; } catch (_) {}
-  const dataUrl = bgUrl.startsWith('data:') ? bgUrl : await window.api.fetchDataUrl(bgUrl);
+  const dataUrl = srcUrl.startsWith('data:') ? srcUrl : await window.api.fetchDataUrl(srcUrl);
   await new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => { setBgImage(img); resolve(); };
@@ -1967,7 +1968,138 @@ async function composeProPoster(bgUrl, a) {
   selected = null;
   render();
   document.querySelector('.nav-btn[data-view="editor"]').click();
+  // Sauvegarde automatique du design (fond + calques) -> rééditable plus tard
+  bgUrl = srcUrl;
+  currentDesign.id = null;
+  document.getElementById('designName').value = (a.headline || 'Affiche Pro').slice(0, 50);
+  try { await saveCurrentDesign(true); } catch (_) {}
 }
+
+// ===== Sauvegarde / réouverture des affiches composées (designs) =====
+// Sérialise les calques (les images deviennent des data URLs ré-importables).
+function serializeLayers() {
+  return layers.map((l) => {
+    const c = { ...l };
+    delete c._w; delete c._h;
+    if (l.type === 'image' && l.img) {
+      c.src = l.img.src;
+      delete c.img;
+    }
+    return c;
+  });
+}
+function designStatus(msg) {
+  const el = document.getElementById('designStatus');
+  if (el) el.textContent = msg;
+}
+async function saveCurrentDesign(silent) {
+  if (!bgImage || !bgUrl) {
+    if (!silent) alert("Ajoute d'abord une image de fond.");
+    return;
+  }
+  const btn = document.getElementById('designSaveBtn');
+  btn.disabled = true;
+  designStatus('⏳ Enregistrement…');
+  try {
+    // Aperçu (miniature) : rendu sans cadre de sélection, réduit à 480 px
+    const prevSel = selected;
+    selected = null; render();
+    const pv = document.createElement('canvas');
+    const scale = 480 / canvas.width;
+    pv.width = 480; pv.height = Math.round(canvas.height * scale);
+    pv.getContext('2d').drawImage(canvas, 0, 0, pv.width, pv.height);
+    let previewDataUrl = null;
+    try { previewDataUrl = pv.toDataURL('image/jpeg', 0.82); } catch (_) {}
+    selected = prevSel; render();
+
+    const saved = await window.api.designSave({
+      id: currentDesign.id,
+      name: document.getElementById('designName').value.trim() || 'Affiche',
+      bgUrl,
+      layers: serializeLayers(),
+      previewDataUrl,
+      companyId: activeCompanyId,
+    });
+    currentDesign.id = saved.id;
+    if (saved.bg_url) bgUrl = saved.bg_url; // si le fond data: a été hébergé
+    designStatus('✅ Affiche enregistrée — rouvre-la quand tu veux via 📂 Ouvrir.');
+  } catch (e) {
+    designStatus('❌ ' + e.message);
+    if (!silent) alert('Échec de l\'enregistrement : ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+async function openDesign(d) {
+  document.getElementById('designsModal').classList.add('hidden');
+  designStatus('⏳ Ouverture…');
+  const du = d.bg_url.startsWith('data:') ? d.bg_url : await window.api.fetchDataUrl(d.bg_url);
+  await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => { setBgImage(im); resolve(); };
+    im.onerror = reject;
+    im.src = du;
+  });
+  bgUrl = d.bg_url;
+  layers = [];
+  for (const l of d.layers || []) {
+    if (l.type === 'image' && l.src) {
+      await new Promise((res) => {
+        const im = new Image();
+        im.onload = () => { const c = { ...l, img: im }; delete c.src; layers.push(c); res(); };
+        im.onerror = res;
+        im.src = l.src;
+      });
+    } else {
+      layers.push({ ...l });
+    }
+  }
+  currentDesign.id = d.id;
+  document.getElementById('designName').value = d.name || 'Affiche';
+  selected = null;
+  render();
+  document.querySelector('.nav-btn[data-view="editor"]').click();
+  designStatus('✅ Affiche ouverte — tous les calques sont modifiables.');
+}
+async function showDesignsModal() {
+  const grid = document.getElementById('designsGrid');
+  document.getElementById('designsModal').classList.remove('hidden');
+  grid.innerHTML = '<p class="empty"><span class="spinner"></span>Chargement…</p>';
+  try {
+    const designs = await window.api.designList();
+    if (!designs.length) {
+      grid.innerHTML = '<p class="empty">Aucune affiche enregistrée. Crée une « Affiche Pro » dans le travail guidé, ou compose-en une ici puis « 💾 Enregistrer ».</p>';
+      return;
+    }
+    grid.innerHTML = '';
+    for (const d of designs) {
+      const card = document.createElement('div');
+      card.className = 'design-card';
+      card.innerHTML =
+        `<img src="${esc(d.preview_url || d.bg_url)}" loading="lazy" alt="${esc(d.name)}" />` +
+        `<div class="dc-meta"><span class="dc-name">${esc(d.name)}</span><button class="dc-del" title="Supprimer">🗑</button></div>`;
+      card.onclick = (e) => { if (!e.target.classList.contains('dc-del')) openDesign(d).catch((err) => designStatus('❌ ' + err.message)); };
+      card.querySelector('.dc-del').onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Supprimer « ${d.name} » ?`)) return;
+        try { await window.api.designDelete(d.id); card.remove(); } catch (err) { alert('Échec : ' + err.message); }
+      };
+      grid.appendChild(card);
+    }
+  } catch (e) {
+    grid.innerHTML = `<p class="empty">❌ ${esc(e.message)}</p>`;
+  }
+}
+document.getElementById('designSaveBtn').onclick = () => saveCurrentDesign(false);
+document.getElementById('designOpenBtn').onclick = showDesignsModal;
+document.getElementById('designsClose').onclick = () => document.getElementById('designsModal').classList.add('hidden');
+document.getElementById('designNewBtn').onclick = () => {
+  if (layers.length && !confirm('Commencer une nouvelle affiche ? (les calques non enregistrés seront perdus)')) return;
+  bgImage = null; bgUrl = null; layers = []; selected = null; currentDesign.id = null;
+  document.getElementById('designName').value = '';
+  designStatus('Nouvelle affiche — ajoute une image de fond.');
+  render();
+};
 
 document.getElementById('addText').onclick = () => {
   const text = document.getElementById('textInput').value.trim() || 'Texte';
@@ -2156,13 +2288,7 @@ async function loadGallery() {
 
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Éditer';
-      editBtn.onclick = async () => {
-        const du = await window.api.mediaDataUrl(item.file);
-        const img = new Image();
-        img.onload = () => setBgImage(img);
-        img.src = du;
-        document.querySelector('.nav-btn[data-view="editor"]').click();
-      };
+      editBtn.onclick = () => loadBackgroundFromUrl(item.url);
       actions.appendChild(editBtn);
     }
 

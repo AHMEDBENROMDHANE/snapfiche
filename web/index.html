@@ -351,6 +351,16 @@
         <p class="subtitle">Ajoutez titre, texte et logo par-dessus une image, puis exportez.</p>
         <div class="editor-layout">
           <div class="editor-tools">
+            <div class="tool-group">
+              <strong>Mes affiches</strong>
+              <input type="text" id="designName" placeholder="Nom de l'affiche" />
+              <button id="designSaveBtn" class="primary">💾 Enregistrer l'affiche</button>
+              <div class="row">
+                <button id="designOpenBtn">📂 Ouvrir</button>
+                <button id="designNewBtn">✚ Nouvelle</button>
+              </div>
+              <p class="hint" id="designStatus">Fond + calques sauvegardés — rééditable à tout moment.</p>
+            </div>
             <div class="tool-group" id="editorBrandGroup">
               <strong>Charte entreprise</strong>
               <button id="addCompanyLogo">+ Logo de l'entreprise</button>
@@ -717,6 +727,18 @@
         <div class="modal-actions">
           <button id="saveKey" class="primary">Enregistrer</button>
           <button id="closeSettings">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODALE : MES AFFICHES (designs rééditables) -->
+    <div id="designsModal" class="modal hidden">
+      <div class="modal-box designs-box">
+        <h2>📂 Mes affiches</h2>
+        <p class="hint">Clique une affiche pour la rouvrir avec tous ses calques modifiables.</p>
+        <div id="designsGrid" class="designs-grid"></div>
+        <div class="modal-actions">
+          <button id="designsClose">Fermer</button>
         </div>
       </div>
     </div>
