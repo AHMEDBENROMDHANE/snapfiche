@@ -2008,12 +2008,15 @@ const RECIPES = [
   },
   {
     id: 'restyle', icon: 'shirt', title: 'Tenue · décor · produit',
-    desc: 'Garde la même personne — change tenue/décor, ou fusionne-la avec un produit (importez les 2 photos).',
+    desc: 'Importez la personne + le produit (ex : femme + robe) : elle le porte/présente. Ou changez tenue & décor.',
     kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
     needsImage: true,
-    ask: [{ key: 'subject', label: 'Que faut-il faire ?', ph: 'Ex : costume bleu élégant — plage au coucher du soleil — elle tient le produit en souriant' }],
+    ask: [{ key: 'subject', label: 'Que faut-il faire ?', ph: 'Ex : elle porte la robe de la photo — costume bleu élégant — plage au coucher du soleil — elle tient le produit en souriant' }],
     build: (a) =>
-      `À partir des photos de référence fournies : ${a.subject}. Conserve EXACTEMENT la même personne (même visage, même morphologie, même identité) et, si un produit est fourni, reproduis-le À L'IDENTIQUE (même forme, étiquette, couleurs). Ne change que ce qui est demandé (tenue, décor, ou mise en scène avec le produit). Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
+      `À partir des photos de référence fournies : ${a.subject}. Conserve EXACTEMENT la même personne (même visage, même morphologie, même identité). ` +
+      `Si un VÊTEMENT est fourni en photo, habille la personne avec EXACTEMENT ce vêtement : même coupe, même tissu, mêmes couleurs, mêmes motifs et détails, ajusté naturellement à sa morphologie. ` +
+      `Si un PRODUIT/OBJET est fourni, reproduis-le À L'IDENTIQUE (même forme, étiquette, couleurs) et mets-le en scène avec elle de façon naturelle. ` +
+      `Ne change que ce qui est demandé (tenue, décor, ou mise en scène). Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
   },
   {
     id: 'product', icon: 'tag', title: 'Visuel produit',
@@ -2194,8 +2197,8 @@ function openRecipe(r) {
   updateGuidedSummary();
   resetGuidedRef();
   document.getElementById('guidedRefLabel').textContent = r.needsImage
-    ? 'Photo de la personne (obligatoire)'
-    : 'Image de référence (optionnel)';
+    ? '📸 Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
+    : 'Images de référence (optionnel — style, personnage, produit… max 6)';
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
