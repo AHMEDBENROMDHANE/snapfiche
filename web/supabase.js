@@ -46,13 +46,25 @@ document.addEventListener('DOMContentLoaded', () => {
     else refreshSession();
   };
 
+  // Inscription via le backend : compte confirmé immédiatement (pas d'e-mail de validation),
+  // puis connexion automatique.
   document.getElementById('signupBtn').onclick = async () => {
     setErr(''); busy(true);
-    const { data, error } = await window.SB.auth.signUp({ email: emailEl.value.trim(), password: passEl.value });
+    try {
+      const r = await fetch((window.CONFIG.BACKEND_URL || '') + '/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailEl.value.trim(), password: passEl.value }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Erreur HTTP ' + r.status);
+      const { error } = await window.SB.auth.signInWithPassword({ email: emailEl.value.trim(), password: passEl.value });
+      if (error) throw new Error(error.message);
+      refreshSession();
+    } catch (e) {
+      setErr('Inscription échouée : ' + e.message);
+    }
     busy(false);
-    if (error) return setErr('Inscription échouée : ' + error.message);
-    if (data.session) refreshSession();
-    else setErr('Compte créé ✅. Vérifie tes e-mails pour confirmer, puis connecte-toi.');
   };
 
   passEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });

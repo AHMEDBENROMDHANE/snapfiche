@@ -128,6 +128,7 @@ navButtons.forEach((btn) => {
     btn.classList.add('active');
     document.getElementById(`view-${btn.dataset.view}`).classList.add('active');
     if (btn.dataset.view === 'gallery') loadGallery();
+    if (btn.dataset.view === 'admin') loadAdmin();
     closeNav(); // referme le tiroir sur mobile après navigation
   });
 });
@@ -306,7 +307,7 @@ function atCompanyLimit() { return isParticulier() && companies.length >= 1; }
 // Première connexion : si aucun type choisi, on affiche l'écran de choix (bloquant).
 // Renvoie true si l'utilisateur vient de choisir son type (pour démarrer le cycle de setup).
 async function ensureAccountType() {
-  try { const me = await window.api.getMe(); ACCOUNT.type = me.accountType || null; } catch (_) {}
+  try { const me = await window.api.getMe(); ACCOUNT.type = me.accountType || null; ACCOUNT.isAdmin = !!me.isAdmin; } catch (_) {}
   if (ACCOUNT.type) return false;
   const gate = document.getElementById('typeGate');
   if (!gate) return false;
@@ -365,6 +366,8 @@ function applyAccountUI() {
   if (navCompany) navCompany.style.display = isParticulier() ? 'none' : '';
   if (navPacks) navPacks.style.display = isParticulier() ? '' : 'none';
   if (brandField) brandField.style.display = isParticulier() ? '' : 'none';
+  const navAdmin = document.getElementById('navAdmin');
+  if (navAdmin) navAdmin.style.display = ACCOUNT.isAdmin ? '' : 'none';
   updateOfferUI();
 
   // Particulier sans entreprise -> assistant pas-à-pas ; sinon -> formulaire classique.
@@ -402,6 +405,81 @@ function updateOfferUI() {
     const nav = document.getElementById('navCompany');
     if (nav) nav.click(); // ouvre la vue Entreprises (formulaire/assistant de la marque)
   };
+})();
+
+// ===== Dashboard admin =====
+async function loadAdmin() {
+  const stats = document.getElementById('adminStats');
+  const recent = document.getElementById('adminRecent');
+  stats.innerHTML = '<span class="spinner"></span>';
+  try {
+    const o = await window.api.adminOverview();
+    const card = (val, label) => `<div class="stat-card"><div class="sc-val">${val}</div><div class="sc-label">${label}</div></div>`;
+    stats.innerHTML =
+      card(o.users, 'Utilisateurs') +
+      card('+' + o.usersWeek, 'Inscrits cette semaine') +
+      card(o.companies, 'Entreprises / marques') +
+      card(o.tasks, 'Générations lancées') +
+      card(o.creditsSpent, 'Crédits consommés');
+    recent.innerHTML = (o.recent || []).map((r) => {
+      const d = new Date(r.created_at);
+      const when = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const cls = r.delta < 0 ? 'neg' : 'pos';
+      return `<div class="ar-row"><span class="ar-when">${when}</span><span class="ar-delta ${cls}">${r.delta > 0 ? '+' : ''}${r.delta}</span><span>${esc(r.email)}</span><span style="color:var(--muted)">${esc(r.reason || '')}</span></div>`;
+    }).join('') || '<p class="empty">Aucune activité.</p>';
+  } catch (e) {
+    stats.innerHTML = `<p class="empty">❌ ${esc(e.message)}</p>`;
+  }
+  await loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  const body = document.getElementById('adminUsersBody');
+  const search = document.getElementById('adminSearch').value.trim();
+  body.innerHTML = '<tr><td colspan="7"><span class="spinner"></span></td></tr>';
+  try {
+    const { users } = await window.api.adminUsers(search);
+    body.innerHTML = '';
+    for (const u of users) {
+      const tr = document.createElement('tr');
+      const created = new Date(u.created_at).toLocaleDateString('fr-FR');
+      tr.innerHTML =
+        `<td class="at-email" title="${esc(u.email)}">${esc(u.email)}</td>` +
+        `<td><select class="at-type"><option value="">—</option><option value="particulier">Particulier</option><option value="entreprise">Entreprise</option></select></td>` +
+        `<td><span class="at-credits">${u.credits}</span> <button class="credit-edit" title="Modifier le solde">✎</button></td>` +
+        `<td><input type="checkbox" class="at-unlimited" ${u.unlimited ? 'checked' : ''} /></td>` +
+        `<td>${u.company_count}</td>` +
+        `<td><input type="checkbox" class="at-admin" ${u.is_admin ? 'checked' : ''} /></td>` +
+        `<td>${created}</td>`;
+      tr.querySelector('.at-type').value = u.account_type || '';
+      const upd = async (fields) => {
+        try { await window.api.adminUpdateUser(u.id, fields); }
+        catch (e) { alert('Échec : ' + e.message); loadAdminUsers(); }
+      };
+      tr.querySelector('.at-type').onchange = (e) => upd({ account_type: e.target.value || null });
+      tr.querySelector('.at-unlimited').onchange = (e) => upd({ unlimited: e.target.checked });
+      tr.querySelector('.at-admin').onchange = (e) => upd({ is_admin: e.target.checked });
+      tr.querySelector('.credit-edit').onclick = async () => {
+        const v = prompt(`Nouveau solde pour ${u.email} :`, u.credits);
+        if (v === null) return;
+        const n = parseInt(v, 10);
+        if (isNaN(n) || n < 0) return alert('Valeur invalide.');
+        await upd({ credits: n });
+        tr.querySelector('.at-credits').textContent = n;
+        u.credits = n;
+      };
+      body.appendChild(tr);
+    }
+    if (!users.length) body.innerHTML = '<tr><td colspan="7" class="empty">Aucun utilisateur trouvé.</td></tr>';
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="7" class="empty">❌ ${esc(e.message)}</td></tr>`;
+  }
+}
+(function wireAdminSearch() {
+  const inp = document.getElementById('adminSearch');
+  if (!inp) return;
+  let t;
+  inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(loadAdminUsers, 350); });
 })();
 
 async function loadCompanies() {

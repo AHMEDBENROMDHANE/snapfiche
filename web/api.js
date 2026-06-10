@@ -73,6 +73,11 @@
     getMe: async () => backend('/api/me'),
     setAccountType: async (type) => backend('/api/account-type', { method: 'POST', body: { type } }),
 
+    // ---- Administration ----
+    adminOverview: async () => backend('/api/admin/overview'),
+    adminUsers: async (search) => backend('/api/admin/users' + (search ? '?search=' + encodeURIComponent(search) : '')),
+    adminUpdateUser: async (id, fields) => backend('/api/admin/user/' + id, { method: 'POST', body: fields }),
+
     // ---- Génération (via backend) ----
     generate: (descriptor) => backend('/api/generate', { method: 'POST', body: descriptor }),
     poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),

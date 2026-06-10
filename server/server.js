@@ -138,10 +138,10 @@ app.get('/api/credits', auth, async (req, res) => {
 
 // Profil de l'utilisateur : type de compte (particulier/entreprise) + nb d'entreprises.
 app.get('/api/me', auth, async (req, res) => {
-  const p = await q('select account_type, credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [req.user.id]);
+  const p = await q('select account_type, credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [req.user.id]);
   const cc = await q('select count(*)::int as n from companies where user_id=$1', [req.user.id]);
   const row = p.rows[0] || {};
-  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, companyCount: cc.rows[0].n });
+  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, isAdmin: !!row.is_admin, companyCount: cc.rows[0].n });
 });
 
 // Choix / changement du type de compte. Particulier = 1 entreprise ; Entreprise = plusieurs.
@@ -150,6 +150,83 @@ app.post('/api/account-type', auth, async (req, res) => {
   if (!['particulier', 'entreprise'].includes(t)) return res.status(400).json({ error: 'Type de compte invalide.' });
   await q('update profiles set account_type=$2 where id=$1', [req.user.id, t]);
   res.json({ ok: true, accountType: t });
+});
+
+// ---- Inscription (publique) : compte confirmé immédiatement, sans e-mail de validation ----
+app.post('/api/signup', rateLimit('signup', 5, 60000), async (req, res) => {
+  const email = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const password = String((req.body && req.body.password) || '');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (8 caractères minimum).' });
+  const { data, error } = await supa.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error) {
+    if (/already|registered|exists/i.test(error.message)) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
+    return res.status(502).json({ error: error.message });
+  }
+  // Crédits de bienvenue (utiles quand le mode illimité sera désactivé)
+  await q('insert into profiles(id,email,credits) values($1,$2,$3) on conflict (id) do nothing', [data.user.id, email, 100]);
+  res.json({ ok: true });
+});
+
+// ---- Administration ----
+async function requireAdmin(req, res, next) {
+  try {
+    const r = await q('select is_admin from profiles where id=$1', [req.user.id]);
+    if (!r.rows[0] || !r.rows[0].is_admin) return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
+    next();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+}
+
+// Vue d'ensemble : compteurs + dernières activités.
+app.get('/api/admin/overview', auth, requireAdmin, async (_req, res) => {
+  const [users, usersWeek, companies, tasks, spent, recent] = await Promise.all([
+    q('select count(*)::int as n from profiles'),
+    q("select count(*)::int as n from profiles where created_at > now() - interval '7 days'"),
+    q('select count(*)::int as n from companies'),
+    q('select count(*)::int as n from tasks'),
+    q('select coalesce(sum(-delta),0)::int as n from credit_ledger where delta < 0'),
+    q(`select l.created_at, l.delta, l.reason, p.email
+       from credit_ledger l join profiles p on p.id = l.user_id
+       order by l.created_at desc limit 12`),
+  ]);
+  res.json({
+    users: users.rows[0].n, usersWeek: usersWeek.rows[0].n,
+    companies: companies.rows[0].n, tasks: tasks.rows[0].n,
+    creditsSpent: spent.rows[0].n, recent: recent.rows,
+  });
+});
+
+// Liste des utilisateurs (recherche par e-mail).
+app.get('/api/admin/users', auth, requireAdmin, async (req, res) => {
+  const s = String(req.query.search || '').trim().toLowerCase();
+  const base = `select p.id, p.email, p.account_type, p.credits, coalesce(p.unlimited,false) as unlimited,
+                       coalesce(p.is_admin,false) as is_admin, p.created_at,
+                       (select count(*) from companies c where c.user_id = p.id)::int as company_count
+                from profiles p`;
+  const r = s
+    ? await q(base + ' where lower(p.email) like $1 order by p.created_at desc limit 200', ['%' + s + '%'])
+    : await q(base + ' order by p.created_at desc limit 200');
+  res.json({ users: r.rows });
+});
+
+// Mise à jour d'un utilisateur : crédits / illimité / type / admin.
+app.post('/api/admin/user/:id', auth, requireAdmin, async (req, res) => {
+  const uid = req.params.id;
+  const b = req.body || {};
+  const cur = await q('select credits from profiles where id=$1', [uid]);
+  if (!cur.rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+  const sets = [], vals = [uid];
+  if (typeof b.credits === 'number' && isFinite(b.credits)) { vals.push(Math.max(0, Math.round(b.credits))); sets.push(`credits=$${vals.length}`); }
+  if (typeof b.unlimited === 'boolean') { vals.push(b.unlimited); sets.push(`unlimited=$${vals.length}`); }
+  if (typeof b.is_admin === 'boolean') { vals.push(b.is_admin); sets.push(`is_admin=$${vals.length}`); }
+  if (b.account_type === null || ['particulier', 'entreprise'].includes(b.account_type)) { vals.push(b.account_type); sets.push(`account_type=$${vals.length}`); }
+  if (!sets.length) return res.status(400).json({ error: 'Aucun champ valide.' });
+  await q(`update profiles set ${sets.join(', ')} where id=$1`, vals);
+  if (typeof b.credits === 'number') {
+    const delta = Math.max(0, Math.round(b.credits)) - cur.rows[0].credits;
+    if (delta !== 0) await q('insert into credit_ledger(user_id,delta,reason) values($1,$2,$3)', [uid, delta, 'ajustement admin']);
+  }
+  res.json({ ok: true });
 });
 
 app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) => {

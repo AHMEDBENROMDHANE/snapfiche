@@ -97,6 +97,10 @@
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
           <span>Galerie</span>
         </button>
+        <button class="nav-btn" id="navAdmin" data-view="admin" style="display:none">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span>Admin</span>
+        </button>
       </nav>
       <div id="balanceBox" class="balance-box">
         <span class="balance-label">Solde</span>
@@ -589,6 +593,31 @@
             <h3>🎁 Offres bientôt disponibles</h3>
             <p>Les packs de crédits (paiement <b>Flouci</b> / <b>Paymee</b>) seront proposés ici très prochainement.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- VUE ADMIN -->
+      <section id="view-admin" class="view">
+        <h1>Dashboard admin</h1>
+        <p class="subtitle">Vue d'ensemble de la plateforme et gestion des utilisateurs.</p>
+        <div id="adminStats" class="admin-stats"></div>
+        <div class="admin-block">
+          <div class="admin-users-head">
+            <h3>Utilisateurs</h3>
+            <input type="text" id="adminSearch" placeholder="Rechercher par e-mail…" />
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>E-mail</th><th>Type</th><th>Crédits</th><th>Illimité</th><th>Marques</th><th>Admin</th><th>Inscrit le</th></tr>
+              </thead>
+              <tbody id="adminUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-block">
+          <h3>Activité récente</h3>
+          <div id="adminRecent" class="admin-recent"></div>
         </div>
       </section>
     </main>

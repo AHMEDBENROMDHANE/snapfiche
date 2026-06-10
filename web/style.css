@@ -407,6 +407,32 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .pack-card.coming { border-style: dashed; text-align: center; color: var(--muted); }
 .pack-card h3 { margin: 0 0 8px; }
 
+/* ============ Dashboard admin ============ */
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); animation: fadeUp var(--t-med) both; }
+.stat-card .sc-val { font-size: 26px; font-weight: 800; color: var(--accent-2); letter-spacing: -.5px; }
+.stat-card .sc-label { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.admin-block { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+.admin-block h3 { font-size: 16px; margin-bottom: 12px; }
+.admin-users-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.admin-users-head h3 { margin: 0; }
+.admin-users-head input { min-width: 240px; }
+.table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.admin-table th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.admin-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.admin-table tr:hover td { background: var(--accent-soft); }
+.admin-table .at-email { font-weight: 600; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.admin-table select { padding: 5px 8px; font-size: 13px; }
+.admin-table .credit-edit { background: transparent; border: none; color: var(--accent-2); cursor: pointer; font-size: 13px; padding: 2px 4px; }
+.admin-table .credit-edit:hover { text-decoration: underline; }
+.admin-recent { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.admin-recent .ar-row { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; border-radius: 7px; background: var(--panel-2); }
+.admin-recent .ar-when { color: var(--muted); font-size: 12px; min-width: 120px; }
+.admin-recent .ar-delta { font-weight: 700; min-width: 56px; text-align: right; }
+.admin-recent .ar-delta.neg { color: var(--danger); }
+.admin-recent .ar-delta.pos { color: var(--ok); }
+
 /* ============ Menu hamburger (mobile) ============ */
 .mobile-bar { display: none; }
 .nav-backdrop { display: none; }
