@@ -129,6 +129,7 @@ navButtons.forEach((btn) => {
     document.getElementById(`view-${btn.dataset.view}`).classList.add('active');
     if (btn.dataset.view === 'gallery') loadGallery();
     if (btn.dataset.view === 'admin') loadAdmin();
+    if (btn.dataset.view === 'packs') loadUserPacks();
     closeNav(); // referme le tiroir sur mobile après navigation
   });
 });
@@ -407,7 +408,143 @@ function updateOfferUI() {
   };
 })();
 
+// ===== Page Packs (utilisateur) =====
+async function loadUserPacks() {
+  const wrap = document.getElementById('userPacks');
+  if (!wrap) return;
+  try {
+    const { packs } = await window.api.getPacks();
+    if (!packs.length) return; // garde la carte « bientôt disponibles »
+    wrap.innerHTML = '';
+    for (const p of packs) {
+      const card = document.createElement('div');
+      card.className = 'pack-card';
+      card.innerHTML =
+        (p.badge ? `<span class="pack-badge">${esc(p.badge)}</span>` : '') +
+        `<h3>${esc(p.name)}</h3>` +
+        `<div class="pack-credits">${p.credits} crédits</div>` +
+        `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND</small></div>` +
+        `<button class="primary pack-buy">Choisir ce pack</button>`;
+      card.querySelector('.pack-buy').onclick = () =>
+        alert('💳 Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');
+      wrap.appendChild(card);
+    }
+  } catch (_) { /* on garde le contenu par défaut */ }
+}
+
 // ===== Dashboard admin =====
+function renderAdminChart(daily) {
+  const el = document.getElementById('adminChart');
+  const maxS = Math.max(1, ...daily.map((d) => d.signups));
+  const maxG = Math.max(1, ...daily.map((d) => d.generations));
+  el.innerHTML = daily.map((d) => {
+    const label = d.day.slice(8) + '/' + d.day.slice(5, 7);
+    return `<div class="chart-col" title="${label} — ${d.signups} inscription(s), ${d.generations} génération(s), ${d.credits} crédit(s)">
+      <div class="chart-bars">
+        <div class="bar bar-signup" style="height:${Math.round((d.signups / maxS) * 100)}%"></div>
+        <div class="bar bar-gen" style="height:${Math.round((d.generations / maxG) * 100)}%"></div>
+      </div>
+      <span class="chart-day">${label}</span>
+    </div>`;
+  }).join('');
+}
+function renderAdminModels(models) {
+  const el = document.getElementById('adminModels');
+  if (!models.length) { el.innerHTML = ''; return; }
+  const max = Math.max(...models.map((m) => m.n));
+  el.innerHTML = '<h4>Modèles les plus utilisés (30 j)</h4>' + models.map((m) =>
+    `<div class="model-row"><span class="model-name">${esc(m.model)}</span>
+     <div class="model-bar"><div style="width:${Math.round((m.n / max) * 100)}%"></div></div>
+     <span class="model-n">${m.n}</span></div>`
+  ).join('');
+}
+
+// --- Gestion des packs (admin) ---
+const PACK_TYPES = [['', 'Tous'], ['particulier', 'Particulier'], ['entreprise', 'Entreprise']];
+function packRow(p, isNew) {
+  const tr = document.createElement('tr');
+  const typeOpts = PACK_TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  tr.innerHTML =
+    `<td><input type="text" class="pk-name" value="${esc(p.name || '')}" placeholder="Nom" /></td>` +
+    `<td><input type="number" class="pk-credits" value="${p.credits || ''}" min="1" style="width:80px" /></td>` +
+    `<td><input type="number" class="pk-price" value="${p.price_tnd != null ? p.price_tnd : ''}" min="0" step="0.5" style="width:84px" /></td>` +
+    `<td><select class="pk-type">${typeOpts}</select></td>` +
+    `<td><input type="text" class="pk-badge" value="${esc(p.badge || '')}" placeholder="—" style="width:100px" /></td>` +
+    `<td><input type="number" class="pk-sort" value="${p.sort || 0}" style="width:60px" /></td>` +
+    `<td><input type="checkbox" class="pk-active" ${p.active !== false ? 'checked' : ''} /></td>` +
+    `<td class="pk-actions"><button class="mini pk-save">${isNew ? 'Créer' : '💾'}</button>${isNew ? '' : ' <button class="mini pk-del">🗑</button>'}</td>`;
+  tr.querySelector('.pk-type').value = p.account_type || '';
+  const fields = () => ({
+    name: tr.querySelector('.pk-name').value.trim(),
+    credits: +tr.querySelector('.pk-credits').value,
+    price_tnd: +tr.querySelector('.pk-price').value,
+    account_type: tr.querySelector('.pk-type').value || null,
+    badge: tr.querySelector('.pk-badge').value.trim(),
+    sort: +tr.querySelector('.pk-sort').value || 0,
+    active: tr.querySelector('.pk-active').checked,
+  });
+  tr.querySelector('.pk-save').onclick = async () => {
+    const f = fields();
+    if (!f.name || !f.credits || isNaN(f.price_tnd)) return alert('Nom, crédits et prix sont requis.');
+    try {
+      if (isNew) await window.api.adminPackCreate(f);
+      else await window.api.adminPackUpdate(p.id, f);
+      await loadAdminPacks();
+      loadUserPacks(); // rafraîchit la page offre si ouverte ensuite
+    } catch (e) { alert('Échec : ' + e.message); }
+  };
+  const del = tr.querySelector('.pk-del');
+  if (del) del.onclick = async () => {
+    if (!confirm(`Supprimer le pack « ${p.name} » ?`)) return;
+    try { await window.api.adminPackDelete(p.id); await loadAdminPacks(); } catch (e) { alert('Échec : ' + e.message); }
+  };
+  return tr;
+}
+async function loadAdminPacks() {
+  const body = document.getElementById('adminPacksBody');
+  body.innerHTML = '<tr><td colspan="8"><span class="spinner"></span></td></tr>';
+  try {
+    const { packs } = await window.api.adminPacks();
+    body.innerHTML = '';
+    packs.forEach((p) => body.appendChild(packRow(p, false)));
+    if (!packs.length) body.innerHTML = '<tr><td colspan="8" class="empty">Aucun pack — clique « + Nouveau pack ».</td></tr>';
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="8" class="empty">❌ ${esc(e.message)}</td></tr>`;
+  }
+}
+(function wireAdminPacks() {
+  const btn = document.getElementById('packNew');
+  if (!btn) return;
+  btn.onclick = () => {
+    const body = document.getElementById('adminPacksBody');
+    if (body.querySelector('.pk-new')) return;
+    const tr = packRow({ active: true, sort: 0 }, true);
+    tr.classList.add('pk-new');
+    body.prepend(tr);
+    tr.querySelector('.pk-name').focus();
+  };
+})();
+
+// --- Réglage mode gratuit ---
+(function wireFreeMode() {
+  const t = document.getElementById('freeModeToggle');
+  if (!t) return;
+  t.onchange = async () => {
+    const st = document.getElementById('freeModeState');
+    try {
+      if (!t.checked && !confirm('Désactiver le mode gratuit ?\nLes utilisateurs non-illimités seront limités par leur solde de crédits.')) {
+        t.checked = true;
+        return;
+      }
+      const r = await window.api.adminSetSettings({ free_mode: t.checked });
+      t.checked = r.free_mode;
+      st.textContent = r.free_mode ? 'Actif' : 'Désactivé';
+      st.className = 'offer-state ' + (r.free_mode ? 'on' : 'off');
+      refreshBalance();
+    } catch (e) { alert('Échec : ' + e.message); }
+  };
+})();
+
 async function loadAdmin() {
   const stats = document.getElementById('adminStats');
   const recent = document.getElementById('adminRecent');
@@ -430,6 +567,18 @@ async function loadAdmin() {
   } catch (e) {
     stats.innerHTML = `<p class="empty">❌ ${esc(e.message)}</p>`;
   }
+  // Réglages, graphique d'activité, usage des modèles et packs — en parallèle.
+  window.api.adminSettings().then((s) => {
+    const t = document.getElementById('freeModeToggle');
+    const st = document.getElementById('freeModeState');
+    if (t) t.checked = s.free_mode;
+    if (st) { st.textContent = s.free_mode ? 'Actif' : 'Désactivé'; st.className = 'offer-state ' + (s.free_mode ? 'on' : 'off'); }
+  }).catch(() => {});
+  window.api.adminDaily().then((d) => {
+    renderAdminChart(d.daily || []);
+    renderAdminModels(d.models || []);
+  }).catch(() => {});
+  loadAdminPacks();
   await loadAdminUsers();
 }
 

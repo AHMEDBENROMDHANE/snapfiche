@@ -73,10 +73,20 @@
     getMe: async () => backend('/api/me'),
     setAccountType: async (type) => backend('/api/account-type', { method: 'POST', body: { type } }),
 
+    // ---- Packs (offres) ----
+    getPacks: async () => backend('/api/packs'),
+
     // ---- Administration ----
     adminOverview: async () => backend('/api/admin/overview'),
     adminUsers: async (search) => backend('/api/admin/users' + (search ? '?search=' + encodeURIComponent(search) : '')),
     adminUpdateUser: async (id, fields) => backend('/api/admin/user/' + id, { method: 'POST', body: fields }),
+    adminPacks: async () => backend('/api/admin/packs'),
+    adminPackCreate: async (fields) => backend('/api/admin/packs', { method: 'POST', body: fields }),
+    adminPackUpdate: async (id, fields) => backend('/api/admin/packs/' + id, { method: 'POST', body: fields }),
+    adminPackDelete: async (id) => backend('/api/admin/packs/' + id, { method: 'DELETE' }),
+    adminDaily: async () => backend('/api/admin/daily'),
+    adminSettings: async () => backend('/api/admin/settings'),
+    adminSetSettings: async (fields) => backend('/api/admin/settings', { method: 'POST', body: fields }),
 
     // ---- Génération (via backend) ----
     generate: (descriptor) => backend('/api/generate', { method: 'POST', body: descriptor }),

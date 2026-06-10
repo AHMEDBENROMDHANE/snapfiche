@@ -608,7 +608,7 @@
           </label>
           <span id="offerState" class="offer-state off">Désactivée</span>
         </div>
-        <div class="packs-grid">
+        <div id="userPacks" class="packs-grid">
           <div class="pack-card coming">
             <h3>🎁 Offres bientôt disponibles</h3>
             <p>Les packs de crédits (paiement <b>Flouci</b> / <b>Paymee</b>) seront proposés ici très prochainement.</p>
@@ -619,8 +619,48 @@
       <!-- VUE ADMIN -->
       <section id="view-admin" class="view">
         <h1>Dashboard admin</h1>
-        <p class="subtitle">Vue d'ensemble de la plateforme et gestion des utilisateurs.</p>
+        <p class="subtitle">Vue d'ensemble de la plateforme, packs, utilisateurs et réglages.</p>
         <div id="adminStats" class="admin-stats"></div>
+
+        <div class="admin-block">
+          <h3>⚙️ Réglages plateforme</h3>
+          <div class="offer-row" style="max-width:none">
+            <span class="offer-label">Mode gratuit (phase de test)</span>
+            <label class="switch">
+              <input type="checkbox" id="freeModeToggle" />
+              <span class="slider"></span>
+            </label>
+            <span id="freeModeState" class="offer-state off">…</span>
+            <span class="hint" style="flex:1">Actif : tout le monde est illimité. Désactivé : les soldes de crédits s'appliquent (lancement des packs).</span>
+          </div>
+        </div>
+
+        <div class="admin-block">
+          <h3>📈 Activité des 14 derniers jours</h3>
+          <div id="adminChart" class="admin-chart"></div>
+          <div class="chart-legend">
+            <span><i class="dot dot-signup"></i> Inscriptions</span>
+            <span><i class="dot dot-gen"></i> Générations</span>
+          </div>
+          <div id="adminModels" class="admin-models"></div>
+        </div>
+
+        <div class="admin-block">
+          <div class="admin-users-head">
+            <h3>💎 Packs de crédits</h3>
+            <button id="packNew" class="mini">+ Nouveau pack</button>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Nom</th><th>Crédits</th><th>Prix (TND)</th><th>Pour</th><th>Badge</th><th>Ordre</th><th>Actif</th><th></th></tr>
+              </thead>
+              <tbody id="adminPacksBody"></tbody>
+            </table>
+          </div>
+          <p class="hint">Les packs actifs s'affichent sur la page « Mon offre » des utilisateurs (filtrés selon leur type de compte).</p>
+        </div>
+
         <div class="admin-block">
           <div class="admin-users-head">
             <h3>Utilisateurs</h3>

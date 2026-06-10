@@ -406,6 +406,13 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .pack-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; box-shadow: var(--shadow-sm); animation: fadeUp var(--t-med) both; }
 .pack-card.coming { border-style: dashed; text-align: center; color: var(--muted); }
 .pack-card h3 { margin: 0 0 8px; }
+.pack-card { position: relative; text-align: center; transition: transform var(--t-fast), box-shadow var(--t-fast); }
+.pack-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.pack-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-grad); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 20px; box-shadow: var(--shadow-sm); white-space: nowrap; }
+.pack-credits { font-size: 15px; color: var(--muted); margin-bottom: 6px; }
+.pack-price { font-size: 30px; font-weight: 800; color: var(--accent-2); letter-spacing: -.5px; margin-bottom: 14px; }
+.pack-price small { font-size: 14px; font-weight: 600; color: var(--muted); }
+.pack-buy { width: 100%; }
 
 /* ============ Mise en page génération : réglages à gauche, résultat à droite ============ */
 .gen-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 46%); gap: 24px; align-items: start; }
@@ -462,6 +469,32 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .admin-recent .ar-delta { font-weight: 700; min-width: 56px; text-align: right; }
 .admin-recent .ar-delta.neg { color: var(--danger); }
 .admin-recent .ar-delta.pos { color: var(--ok); }
+
+/* Graphique 14 jours (barres CSS pures) */
+.admin-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 8px 0; }
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.chart-bars { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.chart-bars .bar { width: 38%; max-width: 16px; min-height: 2px; border-radius: 4px 4px 0 0; transition: height var(--t-med); }
+.bar-signup { background: var(--accent-grad); }
+.bar-gen { background: #c4b5fd; }
+.chart-day { font-size: 10px; color: var(--muted); }
+.chart-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.chart-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.dot-signup { background: var(--accent); }
+.dot-gen { background: #c4b5fd; }
+
+/* Usage des modèles */
+.admin-models h4 { font-size: 13px; color: var(--muted); margin: 14px 0 8px; }
+.model-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; }
+.model-row .model-name { width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-row .model-bar { flex: 1; height: 10px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+.model-row .model-bar > div { height: 100%; background: var(--accent-grad); border-radius: 6px; }
+.model-row .model-n { width: 40px; text-align: right; font-weight: 700; color: var(--accent-2); }
+
+/* Édition des packs (admin) */
+.admin-table input[type="text"], .admin-table input[type="number"] { padding: 6px 8px; font-size: 13px; }
+.pk-actions { white-space: nowrap; }
+tr.pk-new td { background: var(--accent-soft); }
 
 /* ============ Menu hamburger (mobile) ============ */
 .mobile-bar { display: none; }

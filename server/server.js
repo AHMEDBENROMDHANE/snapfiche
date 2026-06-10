@@ -96,10 +96,32 @@ async function getCredits(uid) {
   const r = await q('select credits from profiles where id=$1', [uid]);
   return r.rows[0] ? r.rows[0].credits : 0;
 }
-// Solde + statut illimité (phase de test : pas de débit ni de blocage).
+// ---- Réglages plateforme (cache mémoire 30 s) ----
+let _settingsCache = { at: 0, data: {} };
+async function getSettings() {
+  if (Date.now() - _settingsCache.at < 30000) return _settingsCache.data;
+  const r = await q('select key, value from app_settings');
+  const data = {};
+  for (const row of r.rows) data[row.key] = row.value;
+  _settingsCache = { at: Date.now(), data };
+  return data;
+}
+async function setSetting(key, value) {
+  await q(`insert into app_settings(key, value, updated_at) values($1, $2::jsonb, now())
+           on conflict (key) do update set value=$2::jsonb, updated_at=now()`, [key, JSON.stringify(value)]);
+  _settingsCache.at = 0; // invalide le cache
+}
+
+// Solde + statut illimité. Illimité si : profil illimité OU mode gratuit global actif.
 async function getBalance(uid) {
-  const r = await q('select credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [uid]);
-  return r.rows[0] ? { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited } : { credits: 0, unlimited: false };
+  const [r, settings] = await Promise.all([
+    q('select credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [uid]),
+    getSettings(),
+  ]);
+  const freeMode = settings.free_mode === true;
+  return r.rows[0]
+    ? { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited || freeMode }
+    : { credits: 0, unlimited: freeMode };
 }
 async function changeCredits(uid, delta, reason) {
   await q('update profiles set credits = credits + $2 where id=$1', [uid, delta]);
@@ -210,6 +232,86 @@ app.get('/api/admin/users', auth, requireAdmin, async (req, res) => {
   res.json({ users: r.rows });
 });
 
+// ---- Packs (offres de crédits) ----
+// Public : packs actifs visibles par l'utilisateur (les siens + ceux « pour tous »).
+app.get('/api/packs', auth, async (req, res) => {
+  const p = await q('select account_type from profiles where id=$1', [req.user.id]);
+  const t = p.rows[0] ? p.rows[0].account_type : null;
+  const r = t
+    ? await q('select id, name, credits, price_tnd, account_type, badge from packs where active and (account_type is null or account_type=$1) order by sort, credits', [t])
+    : await q('select id, name, credits, price_tnd, account_type, badge from packs where active order by sort, credits');
+  res.json({ packs: r.rows });
+});
+
+// Admin : liste complète + création / modification / suppression.
+app.get('/api/admin/packs', auth, requireAdmin, async (_req, res) => {
+  const r = await q('select * from packs order by sort, credits');
+  res.json({ packs: r.rows });
+});
+function packFields(b) {
+  const out = {};
+  if (typeof b.name === 'string' && b.name.trim()) out.name = b.name.trim().slice(0, 60);
+  if (typeof b.credits === 'number' && isFinite(b.credits)) out.credits = Math.max(1, Math.round(b.credits));
+  if (typeof b.price_tnd === 'number' && isFinite(b.price_tnd)) out.price_tnd = Math.max(0, +(+b.price_tnd).toFixed(2));
+  if (b.account_type === null || ['particulier', 'entreprise'].includes(b.account_type)) out.account_type = b.account_type;
+  if (typeof b.badge === 'string') out.badge = b.badge.trim().slice(0, 30);
+  if (typeof b.active === 'boolean') out.active = b.active;
+  if (typeof b.sort === 'number' && isFinite(b.sort)) out.sort = Math.round(b.sort);
+  return out;
+}
+app.post('/api/admin/packs', auth, requireAdmin, async (req, res) => {
+  const f = packFields(req.body || {});
+  if (!f.name || !f.credits || f.price_tnd == null) return res.status(400).json({ error: 'Nom, crédits et prix sont requis.' });
+  const r = await q(
+    'insert into packs(name, credits, price_tnd, account_type, badge, active, sort) values($1,$2,$3,$4,$5,$6,$7) returning *',
+    [f.name, f.credits, f.price_tnd, f.account_type ?? null, f.badge || '', f.active !== false, f.sort || 0]
+  );
+  res.json({ pack: r.rows[0] });
+});
+app.post('/api/admin/packs/:id', auth, requireAdmin, async (req, res) => {
+  const f = packFields(req.body || {});
+  const keys = Object.keys(f);
+  if (!keys.length) return res.status(400).json({ error: 'Aucun champ valide.' });
+  const sets = keys.map((k, i) => `${k}=$${i + 2}`);
+  const r = await q(`update packs set ${sets.join(', ')} where id=$1 returning *`, [req.params.id, ...keys.map((k) => f[k])]);
+  if (!r.rows.length) return res.status(404).json({ error: 'Pack introuvable.' });
+  res.json({ pack: r.rows[0] });
+});
+app.delete('/api/admin/packs/:id', auth, requireAdmin, async (req, res) => {
+  await q('delete from packs where id=$1', [req.params.id]);
+  res.json({ ok: true });
+});
+
+// Admin : statistiques journalières (14 jours) + usage des modèles (30 jours).
+app.get('/api/admin/daily', auth, requireAdmin, async (_req, res) => {
+  const [daily, models] = await Promise.all([
+    q(`select to_char(d.day, 'YYYY-MM-DD') as day,
+         coalesce(s.n, 0)::int as signups,
+         coalesce(g.n, 0)::int as generations,
+         coalesce(c.n, 0)::int as credits
+       from generate_series(current_date - interval '13 days', current_date, interval '1 day') as d(day)
+       left join (select created_at::date dt, count(*) n from profiles group by 1) s on s.dt = d.day
+       left join (select created_at::date dt, count(*) n from tasks group by 1) g on g.dt = d.day
+       left join (select created_at::date dt, sum(-delta) n from credit_ledger where delta < 0 group by 1) c on c.dt = d.day
+       order by d.day`),
+    q(`select coalesce(nullif(model, ''), api) as model, count(*)::int as n
+       from tasks where created_at > now() - interval '30 days'
+       group by 1 order by n desc limit 8`),
+  ]);
+  res.json({ daily: daily.rows, models: models.rows });
+});
+
+// Admin : réglages plateforme (mode gratuit global…).
+app.get('/api/admin/settings', auth, requireAdmin, async (_req, res) => {
+  const s = await getSettings();
+  res.json({ free_mode: s.free_mode === true });
+});
+app.post('/api/admin/settings', auth, requireAdmin, async (req, res) => {
+  if (typeof req.body.free_mode === 'boolean') await setSetting('free_mode', req.body.free_mode);
+  const s = await getSettings();
+  res.json({ free_mode: s.free_mode === true });
+});
+
 // Mise à jour d'un utilisateur : crédits / illimité / type / admin.
 app.post('/api/admin/user/:id', auth, requireAdmin, async (req, res) => {
   const uid = req.params.id;
@@ -237,7 +339,7 @@ app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) =>
   if (!bal.unlimited && bal.credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ~${cost}, solde ${bal.credits}).`, need: cost, have: bal.credits });
   try {
     const taskId = await kie.generate(KIE_API_KEY, descriptor);
-    await q('insert into tasks(task_id,user_id,api,estimate) values($1,$2,$3,$4) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, cost]);
+    await q('insert into tasks(task_id,user_id,api,model,estimate) values($1,$2,$3,$4,$5) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, descriptor.model || '', cost]);
     res.json({ taskId });
   } catch (e) {
     res.status(502).json({ error: e.message });
