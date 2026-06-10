@@ -112,6 +112,20 @@ async function setSetting(key, value) {
   _settingsCache.at = 0; // invalide le cache
 }
 
+// ---- Fonctionnalités activables/désactivables depuis le dashboard admin ----
+const FEATURES_DEFAULT = {
+  signup: true,        // inscriptions ouvertes
+  video: true,         // génération vidéo
+  editor: true,        // éditeur d'affiche + designs
+  poster_pro: true,    // recette Affiche Pro
+  ai_assistant: true,  // idées / amélioration de texte
+  image_edit: true,    // modification IA des images
+};
+async function getFeatures() {
+  const s = await getSettings();
+  return { ...FEATURES_DEFAULT, ...(s.features && typeof s.features === 'object' ? s.features : {}) };
+}
+
 // Solde + statut illimité. Illimité si : profil illimité OU mode gratuit global actif.
 async function getBalance(uid) {
   const [r, settings] = await Promise.all([
@@ -153,6 +167,11 @@ function estimateCost(d) {
 // ---------------- Routes ----------------
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'snapfiche-api' }));
 
+// Fonctionnalités actives (public : utilisé par l'écran de connexion pour le bouton Inscription).
+app.get('/api/features', async (_req, res) => {
+  res.json({ features: await getFeatures() });
+});
+
 app.get('/api/credits', auth, async (req, res) => {
   const b = await getBalance(req.user.id);
   res.json({ credits: b.credits, unlimited: b.unlimited });
@@ -160,10 +179,13 @@ app.get('/api/credits', auth, async (req, res) => {
 
 // Profil de l'utilisateur : type de compte (particulier/entreprise) + nb d'entreprises.
 app.get('/api/me', auth, async (req, res) => {
-  const p = await q('select account_type, credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [req.user.id]);
-  const cc = await q('select count(*)::int as n from companies where user_id=$1', [req.user.id]);
+  const [p, cc, features] = await Promise.all([
+    q('select account_type, credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [req.user.id]),
+    q('select count(*)::int as n from companies where user_id=$1', [req.user.id]),
+    getFeatures(),
+  ]);
   const row = p.rows[0] || {};
-  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, isAdmin: !!row.is_admin, companyCount: cc.rows[0].n });
+  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, isAdmin: !!row.is_admin, companyCount: cc.rows[0].n, features });
 });
 
 // Choix / changement du type de compte. Particulier = 1 entreprise ; Entreprise = plusieurs.
@@ -176,6 +198,7 @@ app.post('/api/account-type', auth, async (req, res) => {
 
 // ---- Inscription (publique) : compte confirmé immédiatement, sans e-mail de validation ----
 app.post('/api/signup', rateLimit('signup', 5, 60000), async (req, res) => {
+  if (!(await getFeatures()).signup) return res.status(403).json({ error: 'Les inscriptions sont temporairement fermées.' });
   const email = String((req.body && req.body.email) || '').trim().toLowerCase();
   const password = String((req.body && req.body.password) || '');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
@@ -318,15 +341,23 @@ app.get('/api/admin/daily', auth, requireAdmin, async (_req, res) => {
   res.json({ daily: daily.rows, models: models.rows });
 });
 
-// Admin : réglages plateforme (mode gratuit global…).
+// Admin : réglages plateforme (mode gratuit global + fonctionnalités on/off).
 app.get('/api/admin/settings', auth, requireAdmin, async (_req, res) => {
   const s = await getSettings();
-  res.json({ free_mode: s.free_mode === true });
+  res.json({ free_mode: s.free_mode === true, features: await getFeatures() });
 });
 app.post('/api/admin/settings', auth, requireAdmin, async (req, res) => {
   if (typeof req.body.free_mode === 'boolean') await setSetting('free_mode', req.body.free_mode);
+  if (req.body.features && typeof req.body.features === 'object') {
+    // Ne garde que les clés connues, en booléen strict.
+    const clean = {};
+    for (const k of Object.keys(FEATURES_DEFAULT)) {
+      if (typeof req.body.features[k] === 'boolean') clean[k] = req.body.features[k];
+    }
+    await setSetting('features', { ...(await getFeatures()), ...clean });
+  }
   const s = await getSettings();
-  res.json({ free_mode: s.free_mode === true });
+  res.json({ free_mode: s.free_mode === true, features: await getFeatures() });
 });
 
 // Mise à jour d'un utilisateur : crédits / illimité / type / admin.
@@ -351,6 +382,13 @@ app.post('/api/admin/user/:id', auth, requireAdmin, async (req, res) => {
 
 app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) => {
   const descriptor = req.body;
+  // Respect des fonctionnalités désactivées par l'admin (verrouillage serveur).
+  const feats = await getFeatures();
+  const model = String(descriptor.model || '');
+  const isVideo = descriptor.api === 'veo' || model.includes('seedance');
+  const isEdit = ['qwen/image-edit', 'bytedance/seedream-v4-edit'].includes(model);
+  if (isVideo && !feats.video) return res.status(403).json({ error: 'La génération vidéo est temporairement désactivée.' });
+  if (isEdit && !feats.image_edit) return res.status(403).json({ error: "La modification d'image est temporairement désactivée." });
   const cost = estimateCost(descriptor);
   const bal = await getBalance(req.user.id);
   if (!bal.unlimited && bal.credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ~${cost}, solde ${bal.credits}).`, need: cost, have: bal.credits });
@@ -387,6 +425,7 @@ app.post('/api/poll', auth, async (req, res) => {
 });
 
 app.post('/api/chat', auth, rateLimit('chat', 30, 60000), async (req, res) => {
+  if (!(await getFeatures()).ai_assistant) return res.status(403).json({ error: "L'assistant IA est temporairement désactivé." });
   const bal = await getBalance(req.user.id);
   if (!bal.unlimited && bal.credits < 1) return res.status(402).json({ error: 'Crédits insuffisants.' });
   try {

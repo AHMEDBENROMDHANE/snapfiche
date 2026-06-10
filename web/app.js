@@ -308,8 +308,15 @@ function atCompanyLimit() { return isParticulier() && companies.length >= 1; }
 
 // Première connexion : si aucun type choisi, on affiche l'écran de choix (bloquant).
 // Renvoie true si l'utilisateur vient de choisir son type (pour démarrer le cycle de setup).
+// Fonctionnalités activées par l'admin (par défaut : tout est actif).
+function featureOn(k) { return !ACCOUNT.features || ACCOUNT.features[k] !== false; }
 async function ensureAccountType() {
-  try { const me = await window.api.getMe(); ACCOUNT.type = me.accountType || null; ACCOUNT.isAdmin = !!me.isAdmin; } catch (_) {}
+  try {
+    const me = await window.api.getMe();
+    ACCOUNT.type = me.accountType || null;
+    ACCOUNT.isAdmin = !!me.isAdmin;
+    ACCOUNT.features = me.features || {};
+  } catch (_) {}
   if (ACCOUNT.type) return false;
   const gate = document.getElementById('typeGate');
   if (!gate) return false;
@@ -370,6 +377,12 @@ function applyAccountUI() {
   if (brandField) brandField.style.display = isParticulier() ? '' : 'none';
   const navAdmin = document.getElementById('navAdmin');
   if (navAdmin) navAdmin.style.display = ACCOUNT.isAdmin ? '' : 'none';
+  // Fonctionnalités désactivées par l'admin -> masquées dans le menu et l'UI.
+  const navVideo = document.querySelector('.nav-btn[data-view="video"]');
+  if (navVideo) navVideo.style.display = featureOn('video') ? '' : 'none';
+  const navEditor = document.querySelector('.nav-btn[data-view="editor"]');
+  if (navEditor) navEditor.style.display = featureOn('editor') ? '' : 'none';
+  document.querySelectorAll('.ai-assistant').forEach((el) => el.classList.toggle('hidden', !featureOn('ai_assistant')));
   updateOfferUI();
 
   // Particulier sans entreprise -> assistant pas-à-pas ; sinon -> formulaire classique.
@@ -540,6 +553,51 @@ async function loadAdminPacks() {
   };
 })();
 
+// --- Fonctionnalités on/off (feature flags) ---
+const FEATURE_DEFS = [
+  { key: 'signup', label: '✍️ Inscriptions', desc: 'Création de nouveaux comptes' },
+  { key: 'video', label: '🎬 Génération vidéo', desc: 'Vue Vidéo + recettes vidéo guidées' },
+  { key: 'image_edit', label: '🎨 Modification IA', desc: 'Retouche des images par instruction' },
+  { key: 'editor', label: '✏️ Éditeur d\'affiche', desc: 'Calques, textes, designs sauvegardés' },
+  { key: 'poster_pro', label: '✨ Affiche Pro', desc: 'Visuel IA + texte en calques' },
+  { key: 'ai_assistant', label: '💡 Assistant IA', desc: 'Idées et amélioration de texte' },
+];
+function renderFeatureFlags(features) {
+  const wrap = document.getElementById('featureFlags');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const def of FEATURE_DEFS) {
+    const on = features[def.key] !== false;
+    const row = document.createElement('div');
+    row.className = 'ff-row';
+    row.innerHTML =
+      `<div class="ff-info"><span class="ff-label">${def.label}</span><span class="ff-desc">${def.desc}</span></div>` +
+      `<label class="switch"><input type="checkbox" ${on ? 'checked' : ''} /><span class="slider"></span></label>` +
+      `<span class="offer-state ${on ? 'on' : 'off'}">${on ? 'Active' : 'Désactivée'}</span>`;
+    const input = row.querySelector('input');
+    const state = row.querySelector('.offer-state');
+    input.onchange = async () => {
+      input.disabled = true;
+      try {
+        const r = await window.api.adminSetSettings({ features: { [def.key]: input.checked } });
+        const now = r.features[def.key] !== false;
+        input.checked = now;
+        state.textContent = now ? 'Active' : 'Désactivée';
+        state.className = 'offer-state ' + (now ? 'on' : 'off');
+        ACCOUNT.features = r.features; // applique aussi à la session admin
+        applyAccountUI();
+        renderGuidedCards();
+      } catch (e) {
+        alert('Échec : ' + e.message);
+        input.checked = !input.checked;
+      } finally {
+        input.disabled = false;
+      }
+    };
+    wrap.appendChild(row);
+  }
+}
+
 // --- Réglage mode gratuit ---
 (function wireFreeMode() {
   const t = document.getElementById('freeModeToggle');
@@ -588,6 +646,7 @@ async function loadAdmin() {
     const st = document.getElementById('freeModeState');
     if (t) t.checked = s.free_mode;
     if (st) { st.textContent = s.free_mode ? 'Actif' : 'Désactivé'; st.className = 'offer-state ' + (s.free_mode ? 'on' : 'off'); }
+    renderFeatureFlags(s.features || {});
   }).catch(() => {});
   window.api.adminDaily().then((d) => {
     renderAdminChart(d.daily || []);
@@ -1486,12 +1545,13 @@ function showImageResult(container, url, prompt, history, galleryId) {
     saveBtn.onclick = manualSave;
   }
 
-  const editBtn = document.createElement('button');
-  editBtn.textContent = "✏️ Ouvrir dans l'éditeur";
-  editBtn.onclick = () => loadBackgroundFromUrl(url);
-
   actions.appendChild(saveBtn);
-  actions.appendChild(editBtn);
+  if (featureOn('editor')) {
+    const editBtn = document.createElement('button');
+    editBtn.textContent = "✏️ Ouvrir dans l'éditeur";
+    editBtn.onclick = () => loadBackgroundFromUrl(url);
+    actions.appendChild(editBtn);
+  }
   if (history.length) {
     const undoBtn = document.createElement('button');
     undoBtn.textContent = `↩️ Annuler la modif (${history.length})`;
@@ -1505,6 +1565,7 @@ function showImageResult(container, url, prompt, history, galleryId) {
   container.appendChild(actions);
 
   // ---- Édition par IA (langage naturel) ----
+  if (!featureOn('image_edit')) return; // fonctionnalité désactivée par l'admin
   const edit = document.createElement('div');
   edit.className = 'edit-ai';
   edit.innerHTML =
@@ -2290,20 +2351,23 @@ async function loadGallery() {
     if (item.type === 'image') {
       // Modification par IA depuis la galerie : rouvre l'affiche avec son historique
       // de versions (Annuler possible), les modifs sont resynchronisées dans la galerie.
-      const aiBtn = document.createElement('button');
-      aiBtn.textContent = '🎨 Modifier IA';
-      aiBtn.onclick = () => {
-        document.querySelector('.nav-btn[data-view="image"]').click();
-        const resultEl = document.getElementById('imgResult');
-        showImageResult(resultEl, item.url, item.prompt, item.history || [], item.id);
-        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      };
-      actions.appendChild(aiBtn);
-
-      const editBtn = document.createElement('button');
-      editBtn.textContent = 'Éditer';
-      editBtn.onclick = () => loadBackgroundFromUrl(item.url);
-      actions.appendChild(editBtn);
+      if (featureOn('image_edit')) {
+        const aiBtn = document.createElement('button');
+        aiBtn.textContent = '🎨 Modifier IA';
+        aiBtn.onclick = () => {
+          document.querySelector('.nav-btn[data-view="image"]').click();
+          const resultEl = document.getElementById('imgResult');
+          showImageResult(resultEl, item.url, item.prompt, item.history || [], item.id);
+          resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        actions.appendChild(aiBtn);
+      }
+      if (featureOn('editor')) {
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Éditer';
+        editBtn.onclick = () => loadBackgroundFromUrl(item.url);
+        actions.appendChild(editBtn);
+      }
     }
 
     const delBtn = document.createElement('button');
@@ -2520,7 +2584,11 @@ function guidedVideoDescriptor(modelId, params, prompt, images) {
 function renderGuidedCards() {
   const grid = document.getElementById('guidedCards');
   grid.innerHTML = '';
-  RECIPES.forEach((r) => {
+  RECIPES.filter((r) => {
+    if (r.proLayers && !featureOn('poster_pro')) return false;
+    if (r.kind === 'video' && !featureOn('video')) return false;
+    return true;
+  }).forEach((r) => {
     const card = document.createElement('div');
     card.className = 'guided-card';
     card.innerHTML = `<div class="gicon">${svgIcon(r.icon, 'ico-card')}</div><h4>${r.title}</h4><p>${r.desc}</p><span class="gtag">${r.kind === 'video' ? 'Vidéo' : 'Image'} · réglages auto</span>`;

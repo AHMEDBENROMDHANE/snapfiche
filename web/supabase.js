@@ -8,6 +8,17 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+// Masque le bouton « Créer un compte » si l'admin a fermé les inscriptions.
+fetch((window.CONFIG.BACKEND_URL || '') + '/api/features')
+  .then((r) => r.json())
+  .then((j) => {
+    if (j.features && j.features.signup === false) {
+      const b = document.getElementById('signupBtn');
+      if (b) b.style.display = 'none';
+    }
+  })
+  .catch(() => {});
+
 let appLoaded = false;
 function loadApp() {
   if (appLoaded) return;
