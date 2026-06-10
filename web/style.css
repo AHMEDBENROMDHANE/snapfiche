@@ -40,7 +40,7 @@
 }
 
 body {
-  font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-family: 'Inter', -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   background: var(--bg);
   color: var(--text);
   display: flex;
@@ -48,6 +48,15 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
+/* Typographie : Plus Jakarta Sans pour les titres, Inter pour le texte. */
+h1, h2, h3, h4, .brand-name, .mobile-brand, .auth-box h2, .tc-title,
+.stat-card .sc-val, .pack-price, .balance-val {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+h1 { font-weight: 800; }
+h2, h3 { font-weight: 700; }
+button, input, select, textarea { font-family: inherit; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* ============ Écrans d'accueil (connexion / type de compte) ============ */
 .auth-gate {
@@ -97,11 +106,20 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .nav-btn {
   display: flex; align-items: center; gap: 11px; text-align: left;
   background: transparent; border: none; color: var(--muted);
-  padding: 11px 12px; border-radius: var(--r-sm); font-size: 14px; font-weight: 500; cursor: pointer;
+  padding: 8px 10px; border-radius: var(--r-sm); font-size: 14px; font-weight: 500; cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
+/* Icônes soft duotone : trait arrondi mauve sur pastille douce (charte) */
+.nav-btn .ico {
+  width: 32px; height: 32px; padding: 7px; box-sizing: border-box;
+  border-radius: 10px; background: var(--accent-soft); color: var(--accent-2);
+  stroke-width: 2; transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+}
 .nav-btn:hover { background: var(--accent-soft); color: var(--accent-2); }
+.nav-btn:hover .ico { background: #e2d8fb; transform: scale(1.06); }
 .nav-btn.active { background: var(--accent-grad); color: #fff; box-shadow: var(--shadow-md); }
+.nav-btn.active .ico { background: rgba(255, 255, 255, .22); color: #fff; }
+.settings-btn .ico-sm, #refreshBalance .ico-sm { color: var(--accent-2); stroke-width: 2; }
 .settings-btn {
   display: flex; align-items: center; gap: 10px;
   background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
@@ -204,9 +222,17 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .guided-card:nth-child(6) { animation-delay: .20s; } .guided-card:nth-child(7) { animation-delay: .24s; }
 .guided-card:nth-child(8) { animation-delay: .28s; }
 .guided-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.guided-card .gicon { color: var(--accent); }
-.ico-card { width: 30px; height: 30px; }
-.ico-title { width: 22px; height: 22px; vertical-align: -3px; color: var(--accent); }
+.guided-card .gicon { color: var(--accent-2); display: inline-flex; }
+.ico-card {
+  width: 48px; height: 48px; padding: 11px; box-sizing: border-box;
+  border-radius: 13px; background: var(--accent-soft); color: var(--accent-2); stroke-width: 2;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.guided-card:hover .ico-card { background: #e2d8fb; transform: scale(1.06) rotate(-3deg); }
+.ico-title {
+  width: 32px; height: 32px; padding: 7px; box-sizing: border-box; vertical-align: -8px;
+  border-radius: 9px; background: var(--accent-soft); color: var(--accent-2); stroke-width: 2;
+}
 .gq select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--r-sm); font-size: 14px; }
 .ai-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .ai-status { font-size: 13px; color: var(--muted); min-height: 18px; }
