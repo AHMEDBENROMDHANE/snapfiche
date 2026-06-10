@@ -163,8 +163,9 @@ app.post('/api/signup', rateLimit('signup', 5, 60000), async (req, res) => {
     if (/already|registered|exists/i.test(error.message)) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
     return res.status(502).json({ error: error.message });
   }
-  // Crédits de bienvenue (utiles quand le mode illimité sera désactivé)
-  await q('insert into profiles(id,email,credits) values($1,$2,$3) on conflict (id) do nothing', [data.user.id, email, 100]);
+  // Crédits de bienvenue (utiles quand le mode illimité sera désactivé).
+  // Le trigger Supabase crée déjà le profil à 0 crédit -> upsert + mise à niveau.
+  await q('insert into profiles(id,email,credits) values($1,$2,$3) on conflict (id) do update set credits=$3 where profiles.credits=0', [data.user.id, email, 100]);
   res.json({ ok: true });
 });
 
