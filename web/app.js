@@ -1231,7 +1231,10 @@ imgGenerate.onclick = async () => {
   }
 };
 
-function showImageResult(container, url, prompt, history) {
+// Affiche une image générée : enregistrée AUTOMATIQUEMENT dans la galerie, éditable par IA
+// avec historique des versions (Annuler), synchronisé avec l'élément de galerie (galleryId).
+//   galleryId : undefined = nouvelle création (auto-save) · string = élément existant · null = non enregistré
+function showImageResult(container, url, prompt, history, galleryId) {
   history = history || []; // pile des images précédentes (pour Annuler)
   container.innerHTML = '';
   const img = document.createElement('img');
@@ -1241,17 +1244,32 @@ function showImageResult(container, url, prompt, history) {
   actions.className = 'result-actions';
 
   const saveBtn = document.createElement('button');
-  saveBtn.textContent = '💾 Enregistrer dans la galerie';
-  saveBtn.onclick = async () => {
+  const manualSave = async () => {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Enregistrement…';
     try {
-      await window.api.galleryAdd({ type: 'image', url, prompt, companyId: activeCompanyId });
-      saveBtn.textContent = '✅ Ajouté à la galerie';
+      const it = await window.api.galleryAdd({ type: 'image', url, prompt, companyId: activeCompanyId, history });
+      galleryId = it.id;
+      saveBtn.textContent = '✅ Dans la galerie';
     } catch (e) {
-      saveBtn.textContent = '❌ ' + e.message;
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Réessayer l\'enregistrement';
     }
   };
+  if (galleryId === undefined) {
+    // Nouvelle création -> enregistrement automatique
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Enregistrement…';
+    window.api.galleryAdd({ type: 'image', url, prompt, companyId: activeCompanyId, history })
+      .then((it) => { galleryId = it.id; saveBtn.textContent = '✅ Dans la galerie'; })
+      .catch(() => { galleryId = null; saveBtn.disabled = false; saveBtn.textContent = '💾 Enregistrer dans la galerie'; saveBtn.onclick = manualSave; });
+  } else if (galleryId) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '✅ Dans la galerie';
+  } else {
+    saveBtn.textContent = '💾 Enregistrer dans la galerie';
+    saveBtn.onclick = manualSave;
+  }
 
   const editBtn = document.createElement('button');
   editBtn.textContent = "✏️ Ouvrir dans l'éditeur";
@@ -1261,8 +1279,12 @@ function showImageResult(container, url, prompt, history) {
   actions.appendChild(editBtn);
   if (history.length) {
     const undoBtn = document.createElement('button');
-    undoBtn.textContent = '↩️ Annuler la modif';
-    undoBtn.onclick = () => showImageResult(container, history[history.length - 1], prompt, history.slice(0, -1));
+    undoBtn.textContent = `↩️ Annuler la modif (${history.length})`;
+    undoBtn.onclick = async () => {
+      const prev = history[history.length - 1], newHist = history.slice(0, -1);
+      if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: prev, history: newHist }); } catch (_) {} }
+      showImageResult(container, prev, prompt, newHist, galleryId || null);
+    };
     actions.appendChild(undoBtn);
   }
   container.appendChild(actions);
@@ -1309,7 +1331,10 @@ function showImageResult(container, url, prompt, history) {
       const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
       refreshBalance();
       // ré-affiche le résultat modifié (édition itérative + historique pour Annuler)
-      showImageResult(container, res.resultUrl, prompt, [...history, url]);
+      // et met à jour l'élément de galerie correspondant (nouvelle version + historique)
+      const newHistory = [...history, url];
+      if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: res.resultUrl, history: newHistory }); } catch (_) {} }
+      showImageResult(container, res.resultUrl, prompt, newHistory, galleryId || null);
     } catch (e) {
       estatus.textContent = '❌ ' + e.message;
       estatus.className = 'edit-status error';
@@ -1692,7 +1717,7 @@ async function loadGallery() {
     card.innerHTML = `
       ${media}
       <div class="meta">
-        <span class="badge">${item.type === 'video' ? '🎬 Vidéo' : '🖼️ Image'}</span>
+        <span class="badge">${item.type === 'video' ? '🎬 Vidéo' : '🖼️ Image'}</span>${(item.history || []).length ? ` <span class="badge">🕘 ${item.history.length + 1} versions</span>` : ''}
         <p>${esc((item.prompt || '').slice(0, 90))}</p>
         <div class="actions"></div>
       </div>`;
@@ -1708,6 +1733,18 @@ async function loadGallery() {
     actions.appendChild(exportBtn);
 
     if (item.type === 'image') {
+      // Modification par IA depuis la galerie : rouvre l'affiche avec son historique
+      // de versions (Annuler possible), les modifs sont resynchronisées dans la galerie.
+      const aiBtn = document.createElement('button');
+      aiBtn.textContent = '🎨 Modifier IA';
+      aiBtn.onclick = () => {
+        document.querySelector('.nav-btn[data-view="image"]').click();
+        const resultEl = document.getElementById('imgResult');
+        showImageResult(resultEl, item.url, item.prompt, item.history || [], item.id);
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      actions.appendChild(aiBtn);
+
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Éditer';
       editBtn.onclick = async () => {

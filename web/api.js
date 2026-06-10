@@ -123,15 +123,24 @@
     // ---- Galerie (Supabase) ----
     galleryAdd: async (item) => {
       const u = await uid();
-      const row = { user_id: u, type: item.type, prompt: item.prompt || '', url: item.url, company_id: item.companyId || null };
+      const row = { user_id: u, type: item.type, prompt: item.prompt || '', url: item.url, company_id: item.companyId || null, history: item.history || [] };
       const { data, error } = await window.SB.from('gallery').insert(row).select().single();
       if (error) throw new Error(error.message);
-      return { id: data.id, type: data.type, prompt: data.prompt, companyId: data.company_id, file: data.url, url: data.url, createdAt: data.created_at };
+      return { id: data.id, type: data.type, prompt: data.prompt, companyId: data.company_id, file: data.url, url: data.url, history: data.history || [], createdAt: data.created_at };
+    },
+    // Met à jour une création (après une modification IA : nouvelle url + historique des versions).
+    galleryUpdate: async (id, fields) => {
+      const row = {};
+      if (fields.url) row.url = fields.url;
+      if (fields.history) row.history = fields.history;
+      const { error } = await window.SB.from('gallery').update(row).eq('id', id);
+      if (error) throw new Error(error.message);
+      return { ok: true };
     },
     galleryList: async () => {
       const { data, error } = await window.SB.from('gallery').select('*').order('created_at', { ascending: false });
       if (error) throw new Error(error.message);
-      return (data || []).map((g) => ({ id: g.id, type: g.type, prompt: g.prompt || '', companyId: g.company_id, file: g.url, url: g.url, createdAt: g.created_at }));
+      return (data || []).map((g) => ({ id: g.id, type: g.type, prompt: g.prompt || '', companyId: g.company_id, file: g.url, url: g.url, history: g.history || [], createdAt: g.created_at }));
     },
     galleryDelete: async (id) => { const { error } = await window.SB.from('gallery').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
 
