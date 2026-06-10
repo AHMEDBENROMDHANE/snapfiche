@@ -2648,6 +2648,31 @@ function renderSuggestions(list) {
   });
 }
 
+// Idées « Affiche Pro » : chaque concept = titre + description + visuel de fond.
+// Un clic remplit les 3 champs (headline, desc, subject) d'un coup.
+function setGuidedField(key, value) {
+  const f = document.querySelector(`#guidedQuestions .gq-field[data-key="${key}"]`);
+  if (f) f.value = value;
+}
+function renderProSuggestions(list) {
+  const el = document.getElementById('aiSuggestions');
+  el.innerHTML = '';
+  list.forEach(([head, desc, visual]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ai-chip';
+    b.innerHTML = `<b>${esc(head)}</b>${desc ? ' — ' + esc(desc) : ''}<br><small style="color:var(--muted)">🎨 ${esc(visual)}</small>`;
+    b.onclick = () => {
+      setGuidedField('headline', head);
+      setGuidedField('desc', desc);
+      setGuidedField('subject', visual);
+      const sf = subjectField();
+      if (sf) sf.focus();
+    };
+    el.appendChild(b);
+  });
+}
+
 document.getElementById('aiIdeas').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
@@ -2675,6 +2700,7 @@ document.getElementById('aiIdeas').onclick = async () => {
         logoDataUrl = await downscaleDataUrl(await window.api.mediaDataUrl(c.logoFile), 384, 'image/png');
       } catch (_) {}
     }
+    const isPro = !!guidedRecipe.proLayers;
     const SYS =
       "Tu es directeur de création senior dans une agence de design primée. Tu génères des concepts d'affiches PRÉCIS, originaux et directement exploitables — jamais de banalités ni de descriptions vagues. " +
       "Chaque concept combine une ACCROCHE percutante (vrai texte d'affiche) ET une description visuelle concrète : sujet, composition/cadrage, style artistique, lumière, palette. " +
@@ -2686,8 +2712,12 @@ document.getElementById('aiIdeas').onclick = async () => {
       (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
       `\nLangue du texte affiché : ${LANG_LABEL[guidedLang() || 'fr']}.` +
       `\n\nDonne 5 concepts d'affiche RADICALEMENT différents et mémorables, SPÉCIFIQUES à ce secteur (pas génériques).` +
-      `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
-      `\n"Accroche courte et percutante" — concept visuel précis (sujet + composition + style + lumière + palette).` +
+      (isPro
+        ? `\nFormat STRICT — exactement une ligne par concept, avec les 3 parties séparées par || ainsi :` +
+          `\nACCROCHE courte et percutante (titre de l'affiche) || Description courte pour l'affiche (date, offre, sous-titre… 1 phrase max) || Description visuelle du FOND UNIQUEMENT, sans aucun texte ni lettre (scène, composition, style, lumière, palette).` +
+          `\nLa 3e partie ne doit JAMAIS mentionner de texte, mots ou typographie — c'est un fond d'image pur.`
+        : `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
+          `\n"Accroche courte et percutante" — concept visuel précis (sujet + composition + style + lumière + palette).`) +
       `\nVarie les directions (minimaliste éditorial, rendu 3D, photo cinématographique, typographie géante, collage, néon, rétro, dégradé aurora...).` +
       `\nPas de numéro, pas de puce, pas d'introduction ni de conclusion.`;
     // Essai avec le logo (vision) ; repli en texte seul si l'image échoue.
@@ -2707,8 +2737,22 @@ document.getElementById('aiIdeas').onclick = async () => {
       .filter((l) => l.length > 3)
       .slice(0, 6);
     if (!ideas.length) throw new Error('Aucune idée reçue.');
-    statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
-    renderSuggestions(ideas);
+    if (isPro) {
+      // Concepts complets : titre || description || visuel -> un clic remplit les 3 champs
+      const parsed = ideas
+        .map((l) => l.split(/\s*\|\|\s*/).map((p) => p.replace(/^["“”']|["“”']$/g, '').trim()))
+        .filter((p) => p.length >= 3 && p[0] && p[2]);
+      if (!parsed.length) {
+        statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
+        renderSuggestions(ideas); // repli : format inattendu -> comportement classique
+      } else {
+        statusEl.textContent = 'Cliquez un concept : il remplit le titre, la description et le visuel :';
+        renderProSuggestions(parsed);
+      }
+    } else {
+      statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
+      renderSuggestions(ideas);
+    }
   } catch (e) {
     statusEl.textContent = '❌ ' + e.message;
     statusEl.className = 'ai-status error';
