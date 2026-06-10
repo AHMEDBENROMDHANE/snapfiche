@@ -130,7 +130,18 @@
         <div id="guidedPanel" class="guided-panel hidden">
           <h3 id="guidedTitle"></h3>
           <p id="guidedDesc" class="subtitle"></p>
+          <div class="gen-layout">
+          <div class="gen-left">
           <div id="guidedQuestions"></div>
+          <div class="gq">
+            <label for="guidedLang">🌐 Langue de l'affiche <span class="req">* obligatoire</span></label>
+            <select id="guidedLang" required>
+              <option value="" selected disabled>— Choisir la langue —</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="ar">العربية (arabe)</option>
+            </select>
+          </div>
           <div class="gq ai-assistant">
             <label>Assistant IA</label>
             <div class="ai-actions">
@@ -141,26 +152,18 @@
             <div id="aiSuggestions" class="ai-suggestions"></div>
           </div>
           <div class="gq">
-            <label id="guidedRefLabel">Image de référence (optionnel)</label>
+            <label id="guidedRefLabel">Images de référence (optionnel — style, personnage, produit… max 6)</label>
             <div class="ref-row">
-              <label class="filebtn">Importer une image
-                <input type="file" id="guidedRefFile" accept="image/*" hidden />
+              <label class="filebtn">+ Ajouter des images
+                <input type="file" id="guidedRefFile" accept="image/*" multiple hidden />
               </label>
               <select id="guidedRefMode">
                 <option value="inspire">S'inspirer du style</option>
-                <option value="character">Garder le personnage / objet</option>
+                <option value="character">Garder personnage / produit</option>
               </select>
-              <button id="guidedRefClear" type="button" class="mini hidden">✕</button>
+              <button id="guidedRefClear" type="button" class="mini hidden">✕ Tout retirer</button>
             </div>
-            <img id="guidedRefPreview" class="source-preview hidden" />
-          </div>
-          <div class="gq">
-            <label>Langue de l'affiche</label>
-            <select id="guidedLang">
-              <option value="en" selected>English</option>
-              <option value="fr">Français</option>
-              <option value="ar">العربية (arabe)</option>
-            </select>
+            <div id="guidedRefThumbs" class="thumbs"></div>
           </div>
           <div class="gq">
             <label>Style visuel</label>
@@ -197,31 +200,38 @@
             <button id="guidedBack">← Choisir un autre objectif</button>
           </div>
           <div id="guidedStatus" class="status"></div>
-          <div id="guidedResult" class="result"></div>
+          </div><!-- /gen-left -->
+          <div class="gen-right">
+            <div id="guidedResult" class="result"><div class="result-placeholder">✨ Ta création apparaîtra ici</div></div>
+          </div>
+          </div><!-- /gen-layout -->
         </div>
       </section>
 
       <!-- VUE IMAGE -->
       <section id="view-image" class="view">
         <h1>Génération d'image IA</h1>
-        <p class="subtitle">Flux Kontext · Nano Banana (Gemini) — texte → image, ou éditez une image importée.</p>
+        <p class="subtitle">Texte → image, ou transformez vos images : référence de style, personnage, produit…</p>
+        <div class="gen-layout">
+        <div class="gen-left">
         <textarea id="imgPrompt" class="prompt" rows="4"
           placeholder="Ex : affiche de concert électro, néons violets, typographie audacieuse, fond urbain nocturne"></textarea>
         <label class="brand-toggle"><input type="checkbox" id="imgUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
         <label class="brand-toggle"><input type="checkbox" id="imgUseLogo" /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
         <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> 📞 Afficher les coordonnées sur l'image</label>
 
-        <!-- Image source (édition / image-to-image) -->
+        <!-- Images sources (édition / fusion / multi-références) -->
         <div class="source-box">
-          <strong>📤 Image source (optionnel — pour éditer / transformer)</strong>
+          <strong>📤 Images sources (optionnel — jusqu'à 8 : référence, personnage, produit à fusionner…)</strong>
           <div class="source-row">
-            <label class="filebtn">Importer une image
-              <input type="file" id="imgSourceFile" accept="image/*" hidden />
+            <label class="filebtn">+ Ajouter des images
+              <input type="file" id="imgSourceFile" accept="image/*" multiple hidden />
             </label>
             <span id="imgSourceName" class="source-name">Aucune — mode texte → image</span>
-            <button id="imgSourceClear" class="mini hidden">✕</button>
+            <button id="imgSourceClear" class="mini hidden">✕ Tout retirer</button>
           </div>
-          <img id="imgSourcePreview" class="source-preview hidden" />
+          <div id="imgThumbs" class="thumbs"></div>
+          <div class="hint">💡 Avec plusieurs images, choisis 🔥 Snap Max — il sait les combiner (ex : ta personne + ton produit dans la même scène).</div>
         </div>
 
         <div class="controls">
@@ -253,13 +263,19 @@
         </div>
         <div id="imgCost" class="cost"></div>
         <div id="imgStatus" class="status"></div>
-        <div id="imgResult" class="result"></div>
+        </div><!-- /gen-left -->
+        <div class="gen-right">
+          <div id="imgResult" class="result"><div class="result-placeholder">🖼️ Ton image apparaîtra ici</div></div>
+        </div>
+        </div><!-- /gen-layout -->
       </section>
 
       <!-- VUE VIDÉO -->
       <section id="view-video" class="view">
         <h1>Génération de vidéo IA</h1>
-        <p class="subtitle">Veo 3 · Seedance 2.0 — texte → vidéo, ou animez une image importée.</p>
+        <p class="subtitle">Texte → vidéo, ou animez vos images : début, fin, références.</p>
+        <div class="gen-layout">
+        <div class="gen-left">
         <textarea id="vidPrompt" class="prompt" rows="4"
           placeholder="Ex : travelling cinématique sur une ville futuriste au coucher du soleil, lumière dorée"></textarea>
         <label class="brand-toggle"><input type="checkbox" id="vidUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
@@ -318,7 +334,11 @@
         </div>
         <div id="vidCost" class="cost"></div>
         <div id="vidStatus" class="status"></div>
-        <div id="vidResult" class="result"></div>
+        </div><!-- /gen-left -->
+        <div class="gen-right">
+          <div id="vidResult" class="result"><div class="result-placeholder">🎬 Ta vidéo apparaîtra ici</div></div>
+        </div>
+        </div><!-- /gen-layout -->
       </section>
 
       <!-- VUE ÉDITEUR -->

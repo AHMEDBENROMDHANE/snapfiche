@@ -988,38 +988,75 @@ document.getElementById('addCompanyLogo').onclick = async () => {
   img.src = du;
 };
 
-// ============ Image source (upload) ============
-const imgSrc = { v: null };
+// ============ Images sources (upload) ============
+// Miniatures génériques : grille d'aperçus avec bouton de retrait.
+function renderThumbs(container, list, onChange) {
+  container.innerHTML = '';
+  list.forEach((it, i) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.innerHTML = `<img src="${it.dataUrl}" alt="Image importée ${i + 1}" /><button type="button" class="thumb-x" aria-label="Retirer cette image">✕</button>`;
+    d.querySelector('.thumb-x').onclick = () => { list.splice(i, 1); onChange(); };
+    container.appendChild(d);
+  });
+}
+// Lit + réduit un fichier image -> {dataUrl, name}
+function readImageFile(f) {
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = async () => resolve({ dataUrl: await downscaleDataUrl(r.result, 1280, 'image/jpeg'), name: f.name });
+    r.readAsDataURL(f);
+  });
+}
+
+// Vue Image : PLUSIEURS images sources (référence de style, personnage, produit… max 8).
+const IMG_MAX_SOURCES = 8;
+const imgSrcList = [];
+(function wireImgSources() {
+  const file = document.getElementById('imgSourceFile');
+  const name = document.getElementById('imgSourceName');
+  const clear = document.getElementById('imgSourceClear');
+  const thumbs = document.getElementById('imgThumbs');
+  const sync = () => {
+    name.textContent = imgSrcList.length
+      ? `${imgSrcList.length} image(s) — référence, personnage, produit…`
+      : 'Aucune — mode texte → image';
+    clear.classList.toggle('hidden', !imgSrcList.length);
+    renderThumbs(thumbs, imgSrcList, sync);
+  };
+  file.addEventListener('change', async (e) => {
+    const files = [...e.target.files].slice(0, IMG_MAX_SOURCES - imgSrcList.length);
+    for (const f of files) imgSrcList.push(await readImageFile(f));
+    file.value = '';
+    sync();
+  });
+  clear.onclick = () => { imgSrcList.length = 0; sync(); };
+})();
+
+// Vue Vidéo : image de début (1 seule).
 const vidSrc = { v: null };
-function wireSource(prefix, holder, emptyText) {
-  const file = document.getElementById(prefix + 'SourceFile');
-  const name = document.getElementById(prefix + 'SourceName');
-  const prev = document.getElementById(prefix + 'SourcePreview');
-  const clear = document.getElementById(prefix + 'SourceClear');
-  file.addEventListener('change', (e) => {
+(function wireVidSource() {
+  const file = document.getElementById('vidSourceFile');
+  const name = document.getElementById('vidSourceName');
+  const prev = document.getElementById('vidSourcePreview');
+  const clear = document.getElementById('vidSourceClear');
+  file.addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const ds = await downscaleDataUrl(reader.result, 1280, 'image/jpeg');
-      holder.v = { dataUrl: ds, name: f.name };
-      name.textContent = f.name;
-      prev.src = ds;
-      prev.classList.remove('hidden');
-      clear.classList.remove('hidden');
-    };
-    reader.readAsDataURL(f);
+    vidSrc.v = await readImageFile(f);
+    name.textContent = f.name;
+    prev.src = vidSrc.v.dataUrl;
+    prev.classList.remove('hidden');
+    clear.classList.remove('hidden');
   });
   clear.onclick = () => {
-    holder.v = null;
+    vidSrc.v = null;
     file.value = '';
     prev.classList.add('hidden');
     clear.classList.add('hidden');
-    name.textContent = emptyText;
+    name.textContent = 'Aucune — mode texte → vidéo';
   };
-}
-wireSource('img', imgSrc, 'Aucune — mode texte → image');
-wireSource('vid', vidSrc, 'Aucune — mode texte → vidéo');
+})();
 
 // Image de fin (dernière frame) pour la vidéo
 const vidEnd = { v: null };
@@ -1195,6 +1232,17 @@ imgGenerate.onclick = async () => {
     return;
   }
   const m = findModel('image', imgModelSel.value);
+  // Compatibilité : tous les modèles n'acceptent pas d'images sources.
+  if (imgSrcList.length && m.api !== 'flux' && !m.imageField) {
+    statusEl.textContent = `Le modèle « ${m.label} » ne prend pas d'images sources — choisis 🔥 Snap Max (jusqu'à 8 images) ou retire les images.`;
+    statusEl.className = 'status error';
+    return;
+  }
+  if (imgSrcList.length > 1 && m.api === 'flux') {
+    statusEl.textContent = `${m.label} n'accepte qu'UNE image source — garde la première ou choisis 🔥 Snap Max (multi-images).`;
+    statusEl.className = 'status error';
+    return;
+  }
   imgGenerate.disabled = true;
   imgGenToken = { cancelled: false };
   document.getElementById('imgCancel').classList.remove('hidden');
@@ -1203,8 +1251,11 @@ imgGenerate.onclick = async () => {
   statusEl.innerHTML = '<span class="spinner"></span>Préparation…';
   try {
     const images = [];
-    const sourceUrl = await uploadSource(imgSrc, statusEl);
-    if (sourceUrl) images.push(sourceUrl);
+    for (let i = 0; i < imgSrcList.length; i++) {
+      statusEl.innerHTML = `<span class="spinner"></span>Upload des images sources… (${i + 1}/${imgSrcList.length})`;
+      const { url } = await window.api.uploadFile({ base64DataUrl: imgSrcList[i].dataUrl, fileName: imgSrcList[i].name });
+      images.push(url);
+    }
     let prompt2 = applyBrand('img', applyStyleManual('img', prompt));
     const c = activeCompany();
     if (c && document.getElementById('imgShowContact').checked) prompt2 += contactDirective(c);
@@ -1807,13 +1858,13 @@ const RECIPES = [
     build: (a) => `Bannière web horizontale professionnelle. Message : ${a.subject}. Composition panoramique, espace pour titre et bouton, design épuré et moderne.`,
   },
   {
-    id: 'restyle', icon: 'shirt', title: 'Changer tenue / décor',
-    desc: 'Garde la même personne, change ses vêtements ou son décor.',
+    id: 'restyle', icon: 'shirt', title: 'Tenue · décor · produit',
+    desc: 'Garde la même personne — change tenue/décor, ou fusionne-la avec un produit (importez les 2 photos).',
     kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
     needsImage: true,
-    ask: [{ key: 'subject', label: 'Nouvelle tenue ou nouveau décor ?', ph: 'Ex : costume bleu élégant — ou : plage au coucher du soleil' }],
+    ask: [{ key: 'subject', label: 'Que faut-il faire ?', ph: 'Ex : costume bleu élégant — plage au coucher du soleil — elle tient le produit en souriant' }],
     build: (a) =>
-      `À partir de la photo de référence : ${a.subject}. Conserve EXACTEMENT la même personne (même visage, même morphologie, même identité). Ne change que ce qui est demandé (tenue ou décor). Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
+      `À partir des photos de référence fournies : ${a.subject}. Conserve EXACTEMENT la même personne (même visage, même morphologie, même identité) et, si un produit est fourni, reproduis-le À L'IDENTIQUE (même forme, étiquette, couleurs). Ne change que ce qui est demandé (tenue, décor, ou mise en scène avec le produit). Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
   },
   {
     id: 'product', icon: 'tag', title: 'Visuel produit',
@@ -2000,7 +2051,7 @@ function openRecipe(r) {
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
   document.getElementById('guidedStatus').textContent = '';
-  document.getElementById('guidedResult').innerHTML = '';
+  document.getElementById('guidedResult').innerHTML = '<div class="result-placeholder">✨ Ta création apparaîtra ici</div>';
   document.getElementById('aiStatus').textContent = '';
   document.getElementById('aiSuggestions').innerHTML = '';
 }
@@ -2016,35 +2067,29 @@ document.getElementById('guidedLogoMode').onchange = (e) => {
 };
 
 // ---- Image de référence (inspiration / personnage) ----
-let guidedRef = null;
-(function wireGuidedRef() {
+// Références multiples : style à imiter, personnage à garder, produit à intégrer… (max 6)
+const GUIDED_MAX_REFS = 6;
+const guidedRefs = [];
+(function wireGuidedRefs() {
   const file = document.getElementById('guidedRefFile');
-  const prev = document.getElementById('guidedRefPreview');
   const clr = document.getElementById('guidedRefClear');
-  file.addEventListener('change', (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = async () => {
-      const ds = await downscaleDataUrl(r.result, 1280, 'image/jpeg');
-      guidedRef = { dataUrl: ds, name: f.name };
-      prev.src = ds;
-      prev.classList.remove('hidden');
-      clr.classList.remove('hidden');
-    };
-    r.readAsDataURL(f);
-  });
-  clr.onclick = () => {
-    guidedRef = null;
-    file.value = '';
-    prev.classList.add('hidden');
-    clr.classList.add('hidden');
+  const thumbs = document.getElementById('guidedRefThumbs');
+  const sync = () => {
+    clr.classList.toggle('hidden', !guidedRefs.length);
+    renderThumbs(thumbs, guidedRefs, sync);
   };
+  file.addEventListener('change', async (e) => {
+    const files = [...e.target.files].slice(0, GUIDED_MAX_REFS - guidedRefs.length);
+    for (const f of files) guidedRefs.push(await readImageFile(f));
+    file.value = '';
+    sync();
+  });
+  clr.onclick = () => { guidedRefs.length = 0; sync(); };
 })();
 function resetGuidedRef() {
-  guidedRef = null;
+  guidedRefs.length = 0;
   document.getElementById('guidedRefFile').value = '';
-  document.getElementById('guidedRefPreview').classList.add('hidden');
+  document.getElementById('guidedRefThumbs').innerHTML = '';
   document.getElementById('guidedRefClear').classList.add('hidden');
 }
 
@@ -2084,6 +2129,11 @@ function renderSuggestions(list) {
 document.getElementById('aiIdeas').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
+  if (!guidedLang()) {
+    statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
+    statusEl.className = 'ai-status error';
+    return;
+  }
   const btn = document.getElementById('aiIdeas');
   btn.disabled = true;
   document.getElementById('aiSuggestions').innerHTML = '';
@@ -2147,6 +2197,11 @@ document.getElementById('aiIdeas').onclick = async () => {
 document.getElementById('aiImprove').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
+  if (!guidedLang()) {
+    statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
+    statusEl.className = 'ai-status error';
+    return;
+  }
   const f = subjectField();
   const current = f ? f.value.trim() : '';
   if (!current) {
@@ -2188,8 +2243,13 @@ document.getElementById('guidedGenerate').onclick = async () => {
     statusEl.className = 'status error';
     return;
   }
-  if (r.needsImage && !guidedRef) {
-    statusEl.textContent = "Importez d'abord la photo de la personne.";
+  if (r.needsImage && !guidedRefs.length) {
+    statusEl.textContent = "Importez d'abord la ou les photos (personne, produit…).";
+    statusEl.className = 'status error';
+    return;
+  }
+  if (!guidedLang()) {
+    statusEl.textContent = "Choisissez d'abord la langue de l'affiche.";
     statusEl.className = 'status error';
     return;
   }
@@ -2215,16 +2275,20 @@ document.getElementById('guidedGenerate').onclick = async () => {
     const images = [];
     const c = activeCompany();
 
-    // 1) Image de référence de l'utilisateur (inspiration / personnage / tenue-décor)
-    if (guidedRef) {
-      statusEl.innerHTML = '<span class="spinner"></span>Upload de l\'image de référence…';
-      const up = await window.api.uploadFile({ base64DataUrl: guidedRef.dataUrl, fileName: guidedRef.name });
-      images.push(up.url);
+    // 1) Images de référence de l'utilisateur (inspiration / personnage / produit / tenue-décor)
+    if (guidedRefs.length) {
+      for (let i = 0; i < guidedRefs.length; i++) {
+        statusEl.innerHTML = `<span class="spinner"></span>Upload des images de référence… (${i + 1}/${guidedRefs.length})`;
+        const up = await window.api.uploadFile({ base64DataUrl: guidedRefs[i].dataUrl, fileName: guidedRefs[i].name });
+        images.push(up.url);
+      }
       if (!r.needsImage) {
         const mode = document.getElementById('guidedRefMode').value;
         prompt += mode === 'character'
-          ? " Garde le même personnage / sujet que la photo de référence fournie : même visage et mêmes caractéristiques, cohérence d'identité."
-          : " Inspire-toi du style visuel, de l'ambiance et de la palette de la photo de référence fournie.";
+          ? " Garde les mêmes personnages / sujets / produits que les photos de référence fournies : mêmes visages, mêmes caractéristiques, mêmes produits à l'identique, cohérence d'identité parfaite."
+          : " Inspire-toi du style visuel, de l'ambiance et de la palette des photos de référence fournies.";
+      } else if (guidedRefs.length > 1) {
+        prompt += " Plusieurs photos sont fournies (personne, produit, élément…) : COMBINE-les naturellement dans une seule scène cohérente — même lumière, mêmes proportions, intégration réaliste.";
       }
     }
 

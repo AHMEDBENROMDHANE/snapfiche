@@ -407,6 +407,36 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .pack-card.coming { border-style: dashed; text-align: center; color: var(--muted); }
 .pack-card h3 { margin: 0 0 8px; }
 
+/* ============ Mise en page génération : réglages à gauche, résultat à droite ============ */
+.gen-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 46%); gap: 24px; align-items: start; }
+.gen-right { position: sticky; top: 24px; }
+.gen-right .result { margin-top: 0; }
+.result-placeholder {
+  border: 2px dashed var(--border); border-radius: var(--r-lg); padding: 70px 24px;
+  text-align: center; color: var(--muted); background: var(--panel); font-size: 15px;
+}
+.guided-panel { max-width: none; }
+@media (max-width: 1100px) {
+  .gen-layout { grid-template-columns: 1fr; }
+  .gen-right { position: static; }
+}
+
+/* ============ Miniatures des images importées ============ */
+.thumbs { display: flex; flex-wrap: wrap; gap: 10px; }
+.thumbs:empty { display: none; }
+.thumb {
+  position: relative; width: 86px; height: 86px; border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm); animation: popIn var(--t-fast) both;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb-x {
+  position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: rgba(23, 19, 31, .68); color: #fff; font-size: 11px; line-height: 1;
+  cursor: pointer; transition: background var(--t-fast);
+}
+.thumb-x:hover { background: var(--danger); }
+.req { color: var(--danger); font-size: 11.5px; font-weight: 700; }
+
 /* ============ Dashboard admin ============ */
 .admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
 .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); animation: fadeUp var(--t-med) both; }
