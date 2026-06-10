@@ -157,8 +157,13 @@ async function refreshBalance() {
   el.textContent = '…';
   try {
     const b = await window.api.getCredits();
-    el.textContent = `${b.credits} cr (~$${b.usd})`;
-    el.title = `${b.credits} crédits ≈ ${b.usd} $`;
+    if (b.unlimited) {
+      el.textContent = '∞ illimité';
+      el.title = 'Solde illimité (phase de test)';
+    } else {
+      el.textContent = `${b.credits} cr (~$${b.usd})`;
+      el.title = `${b.credits} crédits ≈ ${b.usd} $`;
+    }
   } catch (e) {
     el.textContent = 'erreur';
   }

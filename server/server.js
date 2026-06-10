@@ -51,6 +51,11 @@ async function getCredits(uid) {
   const r = await q('select credits from profiles where id=$1', [uid]);
   return r.rows[0] ? r.rows[0].credits : 0;
 }
+// Solde + statut illimité (phase de test : pas de débit ni de blocage).
+async function getBalance(uid) {
+  const r = await q('select credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [uid]);
+  return r.rows[0] ? { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited } : { credits: 0, unlimited: false };
+}
 async function changeCredits(uid, delta, reason) {
   await q('update profiles set credits = credits + $2 where id=$1', [uid, delta]);
   await q('insert into credit_ledger(user_id,delta,reason) values($1,$2,$3)', [uid, delta, reason]);
@@ -82,15 +87,16 @@ function estimateCost(d) {
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'snapfiche-api' }));
 
 app.get('/api/credits', auth, async (req, res) => {
-  res.json({ credits: await getCredits(req.user.id) });
+  const b = await getBalance(req.user.id);
+  res.json({ credits: b.credits, unlimited: b.unlimited });
 });
 
 // Profil de l'utilisateur : type de compte (particulier/entreprise) + nb d'entreprises.
 app.get('/api/me', auth, async (req, res) => {
-  const p = await q('select account_type, credits from profiles where id=$1', [req.user.id]);
+  const p = await q('select account_type, credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [req.user.id]);
   const cc = await q('select count(*)::int as n from companies where user_id=$1', [req.user.id]);
   const row = p.rows[0] || {};
-  res.json({ accountType: row.account_type || null, credits: row.credits || 0, companyCount: cc.rows[0].n });
+  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, companyCount: cc.rows[0].n });
 });
 
 // Choix / changement du type de compte. Particulier = 1 entreprise ; Entreprise = plusieurs.
@@ -104,8 +110,8 @@ app.post('/api/account-type', auth, async (req, res) => {
 app.post('/api/generate', auth, async (req, res) => {
   const descriptor = req.body;
   const cost = estimateCost(descriptor);
-  const credits = await getCredits(req.user.id);
-  if (credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ~${cost}, solde ${credits}).`, need: cost, have: credits });
+  const bal = await getBalance(req.user.id);
+  if (!bal.unlimited && bal.credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ~${cost}, solde ${bal.credits}).`, need: cost, have: bal.credits });
   try {
     const taskId = await kie.generate(KIE_API_KEY, descriptor);
     await q('insert into tasks(task_id,user_id,api,estimate) values($1,$2,$3,$4) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, cost]);
@@ -122,8 +128,9 @@ app.post('/api/poll', auth, async (req, res) => {
     if (result.done) {
       const t = await q('select charged, estimate from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
       if (t.rows[0] && !t.rows[0].charged) {
-        const charge = Math.max(0, Math.round(result.credits != null ? result.credits : t.rows[0].estimate));
-        await changeCredits(req.user.id, -charge, 'generation');
+        const bal = await getBalance(req.user.id);
+        const charge = bal.unlimited ? 0 : Math.max(0, Math.round(result.credits != null ? result.credits : t.rows[0].estimate));
+        if (charge > 0) await changeCredits(req.user.id, -charge, 'generation');
         await q('update tasks set charged=true where task_id=$1', [taskId]);
         result.charged = charge;
       }
@@ -135,10 +142,11 @@ app.post('/api/poll', auth, async (req, res) => {
 });
 
 app.post('/api/chat', auth, async (req, res) => {
-  if ((await getCredits(req.user.id)) < 1) return res.status(402).json({ error: 'Crédits insuffisants.' });
+  const bal = await getBalance(req.user.id);
+  if (!bal.unlimited && bal.credits < 1) return res.status(402).json({ error: 'Crédits insuffisants.' });
   try {
     const text = await kie.chat(KIE_API_KEY, req.body.model || 'gemini-2.5-flash', req.body.messages);
-    await changeCredits(req.user.id, -1, 'assistant');
+    if (!bal.unlimited) await changeCredits(req.user.id, -1, 'assistant');
     res.json({ text });
   } catch (e) {
     res.status(502).json({ error: e.message });

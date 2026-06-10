@@ -67,7 +67,7 @@
     setActiveCompany: async (id) => { if (id) localStorage.setItem('activeCompanyId', id); else localStorage.removeItem('activeCompanyId'); return { ok: true }; },
 
     // ---- Solde ----
-    getCredits: async () => { const j = await backend('/api/credits'); return { credits: j.credits, usd: +(j.credits * 0.005).toFixed(2) }; },
+    getCredits: async () => { const j = await backend('/api/credits'); return { credits: j.credits, unlimited: !!j.unlimited, usd: +(j.credits * 0.005).toFixed(2) }; },
 
     // ---- Compte (type particulier / entreprise) ----
     getMe: async () => backend('/api/me'),
