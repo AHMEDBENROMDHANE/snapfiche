@@ -4,3 +4,4 @@ server/.env
 dist/
 deploy/
 _render.json
+logo-source.jpg

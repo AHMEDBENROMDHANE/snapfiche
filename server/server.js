@@ -24,13 +24,58 @@ const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorize
 const q = (sql, params) => pool.query(sql, params);
 
 const app = express();
+app.disable('x-powered-by');
 app.use(express.json({ limit: '12mb' }));
 app.use(cors({ origin: ALLOWED_ORIGIN ? ALLOWED_ORIGIN.split(',') : true }));
+
+// ---- Sécurité : en-têtes HTTP de base ----
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 // Sert le frontend SnapFiche (web/) depuis le même serveur (même origine).
-// no-cache : le navigateur revérifie à chaque fois -> plus de version périmée après déploiement.
+// HTML/JS/CSS : no-cache (déploiements immédiats). Images/icônes : cache 1 jour.
 app.use(express.static(path.join(__dirname, '..', 'web'), {
-  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+  setHeaders: (res, filePath) => {
+    if (/\.(png|jpe?g|webp|svg|ico)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=86400');
+    else res.setHeader('Cache-Control', 'no-cache');
+  },
 }));
+
+// ---- Sécurité : garde anti-SSRF (URL distantes fournies par le client) ----
+// N'autorise que http(s) vers des hôtes publics — bloque localhost / IP privées / liens internes.
+function assertPublicUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch (_) { throw new Error('URL invalide.'); }
+  if (!/^https?:$/.test(u.protocol)) throw new Error('Seuls http/https sont autorisés.');
+  const h = u.hostname.toLowerCase();
+  const privatePatterns = [
+    /^localhost$/, /\.local$/, /^0\./, /^127\./, /^10\./, /^192\.168\./,
+    /^172\.(1[6-9]|2\d|3[01])\./, /^169\.254\./, /^\[?::1\]?$/, /^\[?f[cd]/i, /^\[?fe80:/i,
+  ];
+  if (privatePatterns.some((re) => re.test(h))) throw new Error('Adresse non autorisée.');
+  return u.href;
+}
+
+// ---- Sécurité : limite de débit simple (en mémoire, par utilisateur) ----
+const rateBuckets = new Map();
+function rateLimit(name, max, windowMs) {
+  return (req, res, next) => {
+    const key = name + ':' + (req.user ? req.user.id : req.ip);
+    const now = Date.now();
+    const b = rateBuckets.get(key) || { n: 0, t: now };
+    if (now - b.t > windowMs) { b.n = 0; b.t = now; }
+    b.n++;
+    rateBuckets.set(key, b);
+    if (b.n > max) return res.status(429).json({ error: 'Trop de requêtes, réessaie dans un instant.' });
+    next();
+  };
+}
+setInterval(() => { const cut = Date.now() - 300000; for (const [k, b] of rateBuckets) if (b.t < cut) rateBuckets.delete(k); }, 60000).unref();
 
 // ---- Authentification + garantie du profil ----
 async function auth(req, res, next) {
@@ -107,7 +152,7 @@ app.post('/api/account-type', auth, async (req, res) => {
   res.json({ ok: true, accountType: t });
 });
 
-app.post('/api/generate', auth, async (req, res) => {
+app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) => {
   const descriptor = req.body;
   const cost = estimateCost(descriptor);
   const bal = await getBalance(req.user.id);
@@ -124,6 +169,9 @@ app.post('/api/generate', auth, async (req, res) => {
 app.post('/api/poll', auth, async (req, res) => {
   const { api, taskId } = req.body;
   try {
+    // Sécurité : on ne sonde que les tâches appartenant à l'utilisateur connecté.
+    const own = await q('select 1 from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
+    if (!own.rows.length) return res.status(404).json({ error: 'Tâche introuvable.' });
     const result = await kie.poll(KIE_API_KEY, { api, taskId });
     if (result.done) {
       const t = await q('select charged, estimate from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
@@ -141,7 +189,7 @@ app.post('/api/poll', auth, async (req, res) => {
   }
 });
 
-app.post('/api/chat', auth, async (req, res) => {
+app.post('/api/chat', auth, rateLimit('chat', 30, 60000), async (req, res) => {
   const bal = await getBalance(req.user.id);
   if (!bal.unlimited && bal.credits < 1) return res.status(402).json({ error: 'Crédits insuffisants.' });
   try {
@@ -159,7 +207,7 @@ app.post('/api/upload', auth, async (req, res) => {
     // Si on reçoit une URL distante (ex : logo stocké sur Supabase), on télécharge l'image
     // et on la ré-héberge chez kie en vraie image (le modèle a besoin de l'image, pas juste d'un lien).
     if (!dataUrl && req.body.remoteUrl) {
-      const r = await fetch(req.body.remoteUrl);
+      const r = await fetch(assertPublicUrl(req.body.remoteUrl)); // anti-SSRF
       if (!r.ok) throw new Error('Téléchargement image HTTP ' + r.status);
       const ct = r.headers.get('content-type') || 'image/png';
       const buf = Buffer.from(await r.arrayBuffer());
@@ -213,11 +261,12 @@ async function fetchText(url, ms) {
   finally { clearTimeout(t); }
 }
 
-app.post('/api/fetch-site', auth, async (req, res) => {
+app.post('/api/fetch-site', auth, rateLimit('fetchsite', 10, 60000), async (req, res) => {
   let url = clean(req.body.url);
   if (!url) return res.status(400).json({ error: 'URL manquante.' });
   if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   try {
+    url = assertPublicUrl(url); // anti-SSRF
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12000);
     const resp = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (SnapFiche)' } });
@@ -271,7 +320,7 @@ app.post('/api/fetch-site', auth, async (req, res) => {
 
 // ---- Incrustation du VRAI logo (exact, pixel-perfect) sur l'affiche générée ----
 async function fetchBuf(url) {
-  const r = await fetch(url);
+  const r = await fetch(assertPublicUrl(url)); // anti-SSRF
   if (!r.ok) throw new Error('Image HTTP ' + r.status);
   return Buffer.from(await r.arrayBuffer());
 }

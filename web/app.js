@@ -13,6 +13,11 @@ function svgIcon(name, cls) {
   return `<svg class="${cls || 'ico'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
 }
 
+// Sécurité : échappe les données utilisateur avant insertion en innerHTML (anti-XSS).
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // Réduit une image (data URL) pour éviter des fichiers/requêtes trop volumineux.
 function downscaleDataUrl(dataUrl, maxDim, mime) {
   return new Promise((resolve) => {
@@ -271,7 +276,7 @@ async function renderCompanyList() {
       ? `<img class="logo" src="${logos[i]}" />`
       : `<div class="logo placeholder">${svgIcon('briefcase', 'ico')}</div>`;
     const swatches = (c.colors || []).map((col) => `<span style="background:${col}"></span>`).join('');
-    card.innerHTML = `${logoHtml}<div class="cinfo"><h4>${c.name}</h4>${c.website ? `<div class="web">${c.website}</div>` : ''}<div class="swatches">${swatches}</div></div><div class="cactions"></div>`;
+    card.innerHTML = `${logoHtml}<div class="cinfo"><h4>${esc(c.name)}</h4>${c.website ? `<div class="web">${esc(c.website)}</div>` : ''}<div class="swatches">${swatches}</div></div><div class="cactions"></div>`;
     const act = card.querySelector('.cactions');
     const useBtn = document.createElement('button');
     useBtn.textContent = c.id === activeCompanyId ? '✓ Active' : 'Activer';
@@ -1604,13 +1609,13 @@ async function loadGallery() {
     card.className = 'gallery-item';
     const media =
       item.type === 'video'
-        ? `<video src="${dataUrl}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>`
-        : `<img src="${dataUrl}" />`;
+        ? `<video src="${esc(dataUrl)}" muted loop preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>`
+        : `<img src="${esc(dataUrl)}" loading="lazy" alt="Création sauvegardée" />`;
     card.innerHTML = `
       ${media}
       <div class="meta">
         <span class="badge">${item.type === 'video' ? '🎬 Vidéo' : '🖼️ Image'}</span>
-        <p>${(item.prompt || '').slice(0, 90)}</p>
+        <p>${esc((item.prompt || '').slice(0, 90))}</p>
         <div class="actions"></div>
       </div>`;
     const actions = card.querySelector('.actions');
