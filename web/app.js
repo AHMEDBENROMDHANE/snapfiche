@@ -353,6 +353,15 @@ function applyAccountUI() {
   // Particulier ayant déjà son entreprise : on masque « Nouveau » (édition de l'existante seulement)
   if (resetBtn) resetBtn.style.display = atCompanyLimit() ? 'none' : '';
 
+  // Particulier : on retire « Entreprises » du menu et on montre le bouton « Mon offre » -> page Packs.
+  const navCompany = document.getElementById('navCompany');
+  const navPacks = document.getElementById('navPacks');
+  const brandField = document.getElementById('brandEditField');
+  if (navCompany) navCompany.style.display = isParticulier() ? 'none' : '';
+  if (navPacks) navPacks.style.display = isParticulier() ? '' : 'none';
+  if (brandField) brandField.style.display = isParticulier() ? '' : 'none';
+  updateOfferUI();
+
   // Particulier sans entreprise -> assistant pas-à-pas ; sinon -> formulaire classique.
   const wizard = document.getElementById('companyWizard');
   const layout = document.querySelector('.company-layout');
@@ -366,6 +375,29 @@ function applyAccountUI() {
     }
   }
 }
+
+// ===== Offre / Packs (Particulier) =====
+// État stocké en local pour l'instant (les vrais packs + paiement viendront ensuite).
+function offerActive() { return localStorage.getItem('offerActive') === '1'; }
+function updateOfferUI() {
+  const on = offerActive();
+  const lbl = document.getElementById('navPacksLabel');
+  if (lbl) lbl.textContent = on ? 'Offre activée' : 'Offre désactivée';
+  const t = document.getElementById('offerToggle');
+  if (t) t.checked = on;
+  const st = document.getElementById('offerState');
+  if (st) { st.textContent = on ? 'Activée' : 'Désactivée'; st.className = 'offer-state ' + (on ? 'on' : 'off'); }
+}
+(function wireOffer() {
+  const t = document.getElementById('offerToggle');
+  if (t) t.onchange = () => { localStorage.setItem('offerActive', t.checked ? '1' : '0'); updateOfferUI(); };
+  const eb = document.getElementById('editBrandBtn');
+  if (eb) eb.onclick = () => {
+    document.getElementById('settingsModal').classList.add('hidden');
+    const nav = document.getElementById('navCompany');
+    if (nav) nav.click(); // ouvre la vue Entreprises (formulaire/assistant de la marque)
+  };
+})();
 
 async function loadCompanies() {
   companies = await window.api.companyList();

@@ -413,3 +413,20 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .wiz-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
 .wiz-nav .ghost { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 16px; border-radius: 9px; cursor: pointer; }
 .wiz-nav .primary { margin-left: auto; }
+
+/* ===== Page Packs / Offre ===== */
+.offer-row { display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; max-width: 460px; }
+.offer-label { font-weight: 600; }
+.offer-state { font-weight: 700; }
+.offer-state.on { color: #1f9d55; }
+.offer-state.off { color: var(--muted); }
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider { position: absolute; cursor: pointer; inset: 0; background: var(--panel-2); border: 1px solid var(--border); border-radius: 28px; transition: .2s; }
+.switch .slider::before { content: ""; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.switch input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+.switch input:checked + .slider::before { transform: translateX(22px); }
+.packs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 20px; }
+.pack-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+.pack-card.coming { border-style: dashed; text-align: center; color: var(--muted); }
+.pack-card h3 { margin: 0 0 8px; }
