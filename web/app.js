@@ -2651,7 +2651,8 @@ function renderSuggestions(list) {
 document.getElementById('aiIdeas').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
-  if (!guidedLang()) {
+  // Affiche Pro : la langue n'est pas demandée (texte tapé en calques) -> idées en français par défaut.
+  if (!guidedLang() && !guidedRecipe.proLayers) {
     statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
     statusEl.className = 'ai-status error';
     return;
@@ -2683,7 +2684,7 @@ document.getElementById('aiIdeas').onclick = async () => {
       `\nMarque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${cols}${inf}.` +
       (subjectNow ? `\nDemande de l'utilisateur : ${subjectNow}.` : '') +
       (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
-      `\nLangue du texte affiché : ${LANG_LABEL[guidedLang()]}.` +
+      `\nLangue du texte affiché : ${LANG_LABEL[guidedLang() || 'fr']}.` +
       `\n\nDonne 5 concepts d'affiche RADICALEMENT différents et mémorables, SPÉCIFIQUES à ce secteur (pas génériques).` +
       `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
       `\n"Accroche courte et percutante" — concept visuel précis (sujet + composition + style + lumière + palette).` +
@@ -2719,7 +2720,7 @@ document.getElementById('aiIdeas').onclick = async () => {
 document.getElementById('aiImprove').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
-  if (!guidedLang()) {
+  if (!guidedLang() && !guidedRecipe.proLayers) {
     statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
     statusEl.className = 'ai-status error';
     return;
@@ -2740,7 +2741,7 @@ document.getElementById('aiImprove').onclick = async () => {
       model: AI_MODEL,
       messages: [
         { role: 'system', content: "Tu es directeur de création expert en prompts de génération d'images. Tu transformes une idée brève en un brief visuel détaillé et PRO : accroche/texte clé, sujet, composition/cadrage, style artistique, lumière, palette (couleurs de marque), ambiance, haute qualité. 2 à 4 phrases denses, concrètes et exploitables, en français, sans listes, sans guillemets, sans préambule." },
-        { role: 'user', content: (() => { const c = activeCompany(); const ctx = c ? ` Marque « ${c.name} »${c.category ? ', secteur ' + c.category : ''}${c.colors && c.colors.length ? ', couleurs ' + c.colors.join(', ') : ''}.` : ''; return `Objectif : ${guidedRecipe.title}.${ctx} Idée de l'utilisateur : "${current}". Réécris-la en un brief visuel détaillé, inspirant et cohérent avec la marque. Le texte qui apparaîtra sur le visuel sera en ${LANG_LABEL[guidedLang()]}.`; })() },
+        { role: 'user', content: (() => { const c = activeCompany(); const ctx = c ? ` Marque « ${c.name} »${c.category ? ', secteur ' + c.category : ''}${c.colors && c.colors.length ? ', couleurs ' + c.colors.join(', ') : ''}.` : ''; return `Objectif : ${guidedRecipe.title}.${ctx} Idée de l'utilisateur : "${current}". Réécris-la en un brief visuel détaillé, inspirant et cohérent avec la marque. Le texte qui apparaîtra sur le visuel sera en ${LANG_LABEL[guidedLang() || 'fr']}.`; })() },
       ],
     });
     if (f) f.value = text;
