@@ -7,6 +7,7 @@ const ICONS = {
   video: '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>',
   film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',
   briefcase: '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>',
+  layers: '<path d="M12 2l10 6-10 6L2 8z"/><path d="M2 14l10 6 10-6"/>',
   shirt: '<path d="M4 7l4-3 2 2h4l2-2 4 3-2 3-2-1v11H8V9L6 10z"/>',
 };
 function svgIcon(name, cls) {
@@ -1700,39 +1701,123 @@ let bgImage = null;
 let selected = null;
 let drag = null;
 
+// Découpe un texte en lignes : sauts manuels (\n) + retour auto si maxW est défini.
+function textLines(l) {
+  ctx.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
+  const out = [];
+  for (const raw of String(l.text).split('\n')) {
+    if (!l.maxW) { out.push(raw); continue; }
+    let line = '';
+    for (const word of raw.split(' ')) {
+      const t = line ? line + ' ' + word : word;
+      if (ctx.measureText(t).width > l.maxW && line) { out.push(line); line = word; }
+      else line = t;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+// Icônes vectorielles (réseaux & contact) dessinées en primitives — nettes à toute taille.
+function drawIconShape(g, name, x, y, s, color) {
+  g.save();
+  g.translate(x, y);
+  const u = s / 24;
+  g.scale(u, u);
+  g.strokeStyle = color; g.fillStyle = color; g.lineCap = 'round'; g.lineJoin = 'round';
+  if (name === 'facebook') {
+    g.beginPath(); g.roundRect(1, 1, 22, 22, 6); g.fill();
+    g.globalCompositeOperation = 'destination-out';
+    g.font = 'bold 17px Georgia'; g.textBaseline = 'alphabetic'; g.textAlign = 'center';
+    g.fillText('f', 13, 20.5);
+    g.globalCompositeOperation = 'source-over';
+  } else if (name === 'instagram') {
+    g.lineWidth = 2.2;
+    g.beginPath(); g.roundRect(2, 2, 20, 20, 6); g.stroke();
+    g.beginPath(); g.arc(12, 12, 5, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.arc(17.4, 6.6, 1.6, 0, Math.PI * 2); g.fill();
+  } else if (name === 'whatsapp') {
+    g.beginPath(); g.arc(12, 12, 11, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.moveTo(3.5, 21.5); g.lineTo(8, 19.5); g.lineTo(5.5, 16.5); g.closePath(); g.fill();
+    g.globalCompositeOperation = 'destination-out';
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(12.5, 13.5, 5.2, Math.PI * 0.78, Math.PI * 1.62); g.stroke();
+    g.globalCompositeOperation = 'source-over';
+  } else if (name === 'phone') {
+    g.lineWidth = 3.2;
+    g.beginPath(); g.arc(13, 13, 7.5, Math.PI * 0.78, Math.PI * 1.62); g.stroke();
+    g.beginPath(); g.arc(6.8, 8.2, 2.2, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(17.8, 19.2, 2.2, 0, Math.PI * 2); g.fill();
+  } else if (name === 'globe') {
+    g.lineWidth = 2;
+    g.beginPath(); g.arc(12, 12, 10, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.moveTo(2, 12); g.lineTo(22, 12); g.stroke();
+    g.beginPath(); g.ellipse(12, 12, 4.6, 10, 0, 0, Math.PI * 2); g.stroke();
+  } else if (name === 'mail') {
+    g.lineWidth = 2.2;
+    g.beginPath(); g.roundRect(2, 4.5, 20, 15, 2.5); g.stroke();
+    g.beginPath(); g.moveTo(3.5, 6.5); g.lineTo(12, 13.5); g.lineTo(20.5, 6.5); g.stroke();
+  }
+  g.restore();
+}
+
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (bgImage) {
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
   } else {
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#2a2342';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#8b80a8';
     ctx.font = '28px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('Ajoutez une image de fond', canvas.width / 2, canvas.height / 2);
     ctx.textAlign = 'left';
   }
   for (const l of layers) {
-    if (l.type === 'text') {
-      ctx.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
+    if (l.type === 'rect') {
+      ctx.save();
       ctx.fillStyle = l.color;
+      ctx.beginPath(); ctx.roundRect(l.x, l.y, l.w, l.h, l.r || 0); ctx.fill();
+      ctx.restore();
+      l._w = l.w; l._h = l.h;
+    } else if (l.type === 'icon') {
+      drawIconShape(ctx, l.name, l.x, l.y, l.size, l.color);
+      l._w = l.size; l._h = l.size;
+    } else if (l.type === 'text') {
+      const lines = textLines(l);
+      const lh = l.size * 1.18;
+      ctx.save();
+      ctx.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
       ctx.textBaseline = 'top';
-      ctx.lineWidth = Math.max(2, l.size / 16);
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      ctx.strokeText(l.text, l.x, l.y);
-      ctx.fillText(l.text, l.x, l.y);
-      l._w = ctx.measureText(l.text).width;
-      l._h = l.size;
+      let maxW = 0;
+      for (const line of lines) maxW = Math.max(maxW, ctx.measureText(line).width);
+      l._w = l.align === 'center' && l.maxW ? l.maxW : maxW;
+      l._h = lines.length * lh;
+      if (l.shadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = Math.max(4, l.size / 6);
+        ctx.shadowOffsetY = Math.max(1, l.size / 24);
+      } else {
+        ctx.lineWidth = Math.max(2, l.size / 16);
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      }
+      ctx.fillStyle = l.color;
+      lines.forEach((line, i) => {
+        const w = ctx.measureText(line).width;
+        const x = l.align === 'center' ? l.x + (l._w - w) / 2 : l.x;
+        if (!l.shadow) ctx.strokeText(line, x, l.y + i * lh);
+        ctx.fillText(line, x, l.y + i * lh);
+      });
+      ctx.restore();
     } else if (l.type === 'image' && l.img) {
       ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
+      l._w = l.w; l._h = l.h;
     }
     if (l === selected) {
-      ctx.strokeStyle = '#7c5cff';
+      ctx.strokeStyle = '#7c3aed';
       ctx.lineWidth = 3;
-      const w = l.type === 'text' ? l._w : l.w;
-      const h = l.type === 'text' ? l._h : l.h;
-      ctx.strokeRect(l.x - 4, l.y - 4, w + 8, h + 8);
+      ctx.strokeRect(l.x - 4, l.y - 4, (l._w || 0) + 8, (l._h || 0) + 8);
     }
   }
 }
@@ -1792,6 +1877,98 @@ function promptGalleryChoice(items) {
   return idx >= 0 && idx < items.length ? idx : null;
 }
 
+// ===== Affiche Pro : visuel IA (sans texte) + calques modifiables =====
+// Éléments de contact de l'entreprise -> [{icon, text}] pour la barre du bas.
+function contactItems(c) {
+  if (!c) return [];
+  const out = [];
+  if (c.phone) out.push({ icon: 'phone', text: c.phone });
+  if (c.whatsapp) { const n = (c.whatsapp.match(/(\+?\d[\d ]{5,})/) || [])[1]; out.push({ icon: 'whatsapp', text: n ? n.trim() : '' }); }
+  if (c.instagram) { const h = (c.instagram.match(/instagram\.com\/([^/?#]+)/) || [])[1]; out.push({ icon: 'instagram', text: h ? '@' + h : '' }); }
+  if (c.facebook) { const f = (c.facebook.match(/(?:facebook|fb)\.com\/([^/?#]+)/) || [])[1]; out.push({ icon: 'facebook', text: f || '' }); }
+  if (c.website) out.push({ icon: 'globe', text: c.website.replace(/^https?:\/\//, '').replace(/\/$/, '') });
+  return out.filter((it) => it.text).slice(0, 5);
+}
+
+// Compose l'affiche : fond généré par l'IA + titre, description, logo et barre de
+// contact (icônes vectorielles) en CALQUES — tout reste modifiable/déplaçable.
+async function composeProPoster(bgUrl, a) {
+  const c = activeCompany();
+  try { await document.fonts.ready; } catch (_) {}
+  const dataUrl = bgUrl.startsWith('data:') ? bgUrl : await window.api.fetchDataUrl(bgUrl);
+  await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => { setBgImage(img); resolve(); };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+  layers = [];
+  const W = canvas.width, H = canvas.height;
+
+  // Logo de l'entreprise (coin haut-gauche) — en data URL pour ne pas « tainted » le canvas (export PNG)
+  if (c && c.logoFile) {
+    try {
+      let du = await window.api.mediaDataUrl(c.logoFile);
+      if (!du.startsWith('data:')) du = await window.api.fetchDataUrl(du);
+      await new Promise((res) => {
+        const im = new Image();
+        im.onload = () => {
+          const w = W * 0.15, h = w * (im.naturalHeight / im.naturalWidth);
+          layers.push({ type: 'image', img: im, x: W * 0.045, y: W * 0.04, w, h });
+          res();
+        };
+        im.onerror = res;
+        im.src = du;
+      });
+    } catch (_) {}
+  }
+
+  // Titre
+  if (a.headline) {
+    layers.push({
+      type: 'text', text: a.headline.toUpperCase(), x: W * 0.07, y: H * 0.16,
+      maxW: W * 0.86, align: 'center', size: Math.round(W * 0.092),
+      color: '#ffffff', font: 'Montserrat', bold: true, shadow: true,
+    });
+  }
+  // Description
+  if (a.desc) {
+    layers.push({
+      type: 'text', text: a.desc, x: W * 0.1, y: H * 0.16 + (a.headline ? W * 0.13 : 0),
+      maxW: W * 0.8, align: 'center', size: Math.round(W * 0.034),
+      color: '#ffffff', font: 'Poppins', bold: false, shadow: true,
+    });
+  }
+
+  // Barre de contact (pastille sombre + icônes réseaux + textes)
+  const items = contactItems(c);
+  if (items.length) {
+    const s = Math.round(W * 0.034);          // taille icône
+    const gap = Math.round(W * 0.011);        // icône <-> texte
+    const itemGap = Math.round(W * 0.034);    // entre éléments
+    const pad = Math.round(W * 0.02);
+    const fs = Math.round(s * 0.8);           // taille texte
+    ctx.font = `${fs}px Poppins`;
+    const widths = items.map((it) => s + gap + ctx.measureText(it.text).width);
+    const total = widths.reduce((aa, b) => aa + b, 0) + itemGap * (items.length - 1);
+    const barH = s + pad * 2;
+    const barW = Math.min(W * 0.95, total + pad * 3);
+    const barX = (W - barW) / 2;
+    const barY = H - barH - H * 0.03;
+    layers.push({ type: 'rect', x: barX, y: barY, w: barW, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.66)' });
+    let x = (W - total) / 2;
+    for (let i = 0; i < items.length; i++) {
+      layers.push({ type: 'icon', name: items[i].icon, x, y: barY + pad, size: s, color: '#ffffff' });
+      layers.push({ type: 'text', text: items[i].text, x: x + s + gap, y: barY + pad + Math.round(s * 0.1), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+      x += widths[i] + itemGap;
+    }
+  }
+
+  selected = null;
+  render();
+  document.querySelector('.nav-btn[data-view="editor"]').click();
+}
+
 document.getElementById('addText').onclick = () => {
   const text = document.getElementById('textInput').value.trim() || 'Texte';
   const layer = {
@@ -1845,18 +2022,49 @@ function canvasPos(e) {
 function hitTest(pos) {
   for (let i = layers.length - 1; i >= 0; i--) {
     const l = layers[i];
-    const w = l.type === 'text' ? l._w || 0 : l.w;
-    const h = l.type === 'text' ? l._h || 0 : l.h;
+    const w = l._w || 0;
+    const h = l._h || 0;
     if (pos.x >= l.x - 4 && pos.x <= l.x + w + 4 && pos.y >= l.y - 4 && pos.y <= l.y + h + 4) return l;
   }
   return null;
+}
+// Sélection d'un calque texte/icône : recharge les réglages dans le panneau pour modification directe.
+function syncToolsFromSelected() {
+  if (!selected) return;
+  if (selected.type === 'text') {
+    document.getElementById('textInput').value = selected.text;
+    document.getElementById('textSize').value = selected.size;
+    document.getElementById('textColor').value = /^#([0-9a-f]{6})$/i.test(selected.color) ? selected.color : '#ffffff';
+    const fontSel = document.getElementById('textFont');
+    if ([...fontSel.options].some((o) => o.value === selected.font)) fontSel.value = selected.font;
+    document.getElementById('textBold').checked = !!selected.bold;
+  } else if (selected.type === 'icon') {
+    document.getElementById('textColor').value = /^#([0-9a-f]{6})$/i.test(selected.color) ? selected.color : '#ffffff';
+  }
 }
 canvas.addEventListener('mousedown', (e) => {
   const pos = canvasPos(e);
   const hit = hitTest(pos);
   selected = hit;
   if (hit) drag = { dx: pos.x - hit.x, dy: pos.y - hit.y };
+  syncToolsFromSelected();
   render();
+});
+// Modification EN DIRECT du calque sélectionné via le panneau (texte, taille, couleur, police, gras).
+document.getElementById('textInput').addEventListener('input', (e) => {
+  if (selected && selected.type === 'text') { selected.text = e.target.value; render(); }
+});
+document.getElementById('textSize').addEventListener('input', (e) => {
+  if (selected && selected.type === 'text') { selected.size = Math.max(8, parseInt(e.target.value, 10) || selected.size); render(); }
+});
+document.getElementById('textColor').addEventListener('input', (e) => {
+  if (selected && (selected.type === 'text' || selected.type === 'icon')) { selected.color = e.target.value; render(); }
+});
+document.getElementById('textFont').addEventListener('change', (e) => {
+  if (selected && selected.type === 'text') { selected.font = e.target.value; render(); }
+});
+document.getElementById('textBold').addEventListener('change', (e) => {
+  if (selected && selected.type === 'text') { selected.bold = e.target.checked; render(); }
 });
 canvas.addEventListener('mousemove', (e) => {
   if (!drag || !selected) return;
@@ -1873,6 +2081,7 @@ canvas.addEventListener(
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.08 : 0.92;
     if (selected.type === 'text') selected.size = Math.max(8, Math.round(selected.size * factor));
+    else if (selected.type === 'icon') selected.size = Math.max(10, Math.round(selected.size * factor));
     else {
       selected.w *= factor;
       selected.h *= factor;
@@ -1975,6 +2184,22 @@ async function loadGallery() {
 // Chaque « recette » décide automatiquement du modèle, du format et des réglages,
 // et construit le prompt à partir de réponses simples (+ charte de l'entreprise).
 const RECIPES = [
+  {
+    id: 'poster-pro', icon: 'layers', title: 'Affiche Pro ✨ (texte modifiable)',
+    desc: "L'IA crée le visuel SANS texte — titre, description, logo et contacts sont posés en calques 100 % modifiables.",
+    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
+    proLayers: true,
+    ask: [
+      { key: 'subject', label: 'Quel visuel de fond ?', ph: 'Ex : burger gourmet sur table en bois, vapeur, éclairage dramatique, fond sombre' },
+      { key: 'headline', label: "Titre de l'affiche (calque modifiable)", ph: 'Ex : SOLDES -50%' },
+      { key: 'desc', label: 'Description (calque modifiable — optionnel)', ph: 'Ex : Du 10 au 20 juin sur tout le magasin' },
+    ],
+    build: (a) =>
+      `Visuel d'arrière-plan pour une affiche professionnelle. Sujet : ${a.subject}. ` +
+      `INTERDICTION ABSOLUE : aucun texte, aucune lettre, aucun chiffre, aucun mot, aucun logo, aucune typographie, aucun filigrane dans l'image — uniquement le visuel. ` +
+      `Composition pensée pour accueillir du texte ensuite : zone supérieure épurée et dégagée (fond uni, ciel, flou doux) pour un grand titre, zone inférieure calme pour une barre de contact. ` +
+      `Sujet principal au centre ou au tiers, profondeur de champ, éclairage soigné, qualité studio.`,
+  },
   {
     id: 'poster-event', icon: 'star', title: 'Affiche événement',
     desc: 'Affiche verticale percutante (concert, expo, soirée…).',
@@ -2199,6 +2424,11 @@ function openRecipe(r) {
   document.getElementById('guidedRefLabel').textContent = r.needsImage
     ? '📸 Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
     : 'Images de référence (optionnel — style, personnage, produit… max 6)';
+  // Affiche Pro : langue / logo / coordonnées deviennent des calques -> réglages inutiles ici.
+  ['gqLang', 'gqLogo', 'gqContact'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !!r.proLayers);
+  });
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
@@ -2400,7 +2630,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
     statusEl.className = 'status error';
     return;
   }
-  if (!guidedLang()) {
+  if (!guidedLang() && !r.proLayers) { // Affiche Pro : le texte est tapé par l'utilisateur (calques), pas généré
     statusEl.textContent = "Choisissez d'abord la langue de l'affiche.";
     statusEl.className = 'status error';
     return;
@@ -2409,10 +2639,11 @@ document.getElementById('guidedGenerate').onclick = async () => {
   // Style sélectionné : remplace la direction artistique auto par le style choisi.
   const styleSel = document.getElementById('guidedStyle');
   const style = STYLES[r.kind].find((s) => s.id === styleSel.value);
-  const useStyle = style && style.t && !r.needsImage; // on garde le prompt dédié pour "changer tenue/décor"
-  let prompt = (useStyle ? buildStylePrompt(style, answers.subject) : r.build(answers) + ART_DIRECTION) + langDirective(guidedLang());
+  const useStyle = style && style.t && !r.needsImage && !r.proLayers; // prompts dédiés conservés
+  // Affiche Pro : pas de directive de langue ni de coordonnées dans l'image (tout est en calques).
+  let prompt = (useStyle ? buildStylePrompt(style, answers.subject) : r.build(answers) + ART_DIRECTION) + (r.proLayers ? '' : langDirective(guidedLang()));
   if (document.getElementById('guidedUseBrand').checked && activeCompany()) prompt += brandSuffix(activeCompany());
-  if (document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
+  if (!r.proLayers && document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
 
   const eff = effectiveRecipe(r, document.getElementById('guidedQuality').value);
   const btn = document.getElementById('guidedGenerate');
@@ -2451,8 +2682,9 @@ document.getElementById('guidedGenerate').onclick = async () => {
     }
 
     // 3) Logo : selon le mode choisi (placé par l'IA / incrusté exact / aucun)
+    // Affiche Pro : le logo est un calque ajouté dans l'éditeur, pas dans l'image générée.
     const logoMode = document.getElementById('guidedLogoMode').value;
-    const hasLogo = eff.kind === 'image' && c && c.logoFile;
+    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers;
     const overlayLogoAfter = hasLogo && logoMode === 'exact';
     if (hasLogo && logoMode === 'ai') {
       const logoKie = await uploadCompanyLogo(statusEl); // re-héberge le vrai logo et le donne au modèle
@@ -2486,6 +2718,16 @@ document.getElementById('guidedGenerate').onclick = async () => {
         }
       }
       showImageResult(resultEl, finalUrl, answers.subject);
+      // Affiche Pro : ouvre l'éditeur avec titre/description/logo/contacts en calques modifiables
+      if (r.proLayers) {
+        statusEl.innerHTML = '<span class="spinner"></span>Composition des calques (titre, contacts)…';
+        try {
+          await composeProPoster(finalUrl, answers);
+          statusEl.textContent = '✅ Affiche composée — modifie les textes dans l\'éditeur, puis exporte.';
+        } catch (_) {
+          statusEl.textContent = '✅ Image générée (ouvre-la dans l\'éditeur pour ajouter tes textes).';
+        }
+      }
     } else {
       showVideoResult(resultEl, res.resultUrl, answers.subject);
     }

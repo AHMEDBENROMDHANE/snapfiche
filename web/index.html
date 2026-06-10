@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>SnapFiche</title>
     <link rel="stylesheet" href="style.css" />
+    <!-- Polices pro pour l'éditeur d'affiche -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Poppins:wght@400;600&family=Bebas+Neue&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#7c3aed" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -133,7 +137,7 @@
           <div class="gen-layout">
           <div class="gen-left">
           <div id="guidedQuestions"></div>
-          <div class="gq">
+          <div class="gq" id="gqLang">
             <label for="guidedLang">🌐 Langue de l'affiche <span class="req">* obligatoire</span></label>
             <select id="guidedLang" required>
               <option value="" selected disabled>— Choisir la langue —</option>
@@ -174,7 +178,7 @@
             <select id="guidedQuality"></select>
           </div>
           <label class="brand-toggle"><input type="checkbox" id="guidedUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="guidedBrandHint" class="brand-hint"></span></label>
-          <div class="gq">
+          <div class="gq" id="gqLogo">
             <label>Logo de l'entreprise</label>
             <div class="ai-actions">
               <select id="guidedLogoMode">
@@ -191,7 +195,7 @@
               </select>
             </div>
           </div>
-          <label class="brand-toggle"><input type="checkbox" id="guidedShowContact" checked /> Afficher les coordonnées sur l'affiche (tél, email, réseaux)</label>
+          <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" checked /> Afficher les coordonnées sur l'affiche (tél, email, réseaux)</label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
           <div id="guidedSummary" class="guided-summary"></div>
           <div class="row">
@@ -367,6 +371,10 @@
                 <input type="color" id="textColor" value="#ffffff" />
                 <input type="number" id="textSize" value="64" min="8" max="400" title="Taille" />
                 <select id="textFont">
+                  <option>Montserrat</option>
+                  <option>Poppins</option>
+                  <option value="Bebas Neue">Bebas Neue</option>
+                  <option value="Playfair Display">Playfair Display</option>
                   <option>Impact</option>
                   <option>Arial</option>
                   <option>Georgia</option>
