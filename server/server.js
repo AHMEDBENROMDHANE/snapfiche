@@ -237,10 +237,16 @@ app.get('/api/admin/users', auth, requireAdmin, async (req, res) => {
 app.get('/api/packs', auth, async (req, res) => {
   const p = await q('select account_type from profiles where id=$1', [req.user.id]);
   const t = p.rows[0] ? p.rows[0].account_type : null;
+  const cols = 'id, name, credits, price_tnd, promo_price_tnd, promo_until, account_type, badge';
   const r = t
-    ? await q('select id, name, credits, price_tnd, account_type, badge from packs where active and (account_type is null or account_type=$1) order by sort, credits', [t])
-    : await q('select id, name, credits, price_tnd, account_type, badge from packs where active order by sort, credits');
-  res.json({ packs: r.rows });
+    ? await q(`select ${cols} from packs where active and (account_type is null or account_type=$1) order by sort, credits`, [t])
+    : await q(`select ${cols} from packs where active order by sort, credits`);
+  // Promo effective : prix promo défini ET (pas de date de fin OU date non dépassée)
+  const packs = r.rows.map((p) => ({
+    ...p,
+    promo_active: p.promo_price_tnd != null && (!p.promo_until || new Date(p.promo_until) > new Date()),
+  }));
+  res.json({ packs });
 });
 
 // Admin : liste complète + création / modification / suppression.
@@ -257,14 +263,20 @@ function packFields(b) {
   if (typeof b.badge === 'string') out.badge = b.badge.trim().slice(0, 30);
   if (typeof b.active === 'boolean') out.active = b.active;
   if (typeof b.sort === 'number' && isFinite(b.sort)) out.sort = Math.round(b.sort);
+  // Promo : prix réduit (null = pas de promo) + date de fin optionnelle
+  if (b.promo_price_tnd === null) out.promo_price_tnd = null;
+  else if (typeof b.promo_price_tnd === 'number' && isFinite(b.promo_price_tnd)) out.promo_price_tnd = Math.max(0, +(+b.promo_price_tnd).toFixed(2));
+  if (b.promo_until === null) out.promo_until = null;
+  else if (typeof b.promo_until === 'string' && !isNaN(Date.parse(b.promo_until))) out.promo_until = new Date(b.promo_until).toISOString();
   return out;
 }
 app.post('/api/admin/packs', auth, requireAdmin, async (req, res) => {
   const f = packFields(req.body || {});
   if (!f.name || !f.credits || f.price_tnd == null) return res.status(400).json({ error: 'Nom, crédits et prix sont requis.' });
+  if (f.promo_price_tnd != null && f.promo_price_tnd >= f.price_tnd) return res.status(400).json({ error: 'Le prix promo doit être inférieur au prix normal.' });
   const r = await q(
-    'insert into packs(name, credits, price_tnd, account_type, badge, active, sort) values($1,$2,$3,$4,$5,$6,$7) returning *',
-    [f.name, f.credits, f.price_tnd, f.account_type ?? null, f.badge || '', f.active !== false, f.sort || 0]
+    'insert into packs(name, credits, price_tnd, promo_price_tnd, promo_until, account_type, badge, active, sort) values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',
+    [f.name, f.credits, f.price_tnd, f.promo_price_tnd ?? null, f.promo_until ?? null, f.account_type ?? null, f.badge || '', f.active !== false, f.sort || 0]
   );
   res.json({ pack: r.rows[0] });
 });
@@ -272,6 +284,11 @@ app.post('/api/admin/packs/:id', auth, requireAdmin, async (req, res) => {
   const f = packFields(req.body || {});
   const keys = Object.keys(f);
   if (!keys.length) return res.status(400).json({ error: 'Aucun champ valide.' });
+  if (f.promo_price_tnd != null) {
+    const cur = await q('select price_tnd from packs where id=$1', [req.params.id]);
+    const price = f.price_tnd != null ? f.price_tnd : (cur.rows[0] ? +cur.rows[0].price_tnd : null);
+    if (price != null && f.promo_price_tnd >= price) return res.status(400).json({ error: 'Le prix promo doit être inférieur au prix normal.' });
+  }
   const sets = keys.map((k, i) => `${k}=$${i + 2}`);
   const r = await q(`update packs set ${sets.join(', ')} where id=$1 returning *`, [req.params.id, ...keys.map((k) => f[k])]);
   if (!r.rows.length) return res.status(404).json({ error: 'Pack introuvable.' });

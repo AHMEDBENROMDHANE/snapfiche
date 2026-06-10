@@ -419,12 +419,17 @@ async function loadUserPacks() {
     wrap.innerHTML = '';
     for (const p of packs) {
       const card = document.createElement('div');
-      card.className = 'pack-card';
+      card.className = 'pack-card' + (p.promo_active ? ' promo' : '');
+      const badge = p.promo_active ? '🔥 PROMO' : p.badge;
+      const priceHtml = p.promo_active
+        ? `<div class="pack-price"><s class="pack-old">${(+p.price_tnd).toFixed(2)}</s> ${(+p.promo_price_tnd).toFixed(2)} <small>TND</small></div>` +
+          (p.promo_until ? `<div class="pack-promo-until">⏳ jusqu'au ${new Date(p.promo_until).toLocaleDateString('fr-FR')}</div>` : '')
+        : `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND</small></div>`;
       card.innerHTML =
-        (p.badge ? `<span class="pack-badge">${esc(p.badge)}</span>` : '') +
+        (badge ? `<span class="pack-badge">${esc(badge)}</span>` : '') +
         `<h3>${esc(p.name)}</h3>` +
         `<div class="pack-credits">${p.credits} crédits</div>` +
-        `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND</small></div>` +
+        priceHtml +
         `<button class="primary pack-buy">Choisir ce pack</button>`;
       card.querySelector('.pack-buy').onclick = () =>
         alert('💳 Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');
@@ -465,25 +470,34 @@ const PACK_TYPES = [['', 'Tous'], ['particulier', 'Particulier'], ['entreprise',
 function packRow(p, isNew) {
   const tr = document.createElement('tr');
   const typeOpts = PACK_TYPES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  const promoEnd = p.promo_until ? new Date(p.promo_until).toISOString().slice(0, 10) : '';
   tr.innerHTML =
     `<td><input type="text" class="pk-name" value="${esc(p.name || '')}" placeholder="Nom" /></td>` +
     `<td><input type="number" class="pk-credits" value="${p.credits || ''}" min="1" style="width:80px" /></td>` +
     `<td><input type="number" class="pk-price" value="${p.price_tnd != null ? p.price_tnd : ''}" min="0" step="0.5" style="width:84px" /></td>` +
+    `<td><input type="number" class="pk-promo" value="${p.promo_price_tnd != null ? p.promo_price_tnd : ''}" min="0" step="0.5" placeholder="—" style="width:84px" title="Prix promo (vide = pas de promo)" /></td>` +
+    `<td><input type="date" class="pk-promoend" value="${promoEnd}" title="Fin de la promo (vide = sans limite)" style="width:130px" /></td>` +
     `<td><select class="pk-type">${typeOpts}</select></td>` +
     `<td><input type="text" class="pk-badge" value="${esc(p.badge || '')}" placeholder="—" style="width:100px" /></td>` +
     `<td><input type="number" class="pk-sort" value="${p.sort || 0}" style="width:60px" /></td>` +
     `<td><input type="checkbox" class="pk-active" ${p.active !== false ? 'checked' : ''} /></td>` +
     `<td class="pk-actions"><button class="mini pk-save">${isNew ? 'Créer' : '💾'}</button>${isNew ? '' : ' <button class="mini pk-del">🗑</button>'}</td>`;
   tr.querySelector('.pk-type').value = p.account_type || '';
-  const fields = () => ({
-    name: tr.querySelector('.pk-name').value.trim(),
-    credits: +tr.querySelector('.pk-credits').value,
-    price_tnd: +tr.querySelector('.pk-price').value,
-    account_type: tr.querySelector('.pk-type').value || null,
-    badge: tr.querySelector('.pk-badge').value.trim(),
-    sort: +tr.querySelector('.pk-sort').value || 0,
-    active: tr.querySelector('.pk-active').checked,
-  });
+  const fields = () => {
+    const promoVal = tr.querySelector('.pk-promo').value.trim();
+    const promoEndVal = tr.querySelector('.pk-promoend').value;
+    return {
+      name: tr.querySelector('.pk-name').value.trim(),
+      credits: +tr.querySelector('.pk-credits').value,
+      price_tnd: +tr.querySelector('.pk-price').value,
+      promo_price_tnd: promoVal === '' ? null : +promoVal,
+      promo_until: promoEndVal ? new Date(promoEndVal + 'T23:59:59').toISOString() : null,
+      account_type: tr.querySelector('.pk-type').value || null,
+      badge: tr.querySelector('.pk-badge').value.trim(),
+      sort: +tr.querySelector('.pk-sort').value || 0,
+      active: tr.querySelector('.pk-active').checked,
+    };
+  };
   tr.querySelector('.pk-save').onclick = async () => {
     const f = fields();
     if (!f.name || !f.credits || isNaN(f.price_tnd)) return alert('Nom, crédits et prix sont requis.');
@@ -503,14 +517,14 @@ function packRow(p, isNew) {
 }
 async function loadAdminPacks() {
   const body = document.getElementById('adminPacksBody');
-  body.innerHTML = '<tr><td colspan="8"><span class="spinner"></span></td></tr>';
+  body.innerHTML = '<tr><td colspan="10"><span class="spinner"></span></td></tr>';
   try {
     const { packs } = await window.api.adminPacks();
     body.innerHTML = '';
     packs.forEach((p) => body.appendChild(packRow(p, false)));
-    if (!packs.length) body.innerHTML = '<tr><td colspan="8" class="empty">Aucun pack — clique « + Nouveau pack ».</td></tr>';
+    if (!packs.length) body.innerHTML = '<tr><td colspan="10" class="empty">Aucun pack — clique « + Nouveau pack ».</td></tr>';
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="8" class="empty">❌ ${esc(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" class="empty">❌ ${esc(e.message)}</td></tr>`;
   }
 }
 (function wireAdminPacks() {

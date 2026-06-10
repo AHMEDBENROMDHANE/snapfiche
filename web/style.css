@@ -413,6 +413,9 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .pack-price { font-size: 30px; font-weight: 800; color: var(--accent-2); letter-spacing: -.5px; margin-bottom: 14px; }
 .pack-price small { font-size: 14px; font-weight: 600; color: var(--muted); }
 .pack-buy { width: 100%; }
+.pack-card.promo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow-md); }
+.pack-old { font-size: 17px; color: var(--muted); font-weight: 600; margin-right: 6px; }
+.pack-promo-until { font-size: 12px; color: var(--accent-2); font-weight: 600; margin: -8px 0 12px; }
 
 /* ============ Bibliothèque d'affiches (designs rééditables) ============ */
 .designs-box { width: 680px; max-width: 94vw; }
