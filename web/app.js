@@ -60,14 +60,14 @@ const STYLES = {
     { id: 'product', name: 'Photo produit réaliste', t: 'Photorealistic product poster, {SUBJECT} on a seamless studio backdrop, professional softbox lighting, crisp reflections, shallow depth of field, commercial advertising photography, clean tagline space at top, premium look' },
     { id: 'memphis', name: 'Memphis / Pop coloré', t: 'Memphis design poster, playful 80s shapes, bold primary colors, squiggles, dots and zigzags, geometric confetti, fun energetic layout, {SUBJECT} with retro-pop styling, white background' },
     // ---- Tendances 2026 ----
-    { id: 'neonnoir', name: '🆕 Neon-Noir (2026)', t: 'Neon-noir poster, dominant red and black palette with electric neon highlights, blurred streaked motion effects, oversized ultra-bold typography, {SUBJECT} emerging from darkness, cinematic tension, urban night atmosphere, dramatic rim lighting' },
-    { id: 'acidfade', name: '🆕 Acid Fade (2026)', t: 'Acid fade poster, high-saturation prismatic gradients, neon heat-map color blends melting into psychedelic liquid transitions, chrome accents, {SUBJECT} dissolving into iridescent waves, grainy texture, futuristic rave aesthetic' },
-    { id: 'sketch', name: '🆕 Fait main / Sketch (2026)', t: 'Hand-drawn sketch poster, authentic pencil and ink strokes, visible construction lines, doodles and handwritten annotations in margins, imperfect charming linework, {SUBJECT} sketched expressively, paper texture, human warmth, anti-digital aesthetic' },
-    { id: 'artnouveau', name: '🆕 Art Nouveau moderne (2026)', t: 'Modern Art Nouveau revival poster, organic flowing curved lines, botanical ornamental frames, elegant whiplash motifs blended with bold contemporary abstraction, {SUBJECT} embraced by floral linework, muted gold and deep jewel tones, decorative sophistication' },
-    { id: 'scrapbook', name: '🆕 Scrapbooking (2026)', t: 'Scrapbook style poster, layered paper textures, washi tape, stickers, polaroid frames, handwritten notes and doodles, torn edges, {SUBJECT} in a personal memory-board collage, cozy assumed imperfection, tactile and authentic' },
-    { id: 'liquidtype', name: '🆕 Typo liquide (2026)', t: 'Liquid typography poster, fluid melting letterforms that stretch and breathe, glossy chrome and gel-like type treatment, {SUBJECT} integrated with morphing characters, smooth organic motion frozen in time, vibrant gradient backdrop' },
-    { id: 'folk', name: '🆕 Folk art (2026)', t: 'Folk art poster, traditional hand-crafted patterns, stylized flowers, birds and animals, warm heritage palette, symmetrical naive composition, {SUBJECT} celebrated in timeless artisanal motifs, woodblock print texture, cultural warmth' },
-    { id: 'maximal', name: '🆕 Maximalisme chromatique (2026)', t: 'Chromatic maximalism poster, electric saturated clashing colors, dense layered patterns and shapes, energetic visual overload done with intention, {SUBJECT} at the vibrant epicenter, bold confidence, dopamine-inducing palette' },
+    { id: 'neonnoir', name: 'Neon-Noir (2026)', t: 'Neon-noir poster, dominant red and black palette with electric neon highlights, blurred streaked motion effects, oversized ultra-bold typography, {SUBJECT} emerging from darkness, cinematic tension, urban night atmosphere, dramatic rim lighting' },
+    { id: 'acidfade', name: 'Acid Fade (2026)', t: 'Acid fade poster, high-saturation prismatic gradients, neon heat-map color blends melting into psychedelic liquid transitions, chrome accents, {SUBJECT} dissolving into iridescent waves, grainy texture, futuristic rave aesthetic' },
+    { id: 'sketch', name: 'Fait main / Sketch (2026)', t: 'Hand-drawn sketch poster, authentic pencil and ink strokes, visible construction lines, doodles and handwritten annotations in margins, imperfect charming linework, {SUBJECT} sketched expressively, paper texture, human warmth, anti-digital aesthetic' },
+    { id: 'artnouveau', name: 'Art Nouveau moderne (2026)', t: 'Modern Art Nouveau revival poster, organic flowing curved lines, botanical ornamental frames, elegant whiplash motifs blended with bold contemporary abstraction, {SUBJECT} embraced by floral linework, muted gold and deep jewel tones, decorative sophistication' },
+    { id: 'scrapbook', name: 'Scrapbooking (2026)', t: 'Scrapbook style poster, layered paper textures, washi tape, stickers, polaroid frames, handwritten notes and doodles, torn edges, {SUBJECT} in a personal memory-board collage, cozy assumed imperfection, tactile and authentic' },
+    { id: 'liquidtype', name: 'Typo liquide (2026)', t: 'Liquid typography poster, fluid melting letterforms that stretch and breathe, glossy chrome and gel-like type treatment, {SUBJECT} integrated with morphing characters, smooth organic motion frozen in time, vibrant gradient backdrop' },
+    { id: 'folk', name: 'Folk art (2026)', t: 'Folk art poster, traditional hand-crafted patterns, stylized flowers, birds and animals, warm heritage palette, symmetrical naive composition, {SUBJECT} celebrated in timeless artisanal motifs, woodblock print texture, cultural warmth' },
+    { id: 'maximal', name: 'Maximalisme chromatique (2026)', t: 'Chromatic maximalism poster, electric saturated clashing colors, dense layered patterns and shapes, energetic visual overload done with intention, {SUBJECT} at the vibrant epicenter, bold confidence, dopamine-inducing palette' },
   ],
   video: [
     { id: 'auto', name: 'Automatique (recommandé)' },
@@ -103,11 +103,11 @@ const usd = (c) => (c * CREDIT_USD).toFixed(2);
 // Le solde réel (affiché en bas à gauche) fait foi.
 const MODELS = {
   image: [
-    { id: 'nano-banana-pro', label: '🔥 Snap Max — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
-    { id: 'seedream/4.5-text-to-image', label: '✨ Snap — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
-    { id: 'ideogram/v3-text-to-image', label: '🔤 Snap Texte — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
-    { id: 'flux-kontext-pro', label: '🎨 Snap Plus', api: 'flux', edit: true, ratio: true, credits: 8 },
-    { id: 'flux-kontext-max', label: '🎨 Snap Pro', api: 'flux', edit: true, ratio: true, credits: 12 },
+    { id: 'nano-banana-pro', label: 'Snap Max — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
+    { id: 'seedream/4.5-text-to-image', label: 'Snap — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
+    { id: 'ideogram/v3-text-to-image', label: 'Snap Texte — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
+    { id: 'flux-kontext-pro', label: 'Snap Plus', api: 'flux', edit: true, ratio: true, credits: 8 },
+    { id: 'flux-kontext-max', label: 'Snap Pro', api: 'flux', edit: true, ratio: true, credits: 12 },
   ],
   video: [
     { id: 'veo3_fast', label: 'Veo 3 Fast', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
@@ -151,10 +151,10 @@ const keyStatus = document.getElementById('keyStatus');
 async function refreshKeyStatus() {
   const s = await window.api.configStatus();
   if (s.hasKey) {
-    keyStatus.textContent = s.fromEnv ? '🔑 Clé (.env) active' : '🔑 Clé active';
+    keyStatus.textContent = s.fromEnv ? 'Clé (.env) active' : 'Clé active';
     keyStatus.className = 'key-status ok';
   } else {
-    keyStatus.textContent = '⚠️ Aucune clé API';
+    keyStatus.textContent = 'Aucune clé API';
     keyStatus.className = 'key-status warn';
   }
 }
@@ -366,11 +366,11 @@ function applyAccountUI() {
       const locked = atCompanyLimit();
       banner.className = 'account-banner' + (locked ? ' locked' : '');
       banner.innerHTML = locked
-        ? '👤 Compte <b>Particulier</b> — limité à 1 entreprise. Pour en gérer plusieurs, passe en <b>Entreprise</b> dans les Réglages.'
-        : '👤 Compte <b>Particulier</b> — tu peux créer 1 entreprise.';
+        ? 'Compte <b>Particulier</b> — limité à 1 entreprise. Pour en gérer plusieurs, passe en <b>Entreprise</b> dans les Réglages.'
+        : 'Compte <b>Particulier</b> — tu peux créer 1 entreprise.';
     } else {
       banner.className = 'account-banner';
-      banner.innerHTML = '🏢 Compte <b>Entreprise</b> — nombre d\'entreprises illimité.';
+      banner.innerHTML = 'Compte <b>Entreprise</b> — nombre d\'entreprises illimité.';
     }
     banner.classList.remove('hidden');
   }
@@ -442,10 +442,10 @@ async function loadUserPacks() {
     for (const p of packs) {
       const card = document.createElement('div');
       card.className = 'pack-card' + (p.promo_active ? ' promo' : '');
-      const badge = p.promo_active ? '🔥 PROMO' : p.badge;
+      const badge = p.promo_active ? 'PROMO' : p.badge;
       const priceHtml = p.promo_active
         ? `<div class="pack-price"><s class="pack-old">${(+p.price_tnd).toFixed(2)}</s> ${(+p.promo_price_tnd).toFixed(2)} <small>TND</small></div>` +
-          (p.promo_until ? `<div class="pack-promo-until">⏳ jusqu'au ${new Date(p.promo_until).toLocaleDateString('fr-FR')}</div>` : '')
+          (p.promo_until ? `<div class="pack-promo-until">jusqu'au ${new Date(p.promo_until).toLocaleDateString('fr-FR')}</div>` : '')
         : `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND</small></div>`;
       card.innerHTML =
         (badge ? `<span class="pack-badge">${esc(badge)}</span>` : '') +
@@ -454,7 +454,7 @@ async function loadUserPacks() {
         priceHtml +
         `<button class="primary pack-buy">Choisir ce pack</button>`;
       card.querySelector('.pack-buy').onclick = () =>
-        alert('💳 Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');
+        alert('Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');
       wrap.appendChild(card);
     }
   } catch (_) { /* on garde le contenu par défaut */ }
@@ -503,7 +503,7 @@ function packRow(p, isNew) {
     `<td><input type="text" class="pk-badge" value="${esc(p.badge || '')}" placeholder="—" style="width:100px" /></td>` +
     `<td><input type="number" class="pk-sort" value="${p.sort || 0}" style="width:60px" /></td>` +
     `<td><input type="checkbox" class="pk-active" ${p.active !== false ? 'checked' : ''} /></td>` +
-    `<td class="pk-actions"><button class="mini pk-save">${isNew ? 'Créer' : '💾'}</button>${isNew ? '' : ' <button class="mini pk-del">🗑</button>'}</td>`;
+    `<td class="pk-actions"><button class="mini pk-save">${isNew ? 'Créer' : ''}</button>${isNew ? '' : ' <button class="mini pk-del">✕</button>'}</td>`;
   tr.querySelector('.pk-type').value = p.account_type || '';
   const fields = () => {
     const promoVal = tr.querySelector('.pk-promo').value.trim();
@@ -546,7 +546,7 @@ async function loadAdminPacks() {
     packs.forEach((p) => body.appendChild(packRow(p, false)));
     if (!packs.length) body.innerHTML = '<tr><td colspan="10" class="empty">Aucun pack — clique « + Nouveau pack ».</td></tr>';
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="10" class="empty">❌ ${esc(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" class="empty">✗ ${esc(e.message)}</td></tr>`;
   }
 }
 (function wireAdminPacks() {
@@ -564,12 +564,12 @@ async function loadAdminPacks() {
 
 // --- Fonctionnalités on/off (feature flags) ---
 const FEATURE_DEFS = [
-  { key: 'signup', label: '✍️ Inscriptions', desc: 'Création de nouveaux comptes' },
-  { key: 'video', label: '🎬 Génération vidéo', desc: 'Vue Vidéo + recettes vidéo guidées' },
-  { key: 'image_edit', label: '🎨 Modification IA', desc: 'Retouche des images par instruction' },
-  { key: 'editor', label: '✏️ Éditeur d\'affiche', desc: 'Calques, textes, designs sauvegardés' },
-  { key: 'poster_pro', label: '✨ Affiche Pro', desc: 'Visuel IA + texte en calques' },
-  { key: 'ai_assistant', label: '💡 Assistant IA', desc: 'Idées et amélioration de texte' },
+  { key: 'signup', label: 'Inscriptions', desc: 'Création de nouveaux comptes' },
+  { key: 'video', label: 'Génération vidéo', desc: 'Vue Vidéo + recettes vidéo guidées' },
+  { key: 'image_edit', label: 'Modification IA', desc: 'Retouche des images par instruction' },
+  { key: 'editor', label: 'Éditeur d\'affiche', desc: 'Calques, textes, designs sauvegardés' },
+  { key: 'poster_pro', label: 'Affiche Pro', desc: 'Visuel IA + texte en calques' },
+  { key: 'ai_assistant', label: 'Assistant IA', desc: 'Idées et amélioration de texte' },
 ];
 function renderFeatureFlags(features) {
   const wrap = document.getElementById('featureFlags');
@@ -647,7 +647,7 @@ async function loadAdmin() {
       return `<div class="ar-row"><span class="ar-when">${when}</span><span class="ar-delta ${cls}">${r.delta > 0 ? '+' : ''}${r.delta}</span><span>${esc(r.email)}</span><span style="color:var(--muted)">${esc(r.reason || '')}</span></div>`;
     }).join('') || '<p class="empty">Aucune activité.</p>';
   } catch (e) {
-    stats.innerHTML = `<p class="empty">❌ ${esc(e.message)}</p>`;
+    stats.innerHTML = `<p class="empty">✗ ${esc(e.message)}</p>`;
   }
   // Réglages, graphique d'activité, usage des modèles et packs — en parallèle.
   window.api.adminSettings().then((s) => {
@@ -704,7 +704,7 @@ async function loadAdminUsers() {
     }
     if (!users.length) body.innerHTML = '<tr><td colspan="7" class="empty">Aucun utilisateur trouvé.</td></tr>';
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="7" class="empty">❌ ${esc(e.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="empty">✗ ${esc(e.message)}</td></tr>`;
   }
 }
 (function wireAdminSearch() {
@@ -830,7 +830,7 @@ document.getElementById('companyFetch').onclick = async () => {
   if (!url) { status.textContent = "Entre d'abord l'adresse du site web."; return; }
   const btn = document.getElementById('companyFetch');
   btn.disabled = true;
-  status.textContent = '⏳ Lecture du site en cours…';
+  status.textContent = 'Lecture du site en cours…';
   try {
     const d = await window.api.fetchSite(url);
     const set = (id, v) => { if (v) document.getElementById(id).value = v; };
@@ -868,9 +868,9 @@ document.getElementById('companyFetch').onclick = async () => {
       } catch (_) {}
     }
     const n = ['name', 'email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
-    status.textContent = (n || addedCol) ? `✅ Récupéré : ${n} champ(s), ${addedCol} couleur(s), ${catEl.value ? 'catégorie ✓, ' : ''}${d.logo ? 'logo ✓' : 'pas de logo'}. Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+    status.textContent = (n || addedCol) ? `✓ Récupéré : ${n} champ(s), ${addedCol} couleur(s), ${catEl.value ? 'catégorie ✓, ' : ''}${d.logo ? 'logo ✓' : 'pas de logo'}. Vérifie puis Enregistre.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
   } catch (e) {
-    status.textContent = '❌ ' + e.message;
+    status.textContent = '✗ ' + e.message;
   } finally {
     btn.disabled = false;
   }
@@ -961,7 +961,7 @@ async function wizFetch() {
   const url = document.getElementById('wizWebsite').value.trim();
   const status = document.getElementById('wizFetchStatus');
   if (!url) return; // pas de site -> rien à récupérer
-  status.textContent = '⏳ Analyse du site en cours…';
+  status.textContent = 'Analyse du site en cours…';
   try {
     const d = await window.api.fetchSite(url);
     const set = (id, v) => { if (v && !document.getElementById(id).value.trim()) { document.getElementById(id).value = v; wizTag(id, true); } };
@@ -993,7 +993,7 @@ async function wizFetch() {
       } catch (_) {}
     }
     const n = ['email', 'phone', 'whatsapp', 'facebook', 'instagram'].filter((k) => d[k]).length;
-    status.textContent = (n || addedCol || d.logo) ? `✅ Infos récupérées — vérifie-les aux étapes suivantes.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
+    status.textContent = (n || addedCol || d.logo) ? `✓ Infos récupérées — vérifie-les aux étapes suivantes.` : "ℹ️ Peu d'infos trouvées — complète à la main.";
   } catch (e) {
     status.textContent = 'ℹ️ Site illisible — complète les infos à la main.';
   }
@@ -1040,7 +1040,7 @@ async function wizFinish() {
     await loadCompanies(); // companies.length=1 -> applyAccountUI masque l'assistant
   } catch (e) {
     const msg = /PARTICULIER_LIMIT/.test(e.message) ? 'Une entreprise existe déjà sur ce compte.' : e.message;
-    err.textContent = '❌ ' + msg;
+    err.textContent = '✗ ' + msg;
     btn.disabled = false; btn.textContent = '✓ Terminer';
   }
 }
@@ -1049,7 +1049,7 @@ async function wizFinish() {
 document.getElementById('dataExport').onclick = async () => {
   try {
     const res = await window.api.dataExport();
-    if (!res.canceled) alert(`✅ ${res.count} entreprise(s) exportée(s) :\n${res.filePath}`);
+    if (!res.canceled) alert(`✓ ${res.count} entreprise(s) exportée(s) :\n${res.filePath}`);
   } catch (e) {
     alert('Échec de l\'export : ' + e.message);
   }
@@ -1063,7 +1063,7 @@ document.getElementById('dataImportFile').addEventListener('change', (e) => {
       const data = JSON.parse(r.result);
       const res = await window.api.dataImport(data);
       await loadCompanies();
-      alert(`✅ ${res.added} entreprise(s) importée(s).`);
+      alert(`✓ ${res.added} entreprise(s) importée(s).`);
     } catch (err) {
       alert('Échec de l\'import : ' + err.message);
     } finally {
@@ -1167,9 +1167,9 @@ document.getElementById('saveAccountType').onclick = async () => {
     const r = await window.api.setAccountType(sel.value);
     ACCOUNT.type = r.accountType;
     applyAccountUI();
-    hint.textContent = '✅ Type de compte mis à jour : ' + (r.accountType === 'entreprise' ? 'Entreprise' : 'Particulier') + '.';
+    hint.textContent = '✓ Type de compte mis à jour : ' + (r.accountType === 'entreprise' ? 'Entreprise' : 'Particulier') + '.';
   } catch (e) {
-    hint.textContent = '❌ ' + e.message;
+    hint.textContent = '✗ ' + e.message;
   } finally {
     btn.disabled = false;
   }
@@ -1466,12 +1466,12 @@ imgGenerate.onclick = async () => {
   const m = findModel('image', imgModelSel.value);
   // Compatibilité : tous les modèles n'acceptent pas d'images sources.
   if (imgSrcList.length && m.api !== 'flux' && !m.imageField) {
-    statusEl.textContent = `Le modèle « ${m.label} » ne prend pas d'images sources — choisis 🔥 Snap Max (jusqu'à 8 images) ou retire les images.`;
+    statusEl.textContent = `Le modèle « ${m.label} » ne prend pas d'images sources — choisis Snap Max (jusqu'à 8 images) ou retire les images.`;
     statusEl.className = 'status error';
     return;
   }
   if (imgSrcList.length > 1 && m.api === 'flux') {
-    statusEl.textContent = `${m.label} n'accepte qu'UNE image source — garde la première ou choisis 🔥 Snap Max (multi-images).`;
+    statusEl.textContent = `${m.label} n'accepte qu'UNE image source — garde la première ou choisis Snap Max (multi-images).`;
     statusEl.className = 'status error';
     return;
   }
@@ -1502,11 +1502,11 @@ imgGenerate.onclick = async () => {
     statusEl.innerHTML = '<span class="spinner"></span>Envoi de la requête…';
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, "Génération de l'image", imgGenToken);
-    statusEl.textContent = res.credits != null ? `✅ Image générée. (−${res.credits} crédits)` : '✅ Image générée.';
+    statusEl.textContent = res.credits != null ? `✓ Image générée. (−${res.credits} crédits)` : '✓ Image générée.';
     showImageResult(resultEl, res.resultUrl, prompt);
     refreshBalance();
   } catch (e) {
-    statusEl.textContent = (e.message === 'Génération annulée.' ? '⏹️ ' : '❌ ') + e.message;
+    statusEl.textContent = (e.message === 'Génération annulée.' ? '■ ' : '✗ ') + e.message;
     statusEl.className = 'status error';
   } finally {
     imgGenerate.disabled = false;
@@ -1533,37 +1533,37 @@ function showImageResult(container, url, prompt, history, galleryId) {
     try {
       const it = await window.api.galleryAdd({ type: 'image', url, prompt, companyId: activeCompanyId, history });
       galleryId = it.id;
-      saveBtn.textContent = '✅ Dans la galerie';
+      saveBtn.textContent = '✓ Dans la galerie';
     } catch (e) {
       saveBtn.disabled = false;
-      saveBtn.textContent = '💾 Réessayer l\'enregistrement';
+      saveBtn.textContent = 'Réessayer l\'enregistrement';
     }
   };
   if (galleryId === undefined) {
     // Nouvelle création -> enregistrement automatique
     saveBtn.disabled = true;
-    saveBtn.textContent = '⏳ Enregistrement…';
+    saveBtn.textContent = 'Enregistrement…';
     window.api.galleryAdd({ type: 'image', url, prompt, companyId: activeCompanyId, history })
-      .then((it) => { galleryId = it.id; saveBtn.textContent = '✅ Dans la galerie'; })
-      .catch(() => { galleryId = null; saveBtn.disabled = false; saveBtn.textContent = '💾 Enregistrer dans la galerie'; saveBtn.onclick = manualSave; });
+      .then((it) => { galleryId = it.id; saveBtn.textContent = '✓ Dans la galerie'; })
+      .catch(() => { galleryId = null; saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer dans la galerie'; saveBtn.onclick = manualSave; });
   } else if (galleryId) {
     saveBtn.disabled = true;
-    saveBtn.textContent = '✅ Dans la galerie';
+    saveBtn.textContent = '✓ Dans la galerie';
   } else {
-    saveBtn.textContent = '💾 Enregistrer dans la galerie';
+    saveBtn.textContent = 'Enregistrer dans la galerie';
     saveBtn.onclick = manualSave;
   }
 
   actions.appendChild(saveBtn);
   if (featureOn('editor')) {
     const editBtn = document.createElement('button');
-    editBtn.textContent = "✏️ Ouvrir dans l'éditeur";
+    editBtn.textContent = "Ouvrir dans l'éditeur";
     editBtn.onclick = () => loadBackgroundFromUrl(url);
     actions.appendChild(editBtn);
   }
   if (history.length) {
     const undoBtn = document.createElement('button');
-    undoBtn.textContent = `↩️ Annuler la modif (${history.length})`;
+    undoBtn.textContent = `↩ Annuler la modif (${history.length})`;
     undoBtn.onclick = async () => {
       const prev = history[history.length - 1], newHist = history.slice(0, -1);
       if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: prev, history: newHist }); } catch (_) {} }
@@ -1578,12 +1578,12 @@ function showImageResult(container, url, prompt, history, galleryId) {
   const edit = document.createElement('div');
   edit.className = 'edit-ai';
   edit.innerHTML =
-    '<div class="edit-title">✏️ Modifier avec l\'IA</div>' +
+    '<div class="edit-title">Modifier avec l\'IA</div>' +
     '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" />' +
     '<select class="edit-model">' +
-      '<option value="bytedance/seedream-v4-edit">✨ Snap Plus — Retouche fidèle (recommandé · ~5 cr)</option>' +
-      '<option value="nano-banana-pro">🔥 Snap Max — Ultra HD (qualité max · ~30 cr)</option>' +
-      '<option value="qwen/image-edit">⚡ Snap — Éco (~2 cr)</option>' +
+      '<option value="bytedance/seedream-v4-edit">Snap Plus — Retouche fidèle (recommandé · ~5 cr)</option>' +
+      '<option value="nano-banana-pro">Snap Max — Ultra HD (qualité max · ~30 cr)</option>' +
+      '<option value="qwen/image-edit">Snap — Éco (~2 cr)</option>' +
     '</select>' +
     '<button class="edit-btn">Modifier</button></div>' +
     '<div class="edit-hint">Seul le changement demandé est appliqué — le format, la mise en page et le reste sont conservés.</div>' +
@@ -1621,7 +1621,7 @@ function showImageResult(container, url, prompt, history, galleryId) {
       if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: res.resultUrl, history: newHistory }); } catch (_) {} }
       showImageResult(container, res.resultUrl, prompt, newHistory, galleryId || null);
     } catch (e) {
-      estatus.textContent = '❌ ' + e.message;
+      estatus.textContent = '✗ ' + e.message;
       estatus.className = 'edit-status error';
       ebtn.disabled = false;
     }
@@ -1738,11 +1738,11 @@ vidGenerate.onclick = async () => {
     statusEl.innerHTML = '<span class="spinner"></span>Envoi de la requête… (la vidéo peut prendre quelques minutes)';
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, 'Génération de la vidéo', vidGenToken);
-    statusEl.textContent = res.credits != null ? `✅ Vidéo générée. (−${res.credits} crédits)` : '✅ Vidéo générée.';
+    statusEl.textContent = res.credits != null ? `✓ Vidéo générée. (−${res.credits} crédits)` : '✓ Vidéo générée.';
     showVideoResult(resultEl, res.resultUrl, prompt);
     refreshBalance();
   } catch (e) {
-    statusEl.textContent = (e.message === 'Génération annulée.' ? '⏹️ ' : '❌ ') + e.message;
+    statusEl.textContent = (e.message === 'Génération annulée.' ? '■ ' : '✗ ') + e.message;
     statusEl.className = 'status error';
   } finally {
     vidGenerate.disabled = false;
@@ -1762,15 +1762,15 @@ function showVideoResult(container, url, prompt) {
   const actions = document.createElement('div');
   actions.className = 'result-actions';
   const saveBtn = document.createElement('button');
-  saveBtn.textContent = '💾 Enregistrer dans la galerie';
+  saveBtn.textContent = 'Enregistrer dans la galerie';
   saveBtn.onclick = async () => {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Téléchargement…';
     try {
       await window.api.galleryAdd({ type: 'video', url, prompt, companyId: activeCompanyId });
-      saveBtn.textContent = '✅ Ajouté à la galerie';
+      saveBtn.textContent = '✓ Ajouté à la galerie';
     } catch (e) {
-      saveBtn.textContent = '❌ ' + e.message;
+      saveBtn.textContent = '✗ ' + e.message;
     }
   };
   actions.appendChild(saveBtn);
@@ -2083,7 +2083,7 @@ async function saveCurrentDesign(silent) {
   }
   const btn = document.getElementById('designSaveBtn');
   btn.disabled = true;
-  designStatus('⏳ Enregistrement…');
+  designStatus('Enregistrement…');
   try {
     // Aperçu (miniature) : rendu sans cadre de sélection, réduit à 480 px
     const prevSel = selected;
@@ -2106,9 +2106,9 @@ async function saveCurrentDesign(silent) {
     });
     currentDesign.id = saved.id;
     if (saved.bg_url) bgUrl = saved.bg_url; // si le fond data: a été hébergé
-    designStatus('✅ Affiche enregistrée — rouvre-la quand tu veux via 📂 Ouvrir.');
+    designStatus('✓ Affiche enregistrée — rouvre-la quand tu veux via Ouvrir.');
   } catch (e) {
-    designStatus('❌ ' + e.message);
+    designStatus('✗ ' + e.message);
     if (!silent) alert('Échec de l\'enregistrement : ' + e.message);
   } finally {
     btn.disabled = false;
@@ -2116,7 +2116,7 @@ async function saveCurrentDesign(silent) {
 }
 async function openDesign(d) {
   document.getElementById('designsModal').classList.add('hidden');
-  designStatus('⏳ Ouverture…');
+  designStatus('Ouverture…');
   const du = d.bg_url.startsWith('data:') ? d.bg_url : await window.api.fetchDataUrl(d.bg_url);
   await new Promise((resolve, reject) => {
     const im = new Image();
@@ -2143,7 +2143,7 @@ async function openDesign(d) {
   selected = null;
   render();
   document.querySelector('.nav-btn[data-view="editor"]').click();
-  designStatus('✅ Affiche ouverte — tous les calques sont modifiables.');
+  designStatus('✓ Affiche ouverte — tous les calques sont modifiables.');
 }
 async function showDesignsModal() {
   const grid = document.getElementById('designsGrid');
@@ -2152,7 +2152,7 @@ async function showDesignsModal() {
   try {
     const designs = await window.api.designList();
     if (!designs.length) {
-      grid.innerHTML = '<p class="empty">Aucune affiche enregistrée. Crée une « Affiche Pro » dans le travail guidé, ou compose-en une ici puis « 💾 Enregistrer ».</p>';
+      grid.innerHTML = '<p class="empty">Aucune affiche enregistrée. Crée une « Affiche Pro » dans le travail guidé, ou compose-en une ici puis « Enregistrer ».</p>';
       return;
     }
     grid.innerHTML = '';
@@ -2161,8 +2161,8 @@ async function showDesignsModal() {
       card.className = 'design-card';
       card.innerHTML =
         `<img src="${esc(d.preview_url || d.bg_url)}" loading="lazy" alt="${esc(d.name)}" />` +
-        `<div class="dc-meta"><span class="dc-name">${esc(d.name)}</span><button class="dc-del" title="Supprimer">🗑</button></div>`;
-      card.onclick = (e) => { if (!e.target.classList.contains('dc-del')) openDesign(d).catch((err) => designStatus('❌ ' + err.message)); };
+        `<div class="dc-meta"><span class="dc-name">${esc(d.name)}</span><button class="dc-del" title="Supprimer">✕</button></div>`;
+      card.onclick = (e) => { if (!e.target.classList.contains('dc-del')) openDesign(d).catch((err) => designStatus('✗ ' + err.message)); };
       card.querySelector('.dc-del').onclick = async (e) => {
         e.stopPropagation();
         if (!confirm(`Supprimer « ${d.name} » ?`)) return;
@@ -2171,7 +2171,7 @@ async function showDesignsModal() {
       grid.appendChild(card);
     }
   } catch (e) {
-    grid.innerHTML = `<p class="empty">❌ ${esc(e.message)}</p>`;
+    grid.innerHTML = `<p class="empty">✗ ${esc(e.message)}</p>`;
   }
 }
 document.getElementById('designSaveBtn').onclick = () => saveCurrentDesign(false);
@@ -2342,7 +2342,7 @@ async function loadGallery() {
     card.innerHTML = `
       ${media}
       <div class="meta">
-        <span class="badge">${item.type === 'video' ? '🎬 Vidéo' : '🖼️ Image'}</span>${(item.history || []).length ? ` <span class="badge">🕘 ${item.history.length + 1} versions</span>` : ''}
+        <span class="badge">${item.type === 'video' ? 'Vidéo' : 'Image'}</span>${(item.history || []).length ? ` <span class="badge">${item.history.length + 1} versions</span>` : ''}
         <p>${esc((item.prompt || '').slice(0, 90))}</p>
         <div class="actions"></div>
       </div>`;
@@ -2362,7 +2362,7 @@ async function loadGallery() {
       // de versions (Annuler possible), les modifs sont resynchronisées dans la galerie.
       if (featureOn('image_edit')) {
         const aiBtn = document.createElement('button');
-        aiBtn.textContent = '🎨 Modifier IA';
+        aiBtn.textContent = 'Modifier IA';
         aiBtn.onclick = () => {
           document.querySelector('.nav-btn[data-view="image"]').click();
           const resultEl = document.getElementById('imgResult');
@@ -2398,7 +2398,7 @@ async function loadGallery() {
 // et construit le prompt à partir de réponses simples (+ charte de l'entreprise).
 const RECIPES = [
   {
-    id: 'poster-pro', icon: 'layers', title: 'Affiche Pro ✨ (texte modifiable)',
+    id: 'poster-pro', icon: 'layers', title: 'Affiche Pro (texte modifiable)',
     desc: "L'IA crée le visuel SANS texte — titre, description, logo et contacts sont posés en calques 100 % modifiables.",
     kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
     proLayers: true,
@@ -2640,7 +2640,7 @@ function openRecipe(r) {
   updateGuidedSummary();
   resetGuidedRef();
   document.getElementById('guidedRefLabel').textContent = r.needsImage
-    ? '📸 Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
+    ? 'Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
     : 'Images de référence (optionnel — style, personnage, produit… max 6)';
   // Affiche Pro : langue / coordonnées deviennent des calques -> réglages inutiles ici.
   // (gqLogo reste masqué en permanence : logo appliqué automatiquement, mode 'ai' par défaut.)
@@ -2650,12 +2650,12 @@ function openRecipe(r) {
   });
   // Affiche Pro : assistant en 2 temps -> 1) textes, 2) idées visuelles.
   document.getElementById('aiTexts').classList.toggle('hidden', !r.proLayers);
-  document.getElementById('aiIdeas').textContent = r.proLayers ? '🎨 2 · Idées visuelles' : '💡 Proposer des idées';
+  document.getElementById('aiIdeas').textContent = r.proLayers ? '2 · Idées visuelles' : 'Proposer des idées';
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
   document.getElementById('guidedStatus').textContent = '';
-  document.getElementById('guidedResult').innerHTML = '<div class="result-placeholder">✨ Ta création apparaîtra ici</div>';
+  document.getElementById('guidedResult').innerHTML = '<div class="result-placeholder">Ta création apparaîtra ici</div>';
   document.getElementById('aiStatus').textContent = '';
   document.getElementById('aiSuggestions').innerHTML = '';
 }
@@ -2851,7 +2851,7 @@ function setGuidedField(key, value) {
 // Génère une image d'EXEMPLE pour une idée visuelle (modèle éco, à la demande).
 async function generateIdeaPreview(btn, chip, visual) {
   btn.disabled = true;
-  btn.textContent = '⏳ Génération…';
+  btn.textContent = 'Génération…';
   try {
     const c = activeCompany();
     const cols = c && c.colors && c.colors.length ? ` Couleurs de marque : ${c.colors.join(', ')}.` : '';
@@ -2881,8 +2881,8 @@ async function generateIdeaPreview(btn, chip, visual) {
     refreshBalance();
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = '👁 Réessayer';
-    chip.querySelector('.chip-img').innerHTML = `<div class="hint" style="color:var(--danger)">❌ ${esc(e.message)}</div>`;
+    btn.textContent = 'Réessayer';
+    chip.querySelector('.chip-img').innerHTML = `<div class="hint" style="color:var(--danger)">✗ ${esc(e.message)}</div>`;
   }
 }
 
@@ -2899,7 +2899,7 @@ function renderTextSuggestions(list) {
       setGuidedField('headline', head);
       setGuidedField('desc', body);
       const statusEl = document.getElementById('aiStatus');
-      statusEl.textContent = '✅ Texte appliqué — clique « 🎨 2 · Idées visuelles » pour le fond.';
+      statusEl.textContent = '✓ Texte appliqué — clique « 2 · Idées visuelles » pour le fond.';
       statusEl.className = 'ai-status';
     };
     el.appendChild(b);
@@ -2943,7 +2943,7 @@ document.getElementById('aiTexts').onclick = async () => {
     renderTextSuggestions(parsed);
     lastIdeaTitles = [...lastIdeaTitles, ...parsed.map((p) => p[0])].slice(-15);
   } catch (e) {
-    statusEl.textContent = '❌ ' + e.message;
+    statusEl.textContent = '✗ ' + e.message;
     statusEl.className = 'ai-status error';
   } finally {
     btn.disabled = false;
@@ -3024,26 +3024,26 @@ document.getElementById('aiIdeas').onclick = async () => {
     if (!ideas.length) throw new Error('Aucune idée reçue.');
     if (isPro) {
       // Concepts visuels (un par style imposé) : « Utiliser » remplit le champ visuel,
-      // « 👁 Aperçu » génère une vraie image d'exemple (modèle éco) à la demande.
+      // « Aperçu » génère une vraie image d'exemple (modèle éco) à la demande.
       const el = document.getElementById('aiSuggestions');
       el.innerHTML = '';
       ideas.slice(0, 5).forEach((visual, i) => {
         const d = document.createElement('div');
         d.className = 'ai-chip ai-chip-rich';
         d.innerHTML =
-          `<b>🎨 ${esc(angles[i] || 'Concept ' + (i + 1))}</b><br><small>${esc(visual)}</small>` +
+          `<b>${esc(angles[i] || 'Concept ' + (i + 1))}</b><br><small>${esc(visual)}</small>` +
           `<div class="chip-actions"><button type="button" class="mini chip-use">✓ Utiliser ce visuel</button>` +
-          `<button type="button" class="mini chip-prev">👁 Aperçu (~7 cr)</button></div>` +
+          `<button type="button" class="mini chip-prev">Aperçu (~7 cr)</button></div>` +
           `<div class="chip-img"></div>`;
         d.querySelector('.chip-use').onclick = () => {
           setGuidedField('subject', visual);
-          statusEl.textContent = '✅ Visuel appliqué — tu peux lancer la création.';
+          statusEl.textContent = '✓ Visuel appliqué — tu peux lancer la création.';
           statusEl.className = 'ai-status';
         };
         d.querySelector('.chip-prev').onclick = (e) => generateIdeaPreview(e.target, d, visual);
         el.appendChild(d);
       });
-      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) — 👁 pour voir un exemple réel :';
+      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) — pour voir un exemple réel :';
       lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 50))].slice(-15);
     } else {
       statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
@@ -3051,7 +3051,7 @@ document.getElementById('aiIdeas').onclick = async () => {
       lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 60))].slice(-15);
     }
   } catch (e) {
-    statusEl.textContent = '❌ ' + e.message;
+    statusEl.textContent = '✗ ' + e.message;
     statusEl.className = 'ai-status error';
   } finally {
     btn.disabled = false;
@@ -3086,9 +3086,9 @@ document.getElementById('aiImprove').onclick = async () => {
       ],
     });
     if (f) f.value = text;
-    statusEl.textContent = '✅ Texte amélioré.';
+    statusEl.textContent = '✓ Texte amélioré.';
   } catch (e) {
-    statusEl.textContent = '❌ ' + e.message;
+    statusEl.textContent = '✗ ' + e.message;
     statusEl.className = 'ai-status error';
   } finally {
     btn.disabled = false;
@@ -3183,7 +3183,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
     statusEl.innerHTML = '<span class="spinner"></span>Création en cours…' + (r.kind === 'video' ? ' (la vidéo peut prendre quelques minutes)' : '');
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: descriptor.api, taskId }, statusEl, r.kind === 'video' ? 'Génération de la vidéo' : "Génération de l'image", guidedGenToken);
-    statusEl.textContent = res.credits != null ? `✅ Terminé. (−${res.credits} crédits)` : '✅ Terminé.';
+    statusEl.textContent = res.credits != null ? `✓ Terminé. (−${res.credits} crédits)` : '✓ Terminé.';
     if (eff.kind === 'image') {
       lastStyleUrl = res.resultUrl; // mémorise le style (image sans logo)
       document.getElementById('guidedStyleHint').textContent = '✓ style mémorisé';
@@ -3194,9 +3194,9 @@ document.getElementById('guidedGenerate').onclick = async () => {
           const posEl = document.getElementById('guidedLogoPos');
           const o = await window.api.overlayLogo({ imageUrl: res.resultUrl, logoUrl: c.logoFile, position: posEl ? posEl.value : 'tr' });
           finalUrl = o.url;
-          statusEl.textContent = '✅ Terminé (logo ajouté).';
+          statusEl.textContent = '✓ Terminé (logo ajouté).';
         } catch (_) {
-          statusEl.textContent = '✅ Terminé (logo non ajouté).';
+          statusEl.textContent = '✓ Terminé (logo non ajouté).';
         }
       }
       showImageResult(resultEl, finalUrl, answers.subject);
@@ -3205,9 +3205,9 @@ document.getElementById('guidedGenerate').onclick = async () => {
         statusEl.innerHTML = '<span class="spinner"></span>Composition des calques (titre, contacts)…';
         try {
           await composeProPoster(finalUrl, answers);
-          statusEl.textContent = '✅ Affiche composée — modifie les textes dans l\'éditeur, puis exporte.';
+          statusEl.textContent = '✓ Affiche composée — modifie les textes dans l\'éditeur, puis exporte.';
         } catch (_) {
-          statusEl.textContent = '✅ Image générée (ouvre-la dans l\'éditeur pour ajouter tes textes).';
+          statusEl.textContent = '✓ Image générée (ouvre-la dans l\'éditeur pour ajouter tes textes).';
         }
       }
     } else {
@@ -3215,7 +3215,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
     }
     refreshBalance();
   } catch (e) {
-    statusEl.textContent = (e.message === 'Génération annulée.' ? '⏹️ ' : '❌ ') + e.message;
+    statusEl.textContent = (e.message === 'Génération annulée.' ? '■ ' : '✗ ') + e.message;
     statusEl.className = 'status error';
   } finally {
     btn.disabled = false;

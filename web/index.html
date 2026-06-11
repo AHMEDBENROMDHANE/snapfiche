@@ -48,12 +48,12 @@
         <p>Choisis ton type de compte pour commencer.</p>
         <div class="type-cards">
           <button class="type-card" data-type="particulier">
-            <span class="tc-ico">👤</span>
+            <span class="tc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>
             <span class="tc-title">Particulier</span>
             <span class="tc-desc">Une seule entreprise / marque. Idéal pour un usage personnel.</span>
           </button>
           <button class="type-card" data-type="entreprise">
-            <span class="tc-ico">🏢</span>
+            <span class="tc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="18" rx="1"/><path d="M16 9h4v12h-4M8 7h2M8 11h2M8 15h2M12 7h1M12 11h1"/><path d="M10 21v-3h2v3"/></svg></span>
             <span class="tc-title">Entreprise</span>
             <span class="tc-desc">Gérez plusieurs entreprises / marques sous un même compte. Idéale pour les agences digitales.</span>
           </button>
@@ -138,7 +138,7 @@
           <div class="gen-left">
           <div id="guidedQuestions"></div>
           <div class="gq" id="gqLang">
-            <label for="guidedLang">🌐 Langue de l'affiche <span class="req">* obligatoire</span></label>
+            <label for="guidedLang">Langue de l'affiche <span class="req">* obligatoire</span></label>
             <select id="guidedLang" required>
               <option value="" selected disabled>— Choisir la langue —</option>
               <option value="en">English</option>
@@ -149,9 +149,9 @@
           <div class="gq ai-assistant">
             <label>Assistant IA</label>
             <div class="ai-actions">
-              <button id="aiTexts" type="button" class="mini hidden">📝 1 · Proposer des textes</button>
-              <button id="aiIdeas" type="button" class="mini">💡 Proposer des idées</button>
-              <button id="aiImprove" type="button" class="mini">✨ Améliorer mon texte</button>
+              <button id="aiTexts" type="button" class="mini hidden">1 · Proposer des textes</button>
+              <button id="aiIdeas" type="button" class="mini">Proposer des idées</button>
+              <button id="aiImprove" type="button" class="mini">Améliorer mon texte</button>
             </div>
             <div id="aiStatus" class="ai-status"></div>
             <div id="aiSuggestions" class="ai-suggestions"></div>
@@ -208,7 +208,7 @@
           <div id="guidedStatus" class="status"></div>
           </div><!-- /gen-left -->
           <div class="gen-right">
-            <div id="guidedResult" class="result"><div class="result-placeholder">✨ Ta création apparaîtra ici</div></div>
+            <div id="guidedResult" class="result"><div class="result-placeholder">Ta création apparaîtra ici</div></div>
           </div>
           </div><!-- /gen-layout -->
         </div>
@@ -223,13 +223,13 @@
         <textarea id="imgPrompt" class="prompt" rows="4"
           placeholder="Ex : affiche de concert électro, néons violets, typographie audacieuse, fond urbain nocturne"></textarea>
         <!-- Charte + logo appliqués automatiquement -->
-        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseLogo" checked /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
-        <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> 📞 Afficher les coordonnées sur l'image</label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseLogo" checked /> Ajouter le logo de l'entreprise (intégré par l'IA)</label>
+        <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> Afficher les coordonnées sur l'image</label>
 
         <!-- Images sources (édition / fusion / multi-références) -->
         <div class="source-box">
-          <strong>📤 Images sources (optionnel — jusqu'à 8 : référence, personnage, produit à fusionner…)</strong>
+          <strong>Images sources (optionnel — jusqu'à 8 : référence, personnage, produit à fusionner…)</strong>
           <div class="source-row">
             <label class="filebtn">+ Ajouter des images
               <input type="file" id="imgSourceFile" accept="image/*" multiple hidden />
@@ -238,7 +238,7 @@
             <button id="imgSourceClear" class="mini hidden">✕ Tout retirer</button>
           </div>
           <div id="imgThumbs" class="thumbs"></div>
-          <div class="hint">💡 Avec plusieurs images, choisis 🔥 Snap Max — il sait les combiner (ex : ta personne + ton produit dans la même scène).</div>
+          <div class="hint">Avec plusieurs images, choisis Snap Max — il sait les combiner (ex : ta personne + ton produit dans la même scène).</div>
         </div>
 
         <div class="controls">
@@ -272,7 +272,7 @@
         <div id="imgStatus" class="status"></div>
         </div><!-- /gen-left -->
         <div class="gen-right">
-          <div id="imgResult" class="result"><div class="result-placeholder">🖼️ Ton image apparaîtra ici</div></div>
+          <div id="imgResult" class="result"><div class="result-placeholder">Ton image apparaîtra ici</div></div>
         </div>
         </div><!-- /gen-layout -->
       </section>
@@ -286,12 +286,12 @@
         <textarea id="vidPrompt" class="prompt" rows="4"
           placeholder="Ex : travelling cinématique sur une ville futuriste au coucher du soleil, lumière dorée"></textarea>
         <!-- Charte + logo appliqués automatiquement -->
-        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseLogo" checked /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseLogo" checked /> Ajouter le logo de l'entreprise (intégré par l'IA)</label>
 
         <!-- Image source (image-to-video) : début et/ou fin -->
         <div class="source-box">
-          <strong>📤 Animer une image (optionnel) — image de début et/ou de fin</strong>
+          <strong>Animer une image (optionnel) — image de début et/ou de fin</strong>
           <div class="source-row">
             <label class="filebtn">Image de début
               <input type="file" id="vidSourceFile" accept="image/*" hidden />
@@ -344,7 +344,7 @@
         <div id="vidStatus" class="status"></div>
         </div><!-- /gen-left -->
         <div class="gen-right">
-          <div id="vidResult" class="result"><div class="result-placeholder">🎬 Ta vidéo apparaîtra ici</div></div>
+          <div id="vidResult" class="result"><div class="result-placeholder">Ta vidéo apparaîtra ici</div></div>
         </div>
         </div><!-- /gen-layout -->
       </section>
@@ -358,9 +358,9 @@
             <div class="tool-group">
               <strong>Mes affiches</strong>
               <input type="text" id="designName" placeholder="Nom de l'affiche" />
-              <button id="designSaveBtn" class="primary">💾 Enregistrer l'affiche</button>
+              <button id="designSaveBtn" class="primary">Enregistrer l'affiche</button>
               <div class="row">
-                <button id="designOpenBtn">📂 Ouvrir</button>
+                <button id="designOpenBtn">Ouvrir</button>
                 <button id="designNewBtn">✚ Nouvelle</button>
               </div>
               <p class="hint" id="designStatus">Fond + calques sauvegardés — rééditable à tout moment.</p>
@@ -411,7 +411,7 @@
               <p class="hint">Glissez un calque pour le déplacer. Molette = redimensionner.</p>
             </div>
             <div class="tool-group">
-              <button id="exportPoster" class="primary">💾 Exporter l'affiche (PNG)</button>
+              <button id="exportPoster" class="primary">Exporter l'affiche (PNG)</button>
             </div>
           </div>
           <div class="editor-canvas-wrap">
@@ -547,7 +547,7 @@
             <label>Site web
               <input type="text" id="companyWebsite" placeholder="https://exemple.com" />
             </label>
-            <button id="companyFetch" type="button" class="mini">🔎 Récupérer les infos du site</button>
+            <button id="companyFetch" type="button" class="mini">Récupérer les infos du site</button>
             <div id="companyFetchStatus" class="hint"></div>
             <label>Email
               <input type="text" id="companyEmail" placeholder="contact@exemple.com" />
@@ -632,7 +632,7 @@
         </div>
         <div id="userPacks" class="packs-grid">
           <div class="pack-card coming">
-            <h3>🎁 Offres bientôt disponibles</h3>
+            <h3>Offres bientôt disponibles</h3>
             <p>Les packs de crédits (paiement <b>Flouci</b> / <b>Paymee</b>) seront proposés ici très prochainement.</p>
           </div>
         </div>
@@ -645,7 +645,7 @@
         <div id="adminStats" class="admin-stats"></div>
 
         <div class="admin-block">
-          <h3>⚙️ Réglages plateforme</h3>
+          <h3>Réglages plateforme</h3>
           <div class="offer-row" style="max-width:none">
             <span class="offer-label">Mode gratuit (phase de test)</span>
             <label class="switch">
@@ -661,7 +661,7 @@
         </div>
 
         <div class="admin-block">
-          <h3>📈 Activité des 14 derniers jours</h3>
+          <h3>Activité des 14 derniers jours</h3>
           <div id="adminChart" class="admin-chart"></div>
           <div class="chart-legend">
             <span><i class="dot dot-signup"></i> Inscriptions</span>
@@ -672,13 +672,13 @@
 
         <div class="admin-block">
           <div class="admin-users-head">
-            <h3>💎 Packs de crédits</h3>
+            <h3>Packs de crédits</h3>
             <button id="packNew" class="mini">+ Nouveau pack</button>
           </div>
           <div class="table-wrap">
             <table class="admin-table">
               <thead>
-                <tr><th>Nom</th><th>Crédits</th><th>Prix (TND)</th><th>🔥 Promo (TND)</th><th>Fin promo</th><th>Pour</th><th>Badge</th><th>Ordre</th><th>Actif</th><th></th></tr>
+                <tr><th>Nom</th><th>Crédits</th><th>Prix (TND)</th><th>Promo (TND)</th><th>Fin promo</th><th>Pour</th><th>Badge</th><th>Ordre</th><th>Actif</th><th></th></tr>
               </thead>
               <tbody id="adminPacksBody"></tbody>
             </table>
@@ -715,8 +715,8 @@
           <span>Type de compte</span>
           <div class="row">
             <select id="accountTypeSelect">
-              <option value="particulier">👤 Particulier — 1 entreprise</option>
-              <option value="entreprise">🏢 Entreprise — plusieurs</option>
+              <option value="particulier">Particulier — 1 entreprise</option>
+              <option value="entreprise">Entreprise — plusieurs</option>
             </select>
             <button id="saveAccountType" class="mini">Changer</button>
           </div>
@@ -724,7 +724,7 @@
         </div>
         <div class="field" id="brandEditField" style="display:none">
           <span>Ma marque</span>
-          <button id="editBrandBtn" class="mini">✏️ Modifier ma marque (logo, couleurs, infos)</button>
+          <button id="editBrandBtn" class="mini">Modifier ma marque (logo, couleurs, infos)</button>
         </div>
         <hr class="sep" />
         <label>Clé API kie.ai
@@ -741,7 +741,7 @@
     <!-- MODALE : MES AFFICHES (designs rééditables) -->
     <div id="designsModal" class="modal hidden">
       <div class="modal-box designs-box">
-        <h2>📂 Mes affiches</h2>
+        <h2>Mes affiches</h2>
         <p class="hint">Clique une affiche pour la rouvrir avec tous ses calques modifiables.</p>
         <div id="designsGrid" class="designs-grid"></div>
         <div class="modal-actions">
