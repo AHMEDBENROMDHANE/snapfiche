@@ -103,17 +103,17 @@ const usd = (c) => (c * CREDIT_USD).toFixed(2);
 // Le solde réel (affiché en bas à gauche) fait foi.
 const MODELS = {
   image: [
-    { id: 'nano-banana-pro', label: 'Snap Max — Ultra HD (qualité max)', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
-    { id: 'seedream/4.5-text-to-image', label: 'Snap — Créatif (éco)', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
-    { id: 'ideogram/v3-text-to-image', label: 'Snap Texte — Typo nette', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
-    { id: 'flux-kontext-pro', label: 'Snap Plus', api: 'flux', edit: true, ratio: true, credits: 8 },
-    { id: 'flux-kontext-max', label: 'Snap Pro', api: 'flux', edit: true, ratio: true, credits: 12 },
+    { id: 'nano-banana-pro', label: 'Snap Max', desc: 'Qualité maximale : affiches très détaillées, textes nets, sait combiner plusieurs images (personne + produit).', api: 'jobs', edit: true, ratio: true, res: true, imageField: 'image_input', creditsByRes: { '1K': 24, '2K': 30, '4K': 40 } },
+    { id: 'seedream/4.5-text-to-image', label: 'Snap', desc: 'Rapide et économique : parfait pour tester des idées et produire en volume.', api: 'jobs', ratio: true, credits: 7, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', quality: 'basic' }) },
+    { id: 'ideogram/v3-text-to-image', label: 'Snap Texte', desc: 'Spécialiste de la typographie : titres, slogans et textes parfaitement lisibles sur l\'image.', api: 'jobs', ratio: true, credits: 10, jobsInput: (prompt, params) => ({ prompt, aspect_ratio: params.aspect_ratio || '1:1', rendering_speed: 'QUALITY' }) },
+    { id: 'flux-kontext-pro', label: 'Snap Plus', desc: 'Équilibré : bon rendu général et retouche fidèle d\'une image importée.', api: 'flux', edit: true, ratio: true, credits: 8 },
+    { id: 'flux-kontext-max', label: 'Snap Pro', desc: 'Haut de gamme : compositions raffinées et suivi précis des consignes.', api: 'flux', edit: true, ratio: true, credits: 12 },
   ],
   video: [
-    { id: 'veo3_fast', label: 'Veo 3 Fast', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
-    { id: 'veo3', label: 'Veo 3 (Quality)', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 31 },
-    { id: 'bytedance/seedance-2', label: 'Seedance 2.0', api: 'jobs', image: true, audio: true, durations: [4, 6, 8, 10, 12, 15], resolutions: ['480p', '720p', '1080p'], creditsPerSecByRes: { '480p': 11.5, '720p': 25, '1080p': 50 } },
-    { id: 'bytedance/seedance-2-fast', label: 'Seedance 2.0 Fast', api: 'jobs', image: true, audio: true, durations: [4, 6, 8, 10, 12, 15], resolutions: ['480p', '720p', '1080p'], creditsPerSecByRes: { '480p': 9, '720p': 20, '1080p': 40 } },
+    { id: 'veo3_fast', label: 'Snap Motion', desc: 'Vidéo fluide et rapide : le meilleur rapport qualité/prix pour les pubs courtes.', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 7.5 },
+    { id: 'veo3', label: 'Snap Motion Pro', desc: 'Vidéo cinéma : la meilleure qualité d\'image, pour les campagnes importantes.', api: 'veo', image: true, durations: [4, 6, 8], resolutions: ['720p', '1080p'], creditsPerSec: 31 },
+    { id: 'bytedance/seedance-2', label: 'Snap Clip Pro', desc: 'Vidéo créative avec son : transitions début→fin, jusqu\'à 15 s, idéale réseaux sociaux.', api: 'jobs', image: true, audio: true, durations: [4, 6, 8, 10, 12, 15], resolutions: ['480p', '720p', '1080p'], creditsPerSecByRes: { '480p': 11.5, '720p': 25, '1080p': 50 } },
+    { id: 'bytedance/seedance-2-fast', label: 'Snap Clip', desc: 'Vidéo créative économique avec son : parfaite pour stories et tests.', api: 'jobs', image: true, audio: true, durations: [4, 6, 8, 10, 12, 15], resolutions: ['480p', '720p', '1080p'], creditsPerSecByRes: { '480p': 9, '720p': 20, '1080p': 40 } },
   ],
 };
 const findModel = (type, id) => MODELS[type].find((m) => m.id === id);
@@ -1369,6 +1369,7 @@ function imageCost() {
 function updateImageUI() {
   const m = findModel('image', imgModelSel.value);
   document.getElementById('imgResWrap').classList.toggle('hidden', !m.res);
+  document.getElementById('imgModelHint').textContent = m.desc || '';
   const c = imageCost();
   document.getElementById('imgCost').textContent = `Coût estimé : ~${c} crédits (~$${usd(c)}) / image`;
 }
@@ -1390,6 +1391,7 @@ function updateVideoUI() {
   m.durations.forEach((d) => vidDurSel.add(new Option(d + ' s', d)));
   vidDurSel.value = m.durations.includes(8) ? 8 : m.durations[0];
   document.getElementById('vidAudioWrap').classList.toggle('hidden', !m.audio);
+  document.getElementById('vidModelHint').textContent = m.desc || '';
   const c = videoCost();
   document.getElementById('vidCost').textContent = `Coût estimé : ~${c} crédits (~$${usd(c)}) / vidéo`;
 }
@@ -2648,9 +2650,10 @@ function openRecipe(r) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', !!r.proLayers);
   });
-  // Affiche Pro : assistant en 2 temps -> 1) textes, 2) idées visuelles.
-  document.getElementById('aiTexts').classList.toggle('hidden', !r.proLayers);
-  document.getElementById('aiIdeas').textContent = r.proLayers ? '2 · Idées visuelles' : 'Proposer des idées';
+  // Assistant en 2 temps pour TOUTES les recettes image : 1) textes, 2) idées visuelles.
+  // (vidéo : un seul bouton d'idées, pas de texte rendu à l'écran)
+  document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image');
+  document.getElementById('aiIdeas').textContent = r.kind === 'image' ? '2 · Idées visuelles' : 'Proposer des idées';
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
@@ -2886,7 +2889,17 @@ async function generateIdeaPreview(btn, chip, visual) {
   }
 }
 
-// ÉTAPE 1 (Affiche Pro) : propositions de TEXTES (titre + contenu réel), sans design.
+// ÉTAPE 1 : propositions de TEXTES (titre + contenu réel), sans design.
+// Marqueur séparant le message choisi de la direction visuelle dans le champ sujet (recettes classiques).
+const VISUAL_MARK = '— Direction visuelle : ';
+function subjectTextPart() {
+  const f = subjectField();
+  return f ? f.value.split(VISUAL_MARK)[0].trim() : '';
+}
+function subjectVisualPart() {
+  const f = subjectField();
+  return f ? (f.value.split(VISUAL_MARK)[1] || '').trim() : '';
+}
 function renderTextSuggestions(list) {
   const el = document.getElementById('aiSuggestions');
   el.innerHTML = '';
@@ -2896,8 +2909,15 @@ function renderTextSuggestions(list) {
     b.className = 'ai-chip';
     b.innerHTML = `<b>${esc(head)}</b><br><small>${esc(body)}</small>`;
     b.onclick = () => {
-      setGuidedField('headline', head);
-      setGuidedField('desc', body);
+      if (guidedRecipe.proLayers) {
+        setGuidedField('headline', head);
+        setGuidedField('desc', body);
+      } else {
+        // Recette classique : le texte va dans le sujet (l'IA le dessinera sur l'image)
+        const visual = subjectVisualPart();
+        const f = subjectField();
+        if (f) f.value = `« ${head} » — ${body}` + (visual ? `\n${VISUAL_MARK}${visual}` : '');
+      }
       const statusEl = document.getElementById('aiStatus');
       statusEl.textContent = '✓ Texte appliqué — clique « 2 · Idées visuelles » pour le fond.';
       statusEl.className = 'ai-status';
@@ -2906,8 +2926,14 @@ function renderTextSuggestions(list) {
   });
 }
 document.getElementById('aiTexts').onclick = async () => {
-  if (!guidedRecipe || !guidedRecipe.proLayers) return;
+  if (!guidedRecipe || guidedRecipe.kind !== 'image') return;
   const statusEl = document.getElementById('aiStatus');
+  // Recettes classiques : le texte sera dessiné sur l'image -> la langue est requise.
+  if (!guidedLang() && !guidedRecipe.proLayers) {
+    statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
+    statusEl.className = 'ai-status error';
+    return;
+  }
   const btn = document.getElementById('aiTexts');
   btn.disabled = true;
   document.getElementById('aiSuggestions').innerHTML = '';
@@ -2917,7 +2943,9 @@ document.getElementById('aiTexts').onclick = async () => {
     const c = activeCompany();
     const cat = c && c.category ? `, secteur : ${c.category}` : '';
     const inf = c && c.info ? `, infos : ${c.info}` : '';
-    const subjectNow = (subjectField() && subjectField().value.trim()) || '';
+    const subjectNow = guidedRecipe.proLayers
+      ? ((subjectField() && subjectField().value.trim()) || '')
+      : subjectTextPart(); // recette classique : on ignore la direction visuelle déjà ajoutée
     const SYS =
       "Tu es concepteur-rédacteur senior (copywriter). Tu écris les textes d'affiches : un TITRE court et percutant + le TEXTE réel de l'affiche. " +
       "RÈGLE D'OR : affiche éducative/informative => 3 à 4 points CONCRETS, utiles et exacts qui apprennent quelque chose (avantages, chiffres, conseils) ; " +
@@ -2978,32 +3006,35 @@ document.getElementById('aiIdeas').onclick = async () => {
       } catch (_) {}
     }
     const isPro = !!guidedRecipe.proLayers;
+    const isImage = guidedRecipe.kind === 'image';
     // Styles adaptés au secteur d'activité (plus de styles hors-sujet).
     const angles = pickAngles(5, sectorAngles());
+    // Message déjà choisi (étape 1) : champs titre/texte en Pro, partie texte du sujet sinon.
     const headlineNow = isPro ? (document.querySelector('#guidedQuestions .gq-field[data-key="headline"]') || {}).value || '' : '';
     const descNow = isPro ? (document.querySelector('#guidedQuestions .gq-field[data-key="desc"]') || {}).value || '' : '';
-    const SYS = isPro
-      ? "Tu es directeur artistique senior. Tu conçois des FONDS d'affiches (images sans aucun texte) au service d'un message donné. " +
-        "Chaque concept décrit précisément : sujet, cadrage/composition (avec zones dégagées pour le titre en haut et la barre de contact en bas), style, lumière, palette reprenant les couleurs de la marque, ambiance. " +
-        "Tu respectes scrupuleusement la direction artistique imposée pour chaque concept et tu restes crédible pour le secteur d'activité."
-      : "Tu es à la fois directeur de création senior ET concepteur-rédacteur dans une agence primée. Tu produis des concepts d'affiches COMPLETS : un vrai titre, le VRAI TEXTE de l'affiche (jamais de placeholder), et une direction artistique précise. " +
-        "RÈGLE D'OR sur le texte : affiche éducative => 3-4 points concrets et exacts ; promo => offre + appel à l'action ; événement => date/lieu/infos. " +
-        "Tu exploites l'identité de marque et tu respectes la direction artistique imposée pour chaque concept, en restant crédible pour le secteur.";
+    const messageCtx = isPro
+      ? (headlineNow || descNow ? `Titre : « ${headlineNow} »${descNow ? ` ; Texte : « ${descNow} »` : ''}` : '')
+      : subjectTextPart();
+    const SYS = isImage
+      ? "Tu es directeur artistique senior. Tu conçois des directions visuelles d'affiches au service d'un message donné. " +
+        "Chaque concept décrit précisément : sujet/scène, cadrage et composition (zone dégagée en haut pour le titre), style, lumière, palette reprenant les couleurs de la marque, ambiance. " +
+        "Tu ne rédiges JAMAIS de texte d'affiche — uniquement le visuel. Tu respectes la direction artistique imposée pour chaque concept et tu restes crédible pour le secteur d'activité."
+      : "Tu es directeur de création senior. Tu produis des concepts de vidéos courtes : une vraie idée de scène + une direction artistique précise, crédible pour le secteur.";
     const userText =
       `Objectif : ${guidedRecipe.title}.` +
       `\nMarque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${cols}${inf}.` +
-      (subjectNow ? `\nDemande de l'utilisateur (à respecter en priorité) : ${subjectNow}.` : '') +
-      (isPro && (headlineNow || descNow) ? `\nLe fond doit SERVIR ce message déjà choisi — Titre : « ${headlineNow} »${descNow ? ` ; Texte : « ${descNow} »` : ''}.` : '') +
+      (!isImage && subjectNow ? `\nDemande de l'utilisateur (à respecter en priorité) : ${subjectNow}.` : '') +
+      (isImage && messageCtx ? `\nLe visuel doit SERVIR ce message déjà choisi — ${messageCtx}.` : '') +
       (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
       `\nLangue du texte affiché : ${LANG_LABEL[guidedLang() || 'fr']}.` +
       `\n\nDonne exactement 5 concepts très différents, SPÉCIFIQUES à cette demande et ce secteur (jamais génériques).` +
       `\nDirections artistiques IMPOSÉES, une par concept et dans cet ordre : 1) ${angles[0]} ; 2) ${angles[1]} ; 3) ${angles[2]} ; 4) ${angles[3]} ; 5) ${angles[4]}.` +
       (lastIdeaTitles.length ? `\nINTERDIT de reproposer des concepts proches de ceux-ci (déjà montrés) : ${lastIdeaTitles.join(' | ')}.` : '') +
-      (isPro
-        ? `\nFormat STRICT — exactement une ligne par concept : la description du FOND uniquement, sans aucun texte ni lettre dans l'image (sujet précis, cadrage avec zone haute dégagée, style, lumière, palette de la marque, ambiance — 20 mots minimum).` +
-          `\nNe mentionne JAMAIS de texte, mots ou typographie — c'est un fond d'image pur.`
+      (isImage
+        ? `\nFormat STRICT — exactement une ligne par concept : la direction visuelle uniquement (sujet/scène précis, cadrage avec zone haute dégagée, style, lumière, palette de la marque, ambiance — 20 mots minimum). Aucun contenu textuel d'affiche.` +
+          (isPro ? `\nCes visuels seront générés SANS texte (le texte est ajouté en calques) — ne mentionne jamais de texte, mots ou typographie.` : '')
         : `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
-          `\n"Titre percutant" — texte réel de l'affiche (éducatif : points concrets « • » ; promo : offre + CTA) — concept visuel précis (sujet + cadrage + style + lumière + palette de la marque).`) +
+          `\n"Idée de scène" — direction visuelle précise (mouvement de caméra + style + lumière + ambiance).`) +
       `\nPas de numéro, pas de puce en début de ligne, pas d'introduction ni de conclusion.`;
     // Essai avec le logo (vision) ; repli en texte seul si l'image échoue.
     let text;
@@ -3022,7 +3053,7 @@ document.getElementById('aiIdeas').onclick = async () => {
       .filter((l) => l.length > 3)
       .slice(0, 6);
     if (!ideas.length) throw new Error('Aucune idée reçue.');
-    if (isPro) {
+    if (isImage) {
       // Concepts visuels (un par style imposé) : « Utiliser » remplit le champ visuel,
       // « Aperçu » génère une vraie image d'exemple (modèle éco) à la demande.
       const el = document.getElementById('aiSuggestions');
@@ -3036,14 +3067,21 @@ document.getElementById('aiIdeas').onclick = async () => {
           `<button type="button" class="mini chip-prev">Aperçu (~7 cr)</button></div>` +
           `<div class="chip-img"></div>`;
         d.querySelector('.chip-use').onclick = () => {
-          setGuidedField('subject', visual);
+          if (isPro) {
+            setGuidedField('subject', visual);
+          } else {
+            // Recette classique : le sujet garde le message choisi + reçoit la direction visuelle
+            const txt = subjectTextPart();
+            const f = subjectField();
+            if (f) f.value = (txt ? txt + '\n' : '') + VISUAL_MARK + visual;
+          }
           statusEl.textContent = '✓ Visuel appliqué — tu peux lancer la création.';
           statusEl.className = 'ai-status';
         };
         d.querySelector('.chip-prev').onclick = (e) => generateIdeaPreview(e.target, d, visual);
         el.appendChild(d);
       });
-      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) — pour voir un exemple réel :';
+      statusEl.textContent = 'Choisis le style (adapté à ton secteur) — « Aperçu » pour voir un exemple réel :';
       lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 50))].slice(-15);
     } else {
       statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
