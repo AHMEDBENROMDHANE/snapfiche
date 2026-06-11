@@ -2537,22 +2537,23 @@ function effectiveRecipe(r, quality) {
   return eff;
 }
 
+// Résumé sans jargon technique : format, qualité, durée et coût (pas de nom de modèle).
 function recipeSummary(eff) {
   if (eff.kind === 'image') {
     const m = findModel('image', eff.model);
     const c = m.creditsByRes ? m.creditsByRes[eff.params.resolution] || 0 : m.credits || 0;
-    return `${m.label} · ${eff.params.aspect_ratio}${eff.params.resolution ? ' · ' + eff.params.resolution : ''} · ~${c} cr (~$${usd(c)})`;
+    return `Format ${eff.params.aspect_ratio}${eff.params.resolution ? ' · Qualité ' + eff.params.resolution : ''} · ~${c} crédits`;
   }
   const m = findModel('video', eff.model);
   const cps = m.creditsPerSecByRes ? m.creditsPerSecByRes[eff.params.resolution] || 0 : m.creditsPerSec || 0;
   const c = Math.round(cps * eff.params.duration);
-  return `${m.label} · ${eff.params.aspect_ratio} · ${eff.params.resolution} · ${eff.params.duration}s · ~${c} cr (~$${usd(c)})`;
+  return `Format ${eff.params.aspect_ratio} · ${eff.params.resolution} · ${eff.params.duration}s · ~${c} crédits`;
 }
 function updateGuidedSummary() {
   if (!guidedRecipe) return;
   const quality = document.getElementById('guidedQuality').value;
   const eff = effectiveRecipe(guidedRecipe, quality);
-  document.getElementById('guidedSummary').innerHTML = `L'app utilisera : <b>${recipeSummary(eff)}</b>`;
+  document.getElementById('guidedSummary').innerHTML = `<b>${recipeSummary(eff)}</b>`;
 }
 
 function guidedImageDescriptor(modelId, params, prompt, images) {
@@ -2641,8 +2642,9 @@ function openRecipe(r) {
   document.getElementById('guidedRefLabel').textContent = r.needsImage
     ? '📸 Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
     : 'Images de référence (optionnel — style, personnage, produit… max 6)';
-  // Affiche Pro : langue / logo / coordonnées deviennent des calques -> réglages inutiles ici.
-  ['gqLang', 'gqLogo', 'gqContact'].forEach((id) => {
+  // Affiche Pro : langue / coordonnées deviennent des calques -> réglages inutiles ici.
+  // (gqLogo reste masqué en permanence : logo appliqué automatiquement, mode 'ai' par défaut.)
+  ['gqLang', 'gqContact'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', !!r.proLayers);
   });

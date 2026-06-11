@@ -128,7 +128,7 @@
       <!-- VUE TRAVAIL GUIDÉ -->
       <section id="view-guided" class="view active">
         <h1>Travail guidé</h1>
-        <p class="subtitle">Choisissez votre objectif — l'app sélectionne le bon modèle, le format et les réglages, et rédige le prompt en appliquant la charte de l'entreprise active.</p>
+        <p class="subtitle">Choisissez votre objectif — l'app choisit les bons réglages et prépare le visuel ou la vidéo en appliquant automatiquement la charte de votre entreprise.</p>
         <div id="guidedCards" class="guided-cards"></div>
 
         <div id="guidedPanel" class="guided-panel hidden">
@@ -178,8 +178,9 @@
             <label>Qualité</label>
             <select id="guidedQuality"></select>
           </div>
-          <label class="brand-toggle"><input type="checkbox" id="guidedUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="guidedBrandHint" class="brand-hint"></span></label>
-          <div class="gq" id="gqLogo">
+          <!-- Charte + logo appliqués automatiquement (entrées conservées masquées pour la logique) -->
+          <label class="brand-toggle hidden"><input type="checkbox" id="guidedUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="guidedBrandHint" class="brand-hint"></span></label>
+          <div class="gq hidden" id="gqLogo">
             <label>Logo de l'entreprise</label>
             <div class="ai-actions">
               <select id="guidedLogoMode">
@@ -221,8 +222,9 @@
         <div class="gen-left">
         <textarea id="imgPrompt" class="prompt" rows="4"
           placeholder="Ex : affiche de concert électro, néons violets, typographie audacieuse, fond urbain nocturne"></textarea>
-        <label class="brand-toggle"><input type="checkbox" id="imgUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle"><input type="checkbox" id="imgUseLogo" /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
+        <!-- Charte + logo appliqués automatiquement -->
+        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseLogo" checked /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
         <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> 📞 Afficher les coordonnées sur l'image</label>
 
         <!-- Images sources (édition / fusion / multi-références) -->
@@ -283,8 +285,9 @@
         <div class="gen-left">
         <textarea id="vidPrompt" class="prompt" rows="4"
           placeholder="Ex : travelling cinématique sur une ville futuriste au coucher du soleil, lumière dorée"></textarea>
-        <label class="brand-toggle"><input type="checkbox" id="vidUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle"><input type="checkbox" id="vidUseLogo" /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
+        <!-- Charte + logo appliqués automatiquement -->
+        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseBrand" checked /> 🏢 Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseLogo" checked /> 🖼️ Ajouter le logo de l'entreprise (intégré par l'IA)</label>
 
         <!-- Image source (image-to-video) : début et/ou fin -->
         <div class="source-box">
