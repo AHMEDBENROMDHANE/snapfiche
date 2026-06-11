@@ -2689,11 +2689,26 @@ const AI_MODEL = 'gemini-2.5-flash';
 // Variété des idées : directions artistiques tirées au sort à chaque clic,
 // + mémoire des concepts déjà proposés pour ne jamais se répéter.
 const IDEA_ANGLES = [
-  'minimalisme éditorial premium', 'macro photographie ultra détaillée', 'rendu 3D doux (clay render)',
-  'illustration flat moderne et colorée', 'photographie lifestyle authentique', 'typographie géante en vedette',
-  'infographie pédagogique élégante', 'comparatif avant / après', 'néon vibrant sur fond sombre',
-  'collage magazine rétro', 'dégradés aurora pastel', 'humour décalé et complice',
-  'storytelling émotionnel intimiste', 'luxe sobre et minimal', 'pop colorée énergique', 'schéma technique stylisé',
+  // Photo
+  'macro photographie ultra détaillée', 'photographie lifestyle authentique', 'photo cinématographique clair-obscur',
+  'photo studio fond coloré uni', 'flat lay vu de dessus', 'photo en lévitation (objets flottants)',
+  'noir et blanc dramatique avec une seule couleur accent', 'golden hour chaleureuse', 'photo éclatée (exploded view)',
+  // 3D & digital
+  'rendu 3D doux (clay render)', '3D glassmorphism translucide', 'rendu 3D hyperréaliste produit', 'low-poly géométrique',
+  'univers miniature diorama 3D', 'metaball / formes organiques 3D',
+  // Illustration
+  'illustration flat moderne et colorée', 'illustration ligne continue minimaliste', 'aquarelle douce',
+  'style bande dessinée pop', 'gravure vintage / botanique', 'pixel art rétro gaming', 'papier découpé en relief (paper cut)',
+  // Typo & graphisme
+  'typographie géante en vedette', 'typographie cinétique en spirale', 'lettrage manuscrit expressif',
+  'grille suisse éditoriale stricte', 'affiche brutaliste contrastée', 'bauhaus géométrique primaire',
+  // Pédagogie & info
+  'infographie pédagogique élégante', 'comparatif avant / après', 'schéma technique stylisé',
+  'chronologie / étapes numérotées visuelles', 'mythes vs réalités en deux colonnes', 'coupe anatomique didactique',
+  // Ambiances
+  'minimalisme éditorial premium', 'néon vibrant sur fond sombre', 'collage magazine rétro', 'dégradés aurora pastel',
+  'humour décalé et complice', 'storytelling émotionnel intimiste', 'luxe sobre et minimal', 'pop colorée énergique',
+  'futurisme chrome et iridescent', 'vaporwave nostalgique', 'naturel organique (bois, lin, végétal)', 'art déco géométrique doré',
 ];
 let lastIdeaTitles = [];
 function pickAngles(n) {
