@@ -2646,6 +2646,9 @@ function openRecipe(r) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', !!r.proLayers);
   });
+  // Affiche Pro : assistant en 2 temps -> 1) textes, 2) idées visuelles.
+  document.getElementById('aiTexts').classList.toggle('hidden', !r.proLayers);
+  document.getElementById('aiIdeas').textContent = r.proLayers ? '🎨 2 · Idées visuelles' : '💡 Proposer des idées';
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
@@ -2727,11 +2730,84 @@ const IDEA_ANGLES = [
   'grille technique avec timestamps et annotations', 'glass block (blocs de verre 3D)',
 ];
 let lastIdeaTitles = [];
-function pickAngles(n) {
-  const pool = [...IDEA_ANGLES];
+function pickAngles(n, sourcePool) {
+  const pool = [...(sourcePool || IDEA_ANGLES)];
   const out = [];
   while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   return out;
+}
+
+// Styles ADAPTÉS au secteur d'activité : fini le vaporwave pour un cabinet dentaire.
+// Chaque famille de secteurs a sa sélection de directions crédibles.
+const SECTOR_ANGLE_MAP = [
+  {
+    match: /dent|sant|m[ée]dic|clinique|pharma|opti|kin[ée]|v[ée]t[ée]|labo|hopit|hôpit|docteur/i,
+    angles: ['infographie pédagogique élégante', 'minimalisme éditorial premium', 'macro photographie ultra détaillée',
+      'photographie lifestyle authentique', 'comparatif avant / après', 'coupe anatomique didactique',
+      'rendu 3D doux (clay render)', 'chronologie / étapes numérotées visuelles', 'mythes vs réalités en deux colonnes',
+      'illustration ligne continue minimaliste', 'naturel organique (bois, lin, végétal)', 'photo studio fond coloré uni',
+      'croquis fait main authentique (anti-perfection IA)', 'schéma technique stylisé'],
+  },
+  {
+    match: /resto|caf[ée]|food|cuisine|p[âa]tiss|boulang|traiteur|pizz|burger|gastro|chef/i,
+    angles: ['macro photographie ultra détaillée', 'golden hour chaleureuse', 'flat lay vu de dessus',
+      'photographie lifestyle authentique', 'photo en lévitation (objets flottants)', 'collage magazine rétro',
+      'croquis fait main authentique (anti-perfection IA)', 'folk art (motifs artisanaux, fleurs, oiseaux)',
+      'aquarelle douce', 'typographie géante en vedette', 'pop colorée énergique', 'naturel organique (bois, lin, végétal)'],
+  },
+  {
+    match: /mode|v[êe]t|beaut|cosm[ée]t|coiff|esth[ée]t|bijou|parfum|luxe|spa/i,
+    angles: ['luxe sobre et minimal', 'minimalisme éditorial premium', 'photo cinématographique clair-obscur',
+      'noir et blanc dramatique avec une seule couleur accent', 'neon-noir (rouge/noir, néons, flou de mouvement)',
+      'art nouveau moderne (lignes organiques + abstraction)', 'typographie géante en vedette',
+      'acid fade (dégradés prismatiques saturés, fluide psychédélique)', 'golden hour chaleureuse',
+      'typographie liquide (lettres fondues chromées)', 'photo studio fond coloré uni'],
+  },
+  {
+    match: /tech|saas|logiciel|informat|digital|web|app|startup|ia\b|données|data/i,
+    angles: ['3D glassmorphism translucide', 'glass block (blocs de verre 3D)', 'dégradés aurora pastel',
+      'grille suisse éditoriale stricte', 'typographie géante en vedette', 'minimalisme éditorial premium',
+      'grille technique avec timestamps et annotations', 'rendu 3D doux (clay render)', 'low-poly géométrique',
+      'futurisme chrome et iridescent', 'duotone réactif haute énergie', 'metaball / formes organiques 3D'],
+  },
+  {
+    match: /sport|fitness|gym|[ée]v[ée]nement|event|soir[ée]e|festival|club|concert|musique/i,
+    angles: ['neon-noir (rouge/noir, néons, flou de mouvement)', 'maximalisme chromatique électrique',
+      'affiche brutaliste contrastée', 'typographie géante en vedette', 'néon vibrant sur fond sombre',
+      'acid fade (dégradés prismatiques saturés, fluide psychédélique)', 'photo cinématographique clair-obscur',
+      'duotone réactif haute énergie', 'typographie cinétique en spirale', 'pop colorée énergique', 'collage magazine rétro'],
+  },
+  {
+    match: /immobil|construction|btp|archi|r[ée]nov|d[ée]cor|meuble|maison/i,
+    angles: ['minimalisme éditorial premium', 'photographie lifestyle authentique', 'grille suisse éditoriale stricte',
+      'golden hour chaleureuse', 'luxe sobre et minimal', 'rendu 3D hyperréaliste produit',
+      'schéma technique stylisé', 'comparatif avant / après', 'naturel organique (bois, lin, végétal)', 'art déco géométrique doré'],
+  },
+  {
+    match: /[ée]duc|[ée]cole|formation|cours|coach|universit|cr[èe]che|enfant/i,
+    angles: ['infographie pédagogique élégante', 'illustration flat moderne et colorée', 'chronologie / étapes numérotées visuelles',
+      'croquis fait main authentique (anti-perfection IA)', 'scrapbooking (papier, autocollants, notes manuscrites)',
+      'style bande dessinée pop', 'pop colorée énergique', 'mythes vs réalités en deux colonnes',
+      'typographie géante en vedette', 'papier découpé en relief (paper cut)'],
+  },
+  {
+    match: /artisan|tradition|culture|tourisme|voyage|h[ôo]tel/i,
+    angles: ['folk art (motifs artisanaux, fleurs, oiseaux)', 'aquarelle douce', 'gravure vintage / botanique',
+      'photographie lifestyle authentique', 'golden hour chaleureuse', 'collage magazine rétro',
+      'art nouveau moderne (lignes organiques + abstraction)', 'naturel organique (bois, lin, végétal)',
+      'scrapbooking (papier, autocollants, notes manuscrites)', 'papier découpé en relief (paper cut)'],
+  },
+];
+// Sélection sûre et moderne quand le secteur est inconnu.
+const SAFE_ANGLES = ['minimalisme éditorial premium', 'photographie lifestyle authentique', 'infographie pédagogique élégante',
+  'rendu 3D doux (clay render)', 'typographie géante en vedette', 'dégradés aurora pastel',
+  'illustration flat moderne et colorée', 'macro photographie ultra détaillée', 'golden hour chaleureuse',
+  'grille suisse éditoriale stricte', 'photo studio fond coloré uni', 'comparatif avant / après'];
+function sectorAngles() {
+  const c = activeCompany();
+  const txt = ((c && c.category) || '') + ' ' + ((c && c.info) || '');
+  for (const m of SECTOR_ANGLE_MAP) if (m.match.test(txt)) return m.angles;
+  return SAFE_ANGLES;
 }
 function subjectField() {
   return document.querySelector('#guidedQuestions .gq-field[data-key="subject"]');
@@ -2764,30 +2840,75 @@ function renderSuggestions(list) {
   });
 }
 
-// Idées « Affiche Pro » : chaque concept = titre + description + visuel de fond.
-// Un clic remplit les 3 champs (headline, desc, subject) d'un coup.
+// Remplit un champ du panneau guidé (headline / desc / subject).
 function setGuidedField(key, value) {
   const f = document.querySelector(`#guidedQuestions .gq-field[data-key="${key}"]`);
   if (f) f.value = value;
 }
-function renderProSuggestions(list) {
+
+// ÉTAPE 1 (Affiche Pro) : propositions de TEXTES (titre + contenu réel), sans design.
+function renderTextSuggestions(list) {
   const el = document.getElementById('aiSuggestions');
   el.innerHTML = '';
-  list.forEach(([head, desc, visual]) => {
+  list.forEach(([head, body]) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ai-chip';
-    b.innerHTML = `<b>${esc(head)}</b>${desc ? ' — ' + esc(desc) : ''}<br><small style="color:var(--muted)">🎨 ${esc(visual)}</small>`;
+    b.innerHTML = `<b>${esc(head)}</b><br><small>${esc(body)}</small>`;
     b.onclick = () => {
       setGuidedField('headline', head);
-      setGuidedField('desc', desc);
-      setGuidedField('subject', visual);
-      const sf = subjectField();
-      if (sf) sf.focus();
+      setGuidedField('desc', body);
+      const statusEl = document.getElementById('aiStatus');
+      statusEl.textContent = '✅ Texte appliqué — clique « 🎨 2 · Idées visuelles » pour le fond.';
+      statusEl.className = 'ai-status';
     };
     el.appendChild(b);
   });
 }
+document.getElementById('aiTexts').onclick = async () => {
+  if (!guidedRecipe || !guidedRecipe.proLayers) return;
+  const statusEl = document.getElementById('aiStatus');
+  const btn = document.getElementById('aiTexts');
+  btn.disabled = true;
+  document.getElementById('aiSuggestions').innerHTML = '';
+  statusEl.className = 'ai-status';
+  statusEl.innerHTML = '<span class="spinner"></span>Rédaction des textes…';
+  try {
+    const c = activeCompany();
+    const cat = c && c.category ? `, secteur : ${c.category}` : '';
+    const inf = c && c.info ? `, infos : ${c.info}` : '';
+    const subjectNow = (subjectField() && subjectField().value.trim()) || '';
+    const SYS =
+      "Tu es concepteur-rédacteur senior (copywriter). Tu écris les textes d'affiches : un TITRE court et percutant + le TEXTE réel de l'affiche. " +
+      "RÈGLE D'OR : affiche éducative/informative => 3 à 4 points CONCRETS, utiles et exacts qui apprennent quelque chose (avantages, chiffres, conseils) ; " +
+      "promotion => offre précise + appel à l'action ; événement => date/lieu/infos. Jamais de placeholder ni de blabla marketing creux. Aucune description visuelle.";
+    const userText =
+      `Marque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${inf}.` +
+      (subjectNow ? `\nSujet de l'affiche (priorité absolue) : ${subjectNow}.` : '\nSujet : à déduire du secteur.') +
+      `\nLangue : ${LANG_LABEL[guidedLang() || 'fr']}.` +
+      (lastIdeaTitles.length ? `\nNe répète pas ces titres déjà proposés : ${lastIdeaTitles.join(' | ')}.` : '') +
+      `\n\nDonne exactement 5 propositions de textes d'affiche TRÈS différentes (angles d'accroche variés : question, chiffre, bénéfice, urgence, émotion).` +
+      `\nFormat STRICT — une ligne par proposition, 2 parties séparées par || :` +
+      `\nTITRE court || TEXTE de l'affiche (éducatif : 3-4 points séparés par « • » ; promo : offre + CTA).` +
+      `\nPas de numéro, pas de puce en début de ligne, pas d'introduction.`;
+    const text = (await window.api.aiChat({ model: AI_MODEL, messages: [{ role: 'system', content: SYS }, { role: 'user', content: userText }] })).text;
+    const parsed = text.split(/\r?\n/)
+      .map((l) => l.replace(/^\s*(\d+[.)]|[-*•])\s*/, '').trim())
+      .filter((l) => l.includes('||'))
+      .map((l) => l.split(/\s*\|\|\s*/).map((p) => p.replace(/^["“”']|["“”']$/g, '').trim()))
+      .filter((p) => p.length >= 2 && p[0] && p[1])
+      .slice(0, 6);
+    if (!parsed.length) throw new Error('Aucun texte reçu — réessaie.');
+    statusEl.textContent = 'Choisis un texte (il remplit le titre et le texte de l\'affiche) :';
+    renderTextSuggestions(parsed);
+    lastIdeaTitles = [...lastIdeaTitles, ...parsed.map((p) => p[0])].slice(-15);
+  } catch (e) {
+    statusEl.textContent = '❌ ' + e.message;
+    statusEl.className = 'ai-status error';
+  } finally {
+    btn.disabled = false;
+  }
+};
 
 document.getElementById('aiIdeas').onclick = async () => {
   if (!guidedRecipe) return;
@@ -2817,25 +2938,30 @@ document.getElementById('aiIdeas').onclick = async () => {
       } catch (_) {}
     }
     const isPro = !!guidedRecipe.proLayers;
-    const angles = pickAngles(5);
-    const SYS =
-      "Tu es à la fois directeur de création senior ET concepteur-rédacteur dans une agence primée. Tu produis des concepts d'affiches COMPLETS : un vrai titre, le VRAI TEXTE de l'affiche (jamais de placeholder), et une direction artistique précise. " +
-      "RÈGLE D'OR sur le texte : si l'affiche est ÉDUCATIVE ou informative, le texte contient de VRAIES informations utiles, concrètes et exactes qui apprennent quelque chose au lecteur (avantages, chiffres, conseils, étapes) — pas du vocabulaire marketing creux. " +
-      "Si l'affiche est promotionnelle : offre précise + appel à l'action. Si c'est un événement : date, lieu, infos pratiques. " +
-      "Tu exploites l'identité de marque (secteur, couleurs, logo) et tu respectes scrupuleusement la direction artistique imposée pour chaque concept.";
+    // Styles adaptés au secteur d'activité (plus de styles hors-sujet).
+    const angles = pickAngles(5, sectorAngles());
+    const headlineNow = isPro ? (document.querySelector('#guidedQuestions .gq-field[data-key="headline"]') || {}).value || '' : '';
+    const descNow = isPro ? (document.querySelector('#guidedQuestions .gq-field[data-key="desc"]') || {}).value || '' : '';
+    const SYS = isPro
+      ? "Tu es directeur artistique senior. Tu conçois des FONDS d'affiches (images sans aucun texte) au service d'un message donné. " +
+        "Chaque concept décrit précisément : sujet, cadrage/composition (avec zones dégagées pour le titre en haut et la barre de contact en bas), style, lumière, palette reprenant les couleurs de la marque, ambiance. " +
+        "Tu respectes scrupuleusement la direction artistique imposée pour chaque concept et tu restes crédible pour le secteur d'activité."
+      : "Tu es à la fois directeur de création senior ET concepteur-rédacteur dans une agence primée. Tu produis des concepts d'affiches COMPLETS : un vrai titre, le VRAI TEXTE de l'affiche (jamais de placeholder), et une direction artistique précise. " +
+        "RÈGLE D'OR sur le texte : affiche éducative => 3-4 points concrets et exacts ; promo => offre + appel à l'action ; événement => date/lieu/infos. " +
+        "Tu exploites l'identité de marque et tu respectes la direction artistique imposée pour chaque concept, en restant crédible pour le secteur.";
     const userText =
       `Objectif : ${guidedRecipe.title}.` +
       `\nMarque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${cols}${inf}.` +
       (subjectNow ? `\nDemande de l'utilisateur (à respecter en priorité) : ${subjectNow}.` : '') +
+      (isPro && (headlineNow || descNow) ? `\nLe fond doit SERVIR ce message déjà choisi — Titre : « ${headlineNow} »${descNow ? ` ; Texte : « ${descNow} »` : ''}.` : '') +
       (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
       `\nLangue du texte affiché : ${LANG_LABEL[guidedLang() || 'fr']}.` +
-      `\n\nDonne exactement 5 concepts d'affiche très différents, SPÉCIFIQUES à cette demande et ce secteur (jamais génériques).` +
+      `\n\nDonne exactement 5 concepts très différents, SPÉCIFIQUES à cette demande et ce secteur (jamais génériques).` +
       `\nDirections artistiques IMPOSÉES, une par concept et dans cet ordre : 1) ${angles[0]} ; 2) ${angles[1]} ; 3) ${angles[2]} ; 4) ${angles[3]} ; 5) ${angles[4]}.` +
       (lastIdeaTitles.length ? `\nINTERDIT de reproposer des concepts proches de ceux-ci (déjà montrés) : ${lastIdeaTitles.join(' | ')}.` : '') +
       (isPro
-        ? `\nFormat STRICT — exactement une ligne par concept, 3 parties séparées par || ainsi :` +
-          `\nTITRE court et percutant || TEXTE réel de l'affiche (éducatif : 3 à 4 points concrets séparés par « • » ; promo : offre + appel à l'action ; événement : date/lieu/infos) || VISUEL du fond UNIQUEMENT, sans aucun texte ni lettre : sujet précis, cadrage, style, lumière, palette reprenant les couleurs de la marque, ambiance (20 mots minimum).` +
-          `\nLa 3e partie ne doit JAMAIS mentionner de texte, mots ou typographie — c'est un fond d'image pur.`
+        ? `\nFormat STRICT — exactement une ligne par concept : la description du FOND uniquement, sans aucun texte ni lettre dans l'image (sujet précis, cadrage avec zone haute dégagée, style, lumière, palette de la marque, ambiance — 20 mots minimum).` +
+          `\nNe mentionne JAMAIS de texte, mots ou typographie — c'est un fond d'image pur.`
         : `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
           `\n"Titre percutant" — texte réel de l'affiche (éducatif : points concrets « • » ; promo : offre + CTA) — concept visuel précis (sujet + cadrage + style + lumière + palette de la marque).`) +
       `\nPas de numéro, pas de puce en début de ligne, pas d'introduction ni de conclusion.`;
@@ -2857,18 +2983,23 @@ document.getElementById('aiIdeas').onclick = async () => {
       .slice(0, 6);
     if (!ideas.length) throw new Error('Aucune idée reçue.');
     if (isPro) {
-      // Concepts complets : titre || texte || visuel -> un clic remplit les 3 champs
-      const parsed = ideas
-        .map((l) => l.split(/\s*\|\|\s*/).map((p) => p.replace(/^["“”']|["“”']$/g, '').trim()))
-        .filter((p) => p.length >= 3 && p[0] && p[2]);
-      if (!parsed.length) {
-        statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
-        renderSuggestions(ideas); // repli : format inattendu -> comportement classique
-      } else {
-        statusEl.textContent = 'Cliquez un concept : il remplit le titre, le texte et le visuel :';
-        renderProSuggestions(parsed);
-        lastIdeaTitles = [...lastIdeaTitles, ...parsed.map((p) => p[0])].slice(-15);
-      }
+      // Concepts visuels (un par style imposé) -> un clic remplit le champ « visuel de fond »
+      const el = document.getElementById('aiSuggestions');
+      el.innerHTML = '';
+      ideas.slice(0, 5).forEach((visual, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ai-chip';
+        b.innerHTML = `<b>🎨 ${esc(angles[i] || 'Concept ' + (i + 1))}</b><br><small>${esc(visual)}</small>`;
+        b.onclick = () => {
+          setGuidedField('subject', visual);
+          statusEl.textContent = '✅ Visuel appliqué — tu peux lancer la création.';
+          statusEl.className = 'ai-status';
+        };
+        el.appendChild(b);
+      });
+      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) :';
+      lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 50))].slice(-15);
     } else {
       statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
       renderSuggestions(ideas);
