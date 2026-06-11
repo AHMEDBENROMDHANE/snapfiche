@@ -59,6 +59,15 @@ const STYLES = {
     { id: 'aurora', name: 'Aurora / Gradient mesh', t: 'Smooth gradient mesh poster, dreamy aurora colors blending (pink, violet, teal), grainy noise texture overlay, soft glowing orbs, minimal centered typography, modern tech startup aesthetic, {SUBJECT}' },
     { id: 'product', name: 'Photo produit réaliste', t: 'Photorealistic product poster, {SUBJECT} on a seamless studio backdrop, professional softbox lighting, crisp reflections, shallow depth of field, commercial advertising photography, clean tagline space at top, premium look' },
     { id: 'memphis', name: 'Memphis / Pop coloré', t: 'Memphis design poster, playful 80s shapes, bold primary colors, squiggles, dots and zigzags, geometric confetti, fun energetic layout, {SUBJECT} with retro-pop styling, white background' },
+    // ---- Tendances 2026 ----
+    { id: 'neonnoir', name: '🆕 Neon-Noir (2026)', t: 'Neon-noir poster, dominant red and black palette with electric neon highlights, blurred streaked motion effects, oversized ultra-bold typography, {SUBJECT} emerging from darkness, cinematic tension, urban night atmosphere, dramatic rim lighting' },
+    { id: 'acidfade', name: '🆕 Acid Fade (2026)', t: 'Acid fade poster, high-saturation prismatic gradients, neon heat-map color blends melting into psychedelic liquid transitions, chrome accents, {SUBJECT} dissolving into iridescent waves, grainy texture, futuristic rave aesthetic' },
+    { id: 'sketch', name: '🆕 Fait main / Sketch (2026)', t: 'Hand-drawn sketch poster, authentic pencil and ink strokes, visible construction lines, doodles and handwritten annotations in margins, imperfect charming linework, {SUBJECT} sketched expressively, paper texture, human warmth, anti-digital aesthetic' },
+    { id: 'artnouveau', name: '🆕 Art Nouveau moderne (2026)', t: 'Modern Art Nouveau revival poster, organic flowing curved lines, botanical ornamental frames, elegant whiplash motifs blended with bold contemporary abstraction, {SUBJECT} embraced by floral linework, muted gold and deep jewel tones, decorative sophistication' },
+    { id: 'scrapbook', name: '🆕 Scrapbooking (2026)', t: 'Scrapbook style poster, layered paper textures, washi tape, stickers, polaroid frames, handwritten notes and doodles, torn edges, {SUBJECT} in a personal memory-board collage, cozy assumed imperfection, tactile and authentic' },
+    { id: 'liquidtype', name: '🆕 Typo liquide (2026)', t: 'Liquid typography poster, fluid melting letterforms that stretch and breathe, glossy chrome and gel-like type treatment, {SUBJECT} integrated with morphing characters, smooth organic motion frozen in time, vibrant gradient backdrop' },
+    { id: 'folk', name: '🆕 Folk art (2026)', t: 'Folk art poster, traditional hand-crafted patterns, stylized flowers, birds and animals, warm heritage palette, symmetrical naive composition, {SUBJECT} celebrated in timeless artisanal motifs, woodblock print texture, cultural warmth' },
+    { id: 'maximal', name: '🆕 Maximalisme chromatique (2026)', t: 'Chromatic maximalism poster, electric saturated clashing colors, dense layered patterns and shapes, energetic visual overload done with intention, {SUBJECT} at the vibrant epicenter, bold confidence, dopamine-inducing palette' },
   ],
   video: [
     { id: 'auto', name: 'Automatique (recommandé)' },
@@ -2709,6 +2718,13 @@ const IDEA_ANGLES = [
   'minimalisme éditorial premium', 'néon vibrant sur fond sombre', 'collage magazine rétro', 'dégradés aurora pastel',
   'humour décalé et complice', 'storytelling émotionnel intimiste', 'luxe sobre et minimal', 'pop colorée énergique',
   'futurisme chrome et iridescent', 'vaporwave nostalgique', 'naturel organique (bois, lin, végétal)', 'art déco géométrique doré',
+  // Tendances 2026
+  'neon-noir (rouge/noir, néons, flou de mouvement)', 'acid fade (dégradés prismatiques saturés, fluide psychédélique)',
+  'croquis fait main authentique (anti-perfection IA)', 'art nouveau moderne (lignes organiques + abstraction)',
+  'scrapbooking (papier, autocollants, notes manuscrites)', 'typographie liquide (lettres fondues chromées)',
+  'folk art (motifs artisanaux, fleurs, oiseaux)', 'maximalisme chromatique électrique',
+  'mixed media scanné et surtravaillé (textures denses)', 'duotone réactif haute énergie',
+  'grille technique avec timestamps et annotations', 'glass block (blocs de verre 3D)',
 ];
 let lastIdeaTitles = [];
 function pickAngles(n) {
