@@ -2396,7 +2396,7 @@ const RECIPES = [
     ask: [
       { key: 'subject', label: 'Quel visuel de fond ?', ph: 'Ex : burger gourmet sur table en bois, vapeur, éclairage dramatique, fond sombre' },
       { key: 'headline', label: "Titre de l'affiche (calque modifiable)", ph: 'Ex : SOLDES -50%' },
-      { key: 'desc', label: 'Description (calque modifiable — optionnel)', ph: 'Ex : Du 10 au 20 juin sur tout le magasin' },
+      { key: 'desc', label: "Texte de l'affiche (calque modifiable — infos, points éducatifs, offre…)", ph: 'Ex : Invisible au quotidien • Amovible pour manger • Résultats dès 6 mois', multiline: true },
     ],
     build: (a) =>
       `Visuel d'arrière-plan pour une affiche professionnelle. Sujet : ${a.subject}. ` +
@@ -2610,9 +2610,9 @@ function openRecipe(r) {
     wrap.className = 'gq';
     const label = document.createElement('label');
     label.textContent = a.label;
-    const useTextarea = a.key === 'subject';
+    const useTextarea = a.key === 'subject' || a.multiline;
     const field = document.createElement(useTextarea ? 'textarea' : 'input');
-    if (useTextarea) field.rows = 2;
+    if (useTextarea) field.rows = a.key === 'subject' ? 2 : 3;
     field.placeholder = a.ph || '';
     field.dataset.key = a.key;
     field.className = 'gq-field';
@@ -2685,6 +2685,23 @@ function resetGuidedRef() {
 
 // ---- Assistant IA (idées / rédaction) via kie.ai (Gemini Flash) ----
 const AI_MODEL = 'gemini-2.5-flash';
+
+// Variété des idées : directions artistiques tirées au sort à chaque clic,
+// + mémoire des concepts déjà proposés pour ne jamais se répéter.
+const IDEA_ANGLES = [
+  'minimalisme éditorial premium', 'macro photographie ultra détaillée', 'rendu 3D doux (clay render)',
+  'illustration flat moderne et colorée', 'photographie lifestyle authentique', 'typographie géante en vedette',
+  'infographie pédagogique élégante', 'comparatif avant / après', 'néon vibrant sur fond sombre',
+  'collage magazine rétro', 'dégradés aurora pastel', 'humour décalé et complice',
+  'storytelling émotionnel intimiste', 'luxe sobre et minimal', 'pop colorée énergique', 'schéma technique stylisé',
+];
+let lastIdeaTitles = [];
+function pickAngles(n) {
+  const pool = [...IDEA_ANGLES];
+  const out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  return out;
+}
 function subjectField() {
   return document.querySelector('#guidedQuestions .gq-field[data-key="subject"]');
 }
@@ -2769,25 +2786,28 @@ document.getElementById('aiIdeas').onclick = async () => {
       } catch (_) {}
     }
     const isPro = !!guidedRecipe.proLayers;
+    const angles = pickAngles(5);
     const SYS =
-      "Tu es directeur de création senior dans une agence de design primée. Tu génères des concepts d'affiches PRÉCIS, originaux et directement exploitables — jamais de banalités ni de descriptions vagues. " +
-      "Chaque concept combine une ACCROCHE percutante (vrai texte d'affiche) ET une description visuelle concrète : sujet, composition/cadrage, style artistique, lumière, palette. " +
-      "Tu exploites l'identité de marque (secteur, couleurs, logo) et tu varies RADICALEMENT les directions artistiques d'un concept à l'autre.";
+      "Tu es à la fois directeur de création senior ET concepteur-rédacteur dans une agence primée. Tu produis des concepts d'affiches COMPLETS : un vrai titre, le VRAI TEXTE de l'affiche (jamais de placeholder), et une direction artistique précise. " +
+      "RÈGLE D'OR sur le texte : si l'affiche est ÉDUCATIVE ou informative, le texte contient de VRAIES informations utiles, concrètes et exactes qui apprennent quelque chose au lecteur (avantages, chiffres, conseils, étapes) — pas du vocabulaire marketing creux. " +
+      "Si l'affiche est promotionnelle : offre précise + appel à l'action. Si c'est un événement : date, lieu, infos pratiques. " +
+      "Tu exploites l'identité de marque (secteur, couleurs, logo) et tu respectes scrupuleusement la direction artistique imposée pour chaque concept.";
     const userText =
       `Objectif : ${guidedRecipe.title}.` +
       `\nMarque : ${c ? '« ' + c.name + ' »' : '(non précisée)'}${cat}${cols}${inf}.` +
-      (subjectNow ? `\nDemande de l'utilisateur : ${subjectNow}.` : '') +
+      (subjectNow ? `\nDemande de l'utilisateur (à respecter en priorité) : ${subjectNow}.` : '') +
       (logoDataUrl ? `\nLe logo est joint : tiens compte de son style et de ses couleurs.` : '') +
       `\nLangue du texte affiché : ${LANG_LABEL[guidedLang() || 'fr']}.` +
-      `\n\nDonne 5 concepts d'affiche RADICALEMENT différents et mémorables, SPÉCIFIQUES à ce secteur (pas génériques).` +
+      `\n\nDonne exactement 5 concepts d'affiche très différents, SPÉCIFIQUES à cette demande et ce secteur (jamais génériques).` +
+      `\nDirections artistiques IMPOSÉES, une par concept et dans cet ordre : 1) ${angles[0]} ; 2) ${angles[1]} ; 3) ${angles[2]} ; 4) ${angles[3]} ; 5) ${angles[4]}.` +
+      (lastIdeaTitles.length ? `\nINTERDIT de reproposer des concepts proches de ceux-ci (déjà montrés) : ${lastIdeaTitles.join(' | ')}.` : '') +
       (isPro
-        ? `\nFormat STRICT — exactement une ligne par concept, avec les 3 parties séparées par || ainsi :` +
-          `\nACCROCHE courte et percutante (titre de l'affiche) || Description courte pour l'affiche (date, offre, sous-titre… 1 phrase max) || Description visuelle du FOND UNIQUEMENT, sans aucun texte ni lettre (scène, composition, style, lumière, palette).` +
+        ? `\nFormat STRICT — exactement une ligne par concept, 3 parties séparées par || ainsi :` +
+          `\nTITRE court et percutant || TEXTE réel de l'affiche (éducatif : 3 à 4 points concrets séparés par « • » ; promo : offre + appel à l'action ; événement : date/lieu/infos) || VISUEL du fond UNIQUEMENT, sans aucun texte ni lettre : sujet précis, cadrage, style, lumière, palette reprenant les couleurs de la marque, ambiance (20 mots minimum).` +
           `\nLa 3e partie ne doit JAMAIS mentionner de texte, mots ou typographie — c'est un fond d'image pur.`
         : `\nFormat STRICT — exactement une ligne par concept, ainsi :` +
-          `\n"Accroche courte et percutante" — concept visuel précis (sujet + composition + style + lumière + palette).`) +
-      `\nVarie les directions (minimaliste éditorial, rendu 3D, photo cinématographique, typographie géante, collage, néon, rétro, dégradé aurora...).` +
-      `\nPas de numéro, pas de puce, pas d'introduction ni de conclusion.`;
+          `\n"Titre percutant" — texte réel de l'affiche (éducatif : points concrets « • » ; promo : offre + CTA) — concept visuel précis (sujet + cadrage + style + lumière + palette de la marque).`) +
+      `\nPas de numéro, pas de puce en début de ligne, pas d'introduction ni de conclusion.`;
     // Essai avec le logo (vision) ; repli en texte seul si l'image échoue.
     let text;
     try {
@@ -2806,7 +2826,7 @@ document.getElementById('aiIdeas').onclick = async () => {
       .slice(0, 6);
     if (!ideas.length) throw new Error('Aucune idée reçue.');
     if (isPro) {
-      // Concepts complets : titre || description || visuel -> un clic remplit les 3 champs
+      // Concepts complets : titre || texte || visuel -> un clic remplit les 3 champs
       const parsed = ideas
         .map((l) => l.split(/\s*\|\|\s*/).map((p) => p.replace(/^["“”']|["“”']$/g, '').trim()))
         .filter((p) => p.length >= 3 && p[0] && p[2]);
@@ -2814,12 +2834,14 @@ document.getElementById('aiIdeas').onclick = async () => {
         statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
         renderSuggestions(ideas); // repli : format inattendu -> comportement classique
       } else {
-        statusEl.textContent = 'Cliquez un concept : il remplit le titre, la description et le visuel :';
+        statusEl.textContent = 'Cliquez un concept : il remplit le titre, le texte et le visuel :';
         renderProSuggestions(parsed);
+        lastIdeaTitles = [...lastIdeaTitles, ...parsed.map((p) => p[0])].slice(-15);
       }
     } else {
       statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
       renderSuggestions(ideas);
+      lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 60))].slice(-15);
     }
   } catch (e) {
     statusEl.textContent = '❌ ' + e.message;
