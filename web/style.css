@@ -21,9 +21,10 @@
   --shadow-sm: 0 1px 3px rgba(23, 19, 31, .06), 0 1px 2px rgba(23, 19, 31, .04);
   --shadow-md: 0 6px 18px rgba(109, 40, 217, .10), 0 2px 6px rgba(23, 19, 31, .05);
   --shadow-lg: 0 16px 40px rgba(109, 40, 217, .16), 0 4px 12px rgba(23, 19, 31, .06);
-  --r-sm: 9px; --r-md: 12px; --r-lg: 16px;
+  --r-sm: 11px; --r-md: 16px; --r-lg: 22px;
   --t-fast: .16s cubic-bezier(.4, 0, .2, 1);
   --t-med: .28s cubic-bezier(.4, 0, .2, 1);
+  --glass: rgba(255, 255, 255, .72);
 }
 
 /* ---- Animations ---- */
@@ -41,20 +42,30 @@
 
 body {
   font-family: 'Inter', -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  background: var(--bg);
+  /* Fond mesh « aurora » tendance : taches de couleur diffuses sur blanc mauve. */
+  background:
+    radial-gradient(820px 520px at 8% -8%, rgba(139, 92, 246, .10), transparent 60%),
+    radial-gradient(680px 460px at 102% 6%, rgba(217, 70, 239, .07), transparent 55%),
+    radial-gradient(720px 500px at 50% 116%, rgba(99, 102, 241, .08), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   display: flex;
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
-/* Typographie : Plus Jakarta Sans pour les titres, Inter pour le texte. */
+/* Typographie tendance : Bricolage Grotesque (titres expressifs), Inter (texte). */
 h1, h2, h3, h4, .brand-name, .mobile-brand, .auth-box h2, .tc-title,
-.stat-card .sc-val, .pack-price, .balance-val {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+.stat-card .sc-val, .pack-price, .balance-val, .guided-card h4, .wiz-step h3 {
+  font-family: 'Bricolage Grotesque', 'Plus Jakarta Sans', 'Inter', sans-serif;
+  letter-spacing: -0.02em;
 }
-h1 { font-weight: 800; }
+h1 { font-weight: 800; letter-spacing: -0.035em; }
 h2, h3 { font-weight: 700; }
+/* Accents (nav, labels, badges, prix) en Space Grotesk pour le côté « techy » tendance. */
+.nav-btn span, .gtag, .badge, .pack-badge, .balance-label, .sc-label, .chart-day,
+.tool-group strong, .req, .wiz-tag, .offer-state { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 button, input, select, textarea { font-family: inherit; }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
@@ -74,9 +85,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   border-radius: 20px; padding: 38px 34px; box-shadow: var(--shadow-lg);
   animation: popIn var(--t-med) both;
 }
-.auth-logo { height: 64px; object-fit: contain; margin: 0 auto 4px; }
-.auth-box h2 { font-size: 24px; font-weight: 700; letter-spacing: -.2px; }
-.auth-box h2 b { color: var(--accent-2); font-weight: 800; }
+.auth-logo { height: 68px; object-fit: contain; margin: 0 auto 4px; }
+.auth-box h2 { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+.auth-box h2 b { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
 .auth-box p { color: var(--muted); font-size: 14px; }
 .auth-box input[type="password"], .auth-box input[type="email"] {
   background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
@@ -91,9 +102,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .auth-remember { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; justify-content: center; }
 .auth-error { color: var(--danger); font-size: 13px; min-height: 18px; }
 
-/* ============ Sidebar ============ */
+/* ============ Sidebar (glass tendance) ============ */
 .sidebar {
-  width: 236px; background: var(--panel); border-right: 1px solid var(--border);
+  width: 236px; background: var(--glass); backdrop-filter: blur(16px) saturate(1.4);
+  border-right: 1px solid var(--border);
   display: flex; flex-direction: column; padding: 18px 14px; gap: 8px;
 }
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 2px 6px; }
@@ -261,7 +273,7 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .content { flex: 1; overflow-y: auto; padding: 32px 40px; }
 .view { display: none; }
 .view.active { display: block; animation: fadeUp var(--t-med) both; }
-h1 { font-size: 26px; margin-bottom: 4px; letter-spacing: -.3px; }
+h1 { font-size: 34px; margin-bottom: 6px; line-height: 1.08; }
 .subtitle { color: var(--muted); margin-bottom: 20px; }
 
 .prompt {
