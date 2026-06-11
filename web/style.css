@@ -252,6 +252,15 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .ai-suggestions { display: flex; flex-direction: column; gap: 6px; }
 .ai-chip { text-align: left; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: var(--r-sm); cursor: pointer; font-size: 13px; line-height: 1.4; transition: border-color var(--t-fast), background var(--t-fast); animation: fadeUp var(--t-med) both; }
 .ai-chip:hover { border-color: var(--accent); background: var(--accent-soft); }
+/* Idées visuelles riches : actions + aperçu généré à la demande */
+.ai-chip-rich { cursor: default; }
+.ai-chip-rich:hover { background: var(--panel-2); }
+.ai-chip-rich small { color: var(--muted); }
+.chip-actions { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+.chip-use { border-color: var(--accent) !important; color: var(--accent-2) !important; font-weight: 600; }
+.chip-img { margin-top: 8px; }
+.chip-img:empty { display: none; }
+.chip-preview { width: 100%; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow-md); display: block; animation: popIn var(--t-med) both; }
 .ref-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ref-row select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
 .guided-card h4 { font-size: 16px; margin: 8px 0 4px; }

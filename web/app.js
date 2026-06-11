@@ -2846,6 +2846,44 @@ function setGuidedField(key, value) {
   if (f) f.value = value;
 }
 
+// Génère une image d'EXEMPLE pour une idée visuelle (modèle éco, à la demande).
+async function generateIdeaPreview(btn, chip, visual) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Génération…';
+  try {
+    const c = activeCompany();
+    const cols = c && c.colors && c.colors.length ? ` Couleurs de marque : ${c.colors.join(', ')}.` : '';
+    const prompt = `${visual}.${cols} Image d'arrière-plan d'affiche — INTERDICTION ABSOLUE de texte, lettres, chiffres ou logo dans l'image.`;
+    // Seedream n'accepte que certains ratios -> on mappe vers le plus proche supporté.
+    const SEEDREAM_AR = ['1:1', '3:4', '4:3', '16:9', '9:16', '21:9'];
+    let ar = (guidedRecipe && guidedRecipe.params && guidedRecipe.params.aspect_ratio) || '4:5';
+    if (!SEEDREAM_AR.includes(ar)) ar = { '4:5': '3:4', '5:4': '4:3', '2:3': '3:4', '3:2': '4:3' }[ar] || '1:1';
+    const { taskId } = await window.api.generate({
+      api: 'jobs',
+      model: 'seedream/4.5-text-to-image',
+      input: { prompt, aspect_ratio: ar, quality: 'basic' },
+    });
+    // Polling léger (sans toucher au statut global du panneau)
+    let url = null;
+    for (let t = 0; t < 50 && !url; t++) {
+      await new Promise((s) => setTimeout(s, 2500));
+      const r = await window.api.poll({ api: 'jobs', taskId });
+      if (r.error) throw new Error(r.error);
+      if (r.done) url = r.resultUrl;
+    }
+    if (!url) throw new Error('Délai dépassé — réessaie.');
+    chip.querySelector('.chip-img').innerHTML =
+      `<img class="chip-preview" src="${esc(url)}" alt="Aperçu du style" loading="lazy" />` +
+      `<div class="hint">Aperçu indicatif (qualité éco) — la création finale sera en haute qualité.</div>`;
+    btn.textContent = '✓ Aperçu généré';
+    refreshBalance();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '👁 Réessayer';
+    chip.querySelector('.chip-img').innerHTML = `<div class="hint" style="color:var(--danger)">❌ ${esc(e.message)}</div>`;
+  }
+}
+
 // ÉTAPE 1 (Affiche Pro) : propositions de TEXTES (titre + contenu réel), sans design.
 function renderTextSuggestions(list) {
   const el = document.getElementById('aiSuggestions');
@@ -2983,22 +3021,27 @@ document.getElementById('aiIdeas').onclick = async () => {
       .slice(0, 6);
     if (!ideas.length) throw new Error('Aucune idée reçue.');
     if (isPro) {
-      // Concepts visuels (un par style imposé) -> un clic remplit le champ « visuel de fond »
+      // Concepts visuels (un par style imposé) : « Utiliser » remplit le champ visuel,
+      // « 👁 Aperçu » génère une vraie image d'exemple (modèle éco) à la demande.
       const el = document.getElementById('aiSuggestions');
       el.innerHTML = '';
       ideas.slice(0, 5).forEach((visual, i) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'ai-chip';
-        b.innerHTML = `<b>🎨 ${esc(angles[i] || 'Concept ' + (i + 1))}</b><br><small>${esc(visual)}</small>`;
-        b.onclick = () => {
+        const d = document.createElement('div');
+        d.className = 'ai-chip ai-chip-rich';
+        d.innerHTML =
+          `<b>🎨 ${esc(angles[i] || 'Concept ' + (i + 1))}</b><br><small>${esc(visual)}</small>` +
+          `<div class="chip-actions"><button type="button" class="mini chip-use">✓ Utiliser ce visuel</button>` +
+          `<button type="button" class="mini chip-prev">👁 Aperçu (~7 cr)</button></div>` +
+          `<div class="chip-img"></div>`;
+        d.querySelector('.chip-use').onclick = () => {
           setGuidedField('subject', visual);
           statusEl.textContent = '✅ Visuel appliqué — tu peux lancer la création.';
           statusEl.className = 'ai-status';
         };
-        el.appendChild(b);
+        d.querySelector('.chip-prev').onclick = (e) => generateIdeaPreview(e.target, d, visual);
+        el.appendChild(d);
       });
-      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) :';
+      statusEl.textContent = 'Choisis le style du fond (adapté à ton secteur) — 👁 pour voir un exemple réel :';
       lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 50))].slice(-15);
     } else {
       statusEl.textContent = 'Cliquez une idée pour l\'utiliser :';
