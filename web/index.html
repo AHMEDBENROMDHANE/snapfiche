@@ -166,7 +166,8 @@
             </div>
             <div id="guidedRefThumbs" class="thumbs"></div>
           </div>
-          <div class="gq">
+          <!-- Styles auto désactivés pour le moment (sélecteur conservé masqué) -->
+          <div class="gq hidden" id="gqStyleAuto">
             <label>Style visuel</label>
             <select id="guidedStyle"></select>
           </div>
@@ -196,6 +197,10 @@
           <label class="brand-toggle" id="gqLogoToggle"><input type="checkbox" id="guidedUseLogo" checked /> Intégrer le logo dans l'image (placé par l'IA)</label>
           <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" /> Intégrer les infos & réseaux sociaux dans l'image</label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
+          <div class="gq" id="gqStyleLib">
+            <label>Mes styles gardés <span class="brand-hint">(clique pour réutiliser un style — image + directive)</span></label>
+            <div id="styleLibStrip" class="style-strip"></div>
+          </div>
           <div id="guidedSummary" class="guided-summary"></div>
           <div class="row">
             <button id="guidedGenerate" class="primary">Lancer la création</button>

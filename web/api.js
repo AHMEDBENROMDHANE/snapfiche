@@ -191,6 +191,26 @@
       return { ok: true };
     },
 
+    // ---- Styles gardés (image + directive, resélectionnables visuellement) ----
+    styleSave: async (s) => {
+      const u = await uid();
+      const { data, error } = await window.SB.from('user_styles')
+        .insert({ user_id: u, name: s.name || 'Style', image_url: s.imageUrl, directive: s.directive || '' })
+        .select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    styleList: async () => {
+      const { data, error } = await window.SB.from('user_styles').select('*').order('created_at', { ascending: false }).limit(24);
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    styleDelete: async (id) => {
+      const { error } = await window.SB.from('user_styles').delete().eq('id', id);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    },
+
     // ---- Médias ----
     // Sur le web, les "fichiers" sont déjà des URLs publiques -> on les renvoie telles quelles.
     mediaDataUrl: async (x) => x,

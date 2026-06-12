@@ -1558,6 +1558,26 @@ function showImageResult(container, url, prompt, history, galleryId) {
   }
 
   actions.appendChild(saveBtn);
+  // Garder ce style : image + directive sauvegardées, resélectionnables dans le travail guidé
+  const styleBtn = document.createElement('button');
+  styleBtn.textContent = 'Garder ce style';
+  styleBtn.title = 'Sauvegarde ce rendu comme style réutilisable (image + directive)';
+  styleBtn.onclick = async () => {
+    const name = window.prompt('Nom du style :', (prompt || 'Mon style').split('\n')[0].slice(0, 30));
+    if (name === null) return;
+    styleBtn.disabled = true;
+    styleBtn.textContent = 'Sauvegarde…';
+    try {
+      await window.api.styleSave({ name: name.trim() || 'Style', imageUrl: url, directive: (prompt || '').slice(0, 500) });
+      _stylesCache = null; // force le rafraîchissement de la bibliothèque
+      styleBtn.textContent = '✓ Style gardé';
+    } catch (e) {
+      styleBtn.disabled = false;
+      styleBtn.textContent = 'Garder ce style';
+      alert('Échec : ' + e.message);
+    }
+  };
+  actions.appendChild(styleBtn);
   if (history.length) {
     const undoBtn = document.createElement('button');
     undoBtn.textContent = `↩ Annuler la modif (${history.length})`;
@@ -3051,6 +3071,71 @@ const RECIPES = [
 
 let guidedRecipe = null;
 let lastStyleUrl = null; // dernière création (image) — pour « garder le même style »
+// Cocher « garder le même style » fige la direction visuelle -> idées verrouillées + styles gardés désélectionnés.
+document.getElementById('guidedKeepStyle').addEventListener('change', () => {
+  if (document.getElementById('guidedKeepStyle').checked && selectedStyleRef) {
+    selectedStyleRef = null;
+    renderStyleLibrary();
+  }
+  updateIdeasAccess();
+});
+let selectedStyleRef = null; // style gardé sélectionné dans la bibliothèque {id, image_url, directive, name}
+let _stylesCache = null;     // liste des styles gardés (rafraîchie à l'ouverture du panneau)
+
+// « Garder le même style » ou style gardé sélectionné -> les idées visuelles n'ont plus de sens
+// (la direction visuelle vient de l'image de référence) : on verrouille le bouton.
+function updateIdeasAccess() {
+  const btn = document.getElementById('aiIdeas');
+  if (!btn) return;
+  const keep = document.getElementById('guidedKeepStyle');
+  const locked = (keep && keep.checked) || !!selectedStyleRef;
+  btn.disabled = locked;
+  btn.title = locked ? 'Style imposé par l\'image de référence — décoche « Garder le même style » ou désélectionne le style pour proposer des idées.' : '';
+}
+
+// Bibliothèque des styles gardés : vignettes cliquables (sélection unique) + suppression.
+async function renderStyleLibrary(force) {
+  const strip = document.getElementById('styleLibStrip');
+  if (!strip) return;
+  try {
+    if (force || !_stylesCache) _stylesCache = await window.api.styleList();
+  } catch (_) { _stylesCache = []; }
+  strip.innerHTML = '';
+  if (!_stylesCache.length) {
+    strip.innerHTML = '<span class="hint">Aucun style gardé — après une création réussie, clique « Garder ce style ».</span>';
+    return;
+  }
+  for (const s of _stylesCache) {
+    const d = document.createElement('div');
+    d.className = 'style-thumb' + (selectedStyleRef && selectedStyleRef.id === s.id ? ' selected' : '');
+    d.title = s.name + (s.directive ? ' — ' + s.directive.slice(0, 80) : '');
+    d.innerHTML = `<img src="${esc(s.image_url)}" loading="lazy" alt="${esc(s.name)}" /><span class="st-name">${esc(s.name)}</span><button type="button" class="st-del" aria-label="Supprimer">✕</button>`;
+    d.onclick = (e) => {
+      if (e.target.classList.contains('st-del')) return;
+      if (selectedStyleRef && selectedStyleRef.id === s.id) {
+        selectedStyleRef = null; // re-clic = désélection
+      } else {
+        selectedStyleRef = s;
+        const keep = document.getElementById('guidedKeepStyle');
+        if (keep) keep.checked = false; // exclusif avec « dernière création »
+      }
+      renderStyleLibrary();
+      updateIdeasAccess();
+    };
+    d.querySelector('.st-del').onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Supprimer le style « ${s.name} » ?`)) return;
+      try {
+        await window.api.styleDelete(s.id);
+        _stylesCache = _stylesCache.filter((x) => x.id !== s.id);
+        if (selectedStyleRef && selectedStyleRef.id === s.id) selectedStyleRef = null;
+        renderStyleLibrary();
+        updateIdeasAccess();
+      } catch (err) { alert('Échec : ' + err.message); }
+    };
+    strip.appendChild(d);
+  }
+}
 
 // Direction artistique haut de gamme ajoutée à chaque création guidée (inspiration studios créatifs / loveart).
 const ART_DIRECTION =
@@ -3243,6 +3328,12 @@ function openRecipe(r, opts) {
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
+  // Styles gardés : visibles pour les recettes image ; sélection remise à zéro à l'ouverture.
+  const gqLib = document.getElementById('gqStyleLib');
+  if (gqLib) gqLib.classList.toggle('hidden', r.kind !== 'image');
+  selectedStyleRef = null;
+  renderStyleLibrary(true);
+  updateIdeasAccess();
   document.getElementById('guidedStatus').textContent = '';
   document.getElementById('guidedResult').innerHTML = '<div class="result-placeholder">Ta création apparaîtra ici</div>';
   document.getElementById('aiStatus').textContent = '';
@@ -3781,8 +3872,18 @@ document.getElementById('guidedGenerate').onclick = async () => {
       }
     }
 
-    // 2) Garder le même style que la dernière création
-    if (eff.kind === 'image' && lastStyleUrl && document.getElementById('guidedKeepStyle').checked) {
+    // 2) Style de référence : style gardé sélectionné OU dernière création
+    if (eff.kind === 'image' && selectedStyleRef) {
+      statusEl.innerHTML = '<span class="spinner"></span>Préparation du style gardé…';
+      let styleUrl = selectedStyleRef.image_url;
+      try {
+        const up = await window.api.uploadFile({ remoteUrl: styleUrl, fileName: 'style-ref.png' });
+        if (up && up.url) styleUrl = up.url; // ré-hébergé chez kie (URL fraîche)
+      } catch (_) {}
+      images.push(styleUrl);
+      prompt += " Garde la même direction artistique que l'image de style fournie (même palette, même ambiance, même traitement graphique)."
+        + (selectedStyleRef.directive ? ` Style de référence : ${selectedStyleRef.directive.slice(0, 400)}.` : '');
+    } else if (eff.kind === 'image' && lastStyleUrl && document.getElementById('guidedKeepStyle').checked) {
       images.push(lastStyleUrl);
       prompt += " Garde la même direction artistique que l'image de style fournie (même palette, même ambiance, même traitement graphique).";
     }
