@@ -569,8 +569,6 @@ const FEATURE_DEFS = [
   { key: 'signup', label: 'Inscriptions', desc: 'Création de nouveaux comptes' },
   { key: 'video', label: 'Génération vidéo', desc: 'Vue Vidéo + recettes vidéo guidées' },
   { key: 'image_edit', label: 'Modification IA', desc: 'Retouche des images par instruction' },
-  { key: 'editor', label: 'Éditeur d\'affiche', desc: 'Calques, textes, designs sauvegardés' },
-  { key: 'poster_pro', label: 'Affiche Pro', desc: 'Visuel IA + texte en calques' },
   { key: 'ai_assistant', label: 'Assistant IA', desc: 'Idées et amélioration de texte' },
 ];
 function renderFeatureFlags(features) {
@@ -1560,33 +1558,6 @@ function showImageResult(container, url, prompt, history, galleryId) {
   }
 
   actions.appendChild(saveBtn);
-  if (featureOn('editor')) {
-    const editBtn = document.createElement('button');
-    editBtn.textContent = "Ouvrir dans l'éditeur";
-    editBtn.onclick = () => loadBackgroundFromUrl(url);
-    actions.appendChild(editBtn);
-  }
-  // Application du cadre de marque (logo + réseaux) directement sur l'image
-  if (activeCompany()) {
-    const frameBtn = document.createElement('button');
-    frameBtn.textContent = '+ Mon cadre';
-    frameBtn.title = 'Ajoute ton cadre de marque (logo + réseaux) sur cette image';
-    frameBtn.onclick = async () => {
-      frameBtn.disabled = true;
-      frameBtn.textContent = 'Application…';
-      try {
-        const framed = await applyBrandFrame(url);
-        const newHistory = [...history, url];
-        if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: framed, history: newHistory }); } catch (_) {} }
-        showImageResult(container, framed, prompt, newHistory, galleryId || null);
-      } catch (e) {
-        frameBtn.disabled = false;
-        frameBtn.textContent = '+ Mon cadre';
-        alert('Échec : ' + e.message);
-      }
-    };
-    actions.appendChild(frameBtn);
-  }
   if (history.length) {
     const undoBtn = document.createElement('button');
     undoBtn.textContent = `↩ Annuler la modif (${history.length})`;
@@ -2959,12 +2930,6 @@ async function loadGallery() {
         };
         actions.appendChild(aiBtn);
       }
-      if (featureOn('editor')) {
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Éditer';
-        editBtn.onclick = () => loadBackgroundFromUrl(item.url);
-        actions.appendChild(editBtn);
-      }
     }
 
     const delBtn = document.createElement('button');
@@ -3193,12 +3158,8 @@ function buildFrameCard(hasFrame) {
 function renderGuidedCards() {
   const grid = document.getElementById('guidedCards');
   grid.innerHTML = '';
-  const c = activeCompany();
-  const hasFrame = !!(c && c.frame && c.frame.length);
-  // Étape 1 du workflow : créer son cadre (mise en avant tant qu'il n'existe pas)
-  if (c && !hasFrame) grid.appendChild(buildFrameCard(false));
   RECIPES.filter((r) => {
-    if (r.proLayers && !featureOn('poster_pro')) return false;
+    if (r.proLayers) return false; // édition manuelle retirée
     if (r.kind === 'video' && !featureOn('video')) return false;
     return true;
   }).forEach((r) => {
@@ -3206,25 +3167,8 @@ function renderGuidedCards() {
     card.className = 'guided-card';
     card.innerHTML = `<div class="gicon">${svgIcon(r.icon, 'ico-card')}</div><h4>${r.title}</h4><p>${r.desc}</p><span class="gtag">${r.kind === 'video' ? 'Vidéo' : 'Image'} · réglages auto</span>`;
     card.onclick = () => openRecipe(r);
-    // Choix par carte : appliquer le cadre de marque ou laisser l'IA tout dessiner
-    if (r.kind === 'image' && !r.proLayers && c) {
-      const acts = document.createElement('div');
-      acts.className = 'card-actions';
-      const b1 = document.createElement('button');
-      b1.type = 'button'; b1.className = 'mini card-act card-act-frame';
-      b1.textContent = '+ Mon cadre';
-      b1.onclick = (e) => { e.stopPropagation(); openRecipe(r, { frame: true }); };
-      const b2 = document.createElement('button');
-      b2.type = 'button'; b2.className = 'mini card-act';
-      b2.textContent = "L'IA gère";
-      b2.onclick = (e) => { e.stopPropagation(); openRecipe(r, { frame: false }); };
-      acts.append(b1, b2);
-      card.appendChild(acts);
-    }
     grid.appendChild(card);
   });
-  // Cadre déjà créé : la carte de gestion reste accessible en fin de liste
-  if (c && hasFrame) grid.appendChild(buildFrameCard(true));
 }
 
 function openRecipe(r, opts) {
@@ -3789,12 +3733,9 @@ document.getElementById('guidedGenerate').onclick = async () => {
   const style = STYLES[r.kind].find((s) => s.id === styleSel.value);
   const useStyle = style && style.t && !r.needsImage && !r.proLayers; // prompts dédiés conservés
   // Affiche Pro : pas de directive de langue ni de coordonnées dans l'image (tout est en calques).
-  // Cadre de marque appliqué après génération ? -> logo + contacts viennent du cadre, pas de l'IA.
-  const frameOn = r.kind === 'image' && !r.proLayers && document.getElementById('guidedApplyFrame').checked && !!activeCompany();
   let prompt = (useStyle ? buildStylePrompt(style, answers.subject) : r.build(answers) + ART_DIRECTION) + (r.proLayers ? '' : langDirective(guidedLang()));
   if (document.getElementById('guidedUseBrand').checked && activeCompany()) prompt += brandSuffix(activeCompany());
-  if (!r.proLayers && !frameOn && document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
-  if (frameOn) prompt += " Laisse la zone tout en bas de l'image relativement calme et dégagée (une barre de contact y sera superposée).";
+  if (!r.proLayers && document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
 
   const eff = effectiveRecipe(r, document.getElementById('guidedQuality').value);
   const btn = document.getElementById('guidedGenerate');
@@ -3835,7 +3776,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
     // 3) Logo : selon le mode choisi (placé par l'IA / incrusté exact / aucun)
     // Affiche Pro : calque dans l'éditeur. Cadre actif : le logo vient du cadre.
     const logoMode = document.getElementById('guidedLogoMode').value;
-    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers && !frameOn
+    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers
       && document.getElementById('guidedUseLogo').checked; // case « Intégrer le logo »
     const overlayLogoAfter = hasLogo && logoMode === 'exact';
     if (hasLogo && logoMode === 'ai') {
@@ -3867,16 +3808,6 @@ document.getElementById('guidedGenerate').onclick = async () => {
           statusEl.textContent = '✓ Terminé (logo ajouté).';
         } catch (_) {
           statusEl.textContent = '✓ Terminé (logo non ajouté).';
-        }
-      }
-      // Cadre de marque : logo + réseaux superposés directement sur l'affiche
-      if (frameOn) {
-        statusEl.innerHTML = '<span class="spinner"></span>Application du cadre de marque…';
-        try {
-          finalUrl = await applyBrandFrame(finalUrl);
-          statusEl.textContent = '✓ Terminé (cadre de marque appliqué).';
-        } catch (_) {
-          statusEl.textContent = '✓ Terminé (cadre non appliqué — vérifie ton cadre dans l\'éditeur).';
         }
       }
       showImageResult(resultEl, finalUrl, answers.subject);
