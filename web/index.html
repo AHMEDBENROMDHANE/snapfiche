@@ -197,7 +197,8 @@
               </select>
             </div>
           </div>
-          <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" checked /> Afficher les coordonnées sur l'affiche (tél, email, réseaux)</label>
+          <label class="brand-toggle" id="gqFrame"><input type="checkbox" id="guidedApplyFrame" checked /> Appliquer mon cadre de marque (logo + réseaux en bordure)</label>
+          <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" /> Afficher aussi les coordonnées dans l'image (dessinées par l'IA)</label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
           <div id="guidedSummary" class="guided-summary"></div>
           <div class="row">
@@ -263,7 +264,6 @@
             <select id="imgRes">
               <option value="1K" selected>1K</option>
               <option value="2K">2K</option>
-              <option value="4K">4K</option>
             </select>
           </label>
           <button id="imgGenerate" class="primary">Générer l'image</button>
@@ -366,6 +366,12 @@
                 <button id="designNewBtn">✚ Nouvelle</button>
               </div>
               <p class="hint" id="designStatus">Fond + calques sauvegardés — rééditable à tout moment.</p>
+            </div>
+            <div class="tool-group">
+              <strong>Cadre de marque</strong>
+              <button id="frameEditBtn">Modifier le cadre</button>
+              <button id="frameSaveBtn" class="primary">Enregistrer le cadre</button>
+              <p class="hint">Logo + réseaux sociaux en bordure — défini une fois, appliqué d'un clic sur toutes tes affiches.</p>
             </div>
             <div class="tool-group" id="editorBrandGroup">
               <strong>Charte entreprise</strong>

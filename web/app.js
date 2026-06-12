@@ -1563,6 +1563,27 @@ function showImageResult(container, url, prompt, history, galleryId) {
     editBtn.onclick = () => loadBackgroundFromUrl(url);
     actions.appendChild(editBtn);
   }
+  // Application du cadre de marque (logo + réseaux) directement sur l'image
+  if (activeCompany()) {
+    const frameBtn = document.createElement('button');
+    frameBtn.textContent = '+ Mon cadre';
+    frameBtn.title = 'Ajoute ton cadre de marque (logo + réseaux) sur cette image';
+    frameBtn.onclick = async () => {
+      frameBtn.disabled = true;
+      frameBtn.textContent = 'Application…';
+      try {
+        const framed = await applyBrandFrame(url);
+        const newHistory = [...history, url];
+        if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: framed, history: newHistory }); } catch (_) {} }
+        showImageResult(container, framed, prompt, newHistory, galleryId || null);
+      } catch (e) {
+        frameBtn.disabled = false;
+        frameBtn.textContent = '+ Mon cadre';
+        alert('Échec : ' + e.message);
+      }
+    };
+    actions.appendChild(frameBtn);
+  }
   if (history.length) {
     const undoBtn = document.createElement('button');
     undoBtn.textContent = `↩ Annuler la modif (${history.length})`;
@@ -1790,20 +1811,55 @@ let selected = null;
 let drag = null;
 
 // Découpe un texte en lignes : sauts manuels (\n) + retour auto si maxW est défini.
-function textLines(l) {
-  ctx.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
+function textLines(l, g) {
+  g = g || ctx;
+  g.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
   const out = [];
   for (const raw of String(l.text).split('\n')) {
     if (!l.maxW) { out.push(raw); continue; }
     let line = '';
     for (const word of raw.split(' ')) {
       const t = line ? line + ' ' + word : word;
-      if (ctx.measureText(t).width > l.maxW && line) { out.push(line); line = word; }
+      if (g.measureText(t).width > l.maxW && line) { out.push(line); line = word; }
       else line = t;
     }
     out.push(line);
   }
   return out;
+}
+
+// Dessine un calque sur n'importe quel contexte canvas (application du cadre de marque).
+function drawLayerOnto(g, l) {
+  if (l.type === 'rect') {
+    g.save(); g.fillStyle = l.color;
+    g.beginPath(); g.roundRect(l.x, l.y, l.w, l.h, l.r || 0); g.fill();
+    g.restore();
+  } else if (l.type === 'icon') {
+    drawIconShape(g, l.name, l.x, l.y, l.size, l.color);
+  } else if (l.type === 'image' && l.img) {
+    g.drawImage(l.img, l.x, l.y, l.w, l.h);
+  } else if (l.type === 'text') {
+    const lines = textLines(l, g);
+    const lh = l.size * 1.18;
+    g.save();
+    g.font = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
+    g.textBaseline = 'top';
+    let maxW = 0;
+    for (const line of lines) maxW = Math.max(maxW, g.measureText(line).width);
+    const blockW = l.align === 'center' && l.maxW ? l.maxW : maxW;
+    if (l.shadow) {
+      g.shadowColor = 'rgba(0,0,0,0.5)';
+      g.shadowBlur = Math.max(4, l.size / 6);
+      g.shadowOffsetY = Math.max(1, l.size / 24);
+    }
+    g.fillStyle = l.color;
+    lines.forEach((line, i) => {
+      const w = g.measureText(line).width;
+      const x = l.align === 'center' ? l.x + (blockW - w) / 2 : l.x;
+      g.fillText(line, x, l.y + i * lh);
+    });
+    g.restore();
+  }
 }
 
 // Icônes vectorielles (réseaux & contact) dessinées en primitives — nettes à toute taille.
@@ -1979,6 +2035,109 @@ function contactItems(c) {
 
 // Compose l'affiche : fond généré par l'IA + titre, description, logo et barre de
 // contact (icônes vectorielles) en CALQUES — tout reste modifiable/déplaçable.
+// ===== Cadre de marque : logo + barre réseaux, défini une fois, appliqué partout =====
+// Construit les calques par défaut du cadre (logo haut-gauche + barre de contact en bas).
+async function buildBrandFrameLayers(W, H, c) {
+  const out = [];
+  // Logo (data URL pour ne pas « tainted » le canvas à l'export)
+  if (c && c.logoFile) {
+    try {
+      let du = await window.api.mediaDataUrl(c.logoFile);
+      if (!du.startsWith('data:')) du = await window.api.fetchDataUrl(du);
+      await new Promise((res) => {
+        const im = new Image();
+        im.onload = () => {
+          const w = W * 0.15, h = w * (im.naturalHeight / im.naturalWidth);
+          out.push({ type: 'image', img: im, x: W * 0.045, y: W * 0.04, w, h });
+          res();
+        };
+        im.onerror = res;
+        im.src = du;
+      });
+    } catch (_) {}
+  }
+  // Barre de contact (pastille sombre + icônes réseaux + textes)
+  const items = contactItems(c);
+  if (items.length) {
+    const s = Math.round(W * 0.034);          // taille icône
+    const gap = Math.round(W * 0.011);        // icône <-> texte
+    const itemGap = Math.round(W * 0.034);    // entre éléments
+    const pad = Math.round(W * 0.02);
+    const fs = Math.round(s * 0.8);           // taille texte
+    ctx.font = `${fs}px Poppins`;
+    const widths = items.map((it) => s + gap + ctx.measureText(it.text).width);
+    const total = widths.reduce((aa, b) => aa + b, 0) + itemGap * (items.length - 1);
+    const barH = s + pad * 2;
+    const barW = Math.min(W * 0.95, total + pad * 3);
+    const barX = (W - barW) / 2;
+    const barY = H - barH - H * 0.03;
+    out.push({ type: 'rect', x: barX, y: barY, w: barW, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.66)' });
+    let x = (W - total) / 2;
+    for (let i = 0; i < items.length; i++) {
+      out.push({ type: 'icon', name: items[i].icon, x, y: barY + pad, size: s, color: '#ffffff' });
+      out.push({ type: 'text', text: items[i].text, x: x + s + gap, y: barY + pad + Math.round(s * 0.1), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+      x += widths[i] + itemGap;
+    }
+  }
+  return out;
+}
+
+// Coordonnées relatives (fractions de largeur/hauteur) -> le cadre s'adapte à tout format.
+function normalizeFrameLayers(ls, W, H) {
+  return ls.map((l) => {
+    const base = { type: l.type, nx: l.x / W, ny: l.y / H };
+    if (l.type === 'rect') return { ...base, nw: l.w / W, nh: l.h / H, nr: (l.r || 0) / W, color: l.color };
+    if (l.type === 'icon') return { ...base, ns: l.size / W, name: l.name, color: l.color };
+    if (l.type === 'image') return { ...base, nw: l.w / W, nh: l.h / H, src: l.img ? l.img.src : null };
+    return { ...base, ns: l.size / W, text: l.text, color: l.color, font: l.font, bold: !!l.bold, shadow: !!l.shadow, align: l.align || null, nmaxw: l.maxW ? l.maxW / W : null };
+  });
+}
+async function denormalizeFrameLayers(ls, W, H) {
+  const out = [];
+  for (const l of ls || []) {
+    if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color });
+    else if (l.type === 'icon') out.push({ type: 'icon', x: l.nx * W, y: l.ny * H, size: l.ns * W, name: l.name, color: l.color });
+    else if (l.type === 'image' && l.src) {
+      await new Promise((res) => {
+        const im = new Image();
+        im.onload = () => { out.push({ type: 'image', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, img: im }); res(); };
+        im.onerror = res;
+        im.src = l.src;
+      });
+    } else if (l.type === 'text') {
+      out.push({ type: 'text', x: l.nx * W, y: l.ny * H, size: Math.round(l.ns * W), text: l.text, color: l.color, font: l.font, bold: l.bold, shadow: l.shadow, align: l.align || undefined, maxW: l.nmaxw ? l.nmaxw * W : undefined });
+    }
+  }
+  return out;
+}
+
+// Applique le cadre de l'entreprise active sur une image -> nouvelle URL hébergée.
+async function applyBrandFrame(url) {
+  const c = activeCompany();
+  if (!c) throw new Error('Aucune entreprise active.');
+  try { await document.fonts.ready; } catch (_) {}
+  const du = url.startsWith('data:') ? url : await window.api.fetchDataUrl(url);
+  const img = await new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error("Impossible de charger l'image."));
+    im.src = du;
+  });
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const ls = c.frame && c.frame.length
+    ? await denormalizeFrameLayers(c.frame, W, H)
+    : await buildBrandFrameLayers(W, H, c);
+  if (!ls.length) throw new Error('Cadre vide — ajoute un logo ou des coordonnées à ton entreprise.');
+  for (const l of ls) drawLayerOnto(g, l);
+  const dataUrl = cv.toDataURL('image/jpeg', 0.93);
+  const up = await window.api.uploadFile({ base64DataUrl: dataUrl, fileName: 'affiche-cadre.jpg' });
+  return up.url;
+}
+
 async function composeProPoster(srcUrl, a) {
   const c = activeCompany();
   try { await document.fonts.ready; } catch (_) {}
@@ -1992,23 +2151,8 @@ async function composeProPoster(srcUrl, a) {
   layers = [];
   const W = canvas.width, H = canvas.height;
 
-  // Logo de l'entreprise (coin haut-gauche) — en data URL pour ne pas « tainted » le canvas (export PNG)
-  if (c && c.logoFile) {
-    try {
-      let du = await window.api.mediaDataUrl(c.logoFile);
-      if (!du.startsWith('data:')) du = await window.api.fetchDataUrl(du);
-      await new Promise((res) => {
-        const im = new Image();
-        im.onload = () => {
-          const w = W * 0.15, h = w * (im.naturalHeight / im.naturalWidth);
-          layers.push({ type: 'image', img: im, x: W * 0.045, y: W * 0.04, w, h });
-          res();
-        };
-        im.onerror = res;
-        im.src = du;
-      });
-    } catch (_) {}
-  }
+  // Cadre de marque : le cadre personnalisé de l'entreprise s'il existe, sinon le cadre par défaut
+  layers.push(...(c && c.frame && c.frame.length ? await denormalizeFrameLayers(c.frame, W, H) : await buildBrandFrameLayers(W, H, c)));
 
   // Titre
   if (a.headline) {
@@ -2025,30 +2169,6 @@ async function composeProPoster(srcUrl, a) {
       maxW: W * 0.8, align: 'center', size: Math.round(W * 0.034),
       color: '#ffffff', font: 'Poppins', bold: false, shadow: true,
     });
-  }
-
-  // Barre de contact (pastille sombre + icônes réseaux + textes)
-  const items = contactItems(c);
-  if (items.length) {
-    const s = Math.round(W * 0.034);          // taille icône
-    const gap = Math.round(W * 0.011);        // icône <-> texte
-    const itemGap = Math.round(W * 0.034);    // entre éléments
-    const pad = Math.round(W * 0.02);
-    const fs = Math.round(s * 0.8);           // taille texte
-    ctx.font = `${fs}px Poppins`;
-    const widths = items.map((it) => s + gap + ctx.measureText(it.text).width);
-    const total = widths.reduce((aa, b) => aa + b, 0) + itemGap * (items.length - 1);
-    const barH = s + pad * 2;
-    const barW = Math.min(W * 0.95, total + pad * 3);
-    const barX = (W - barW) / 2;
-    const barY = H - barH - H * 0.03;
-    layers.push({ type: 'rect', x: barX, y: barY, w: barW, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.66)' });
-    let x = (W - total) / 2;
-    for (let i = 0; i < items.length; i++) {
-      layers.push({ type: 'icon', name: items[i].icon, x, y: barY + pad, size: s, color: '#ffffff' });
-      layers.push({ type: 'text', text: items[i].text, x: x + s + gap, y: barY + pad + Math.round(s * 0.1), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
-      x += widths[i] + itemGap;
-    }
   }
 
   selected = null;
@@ -2185,6 +2305,51 @@ document.getElementById('designNewBtn').onclick = () => {
   document.getElementById('designName').value = '';
   designStatus('Nouvelle affiche — ajoute une image de fond.');
   render();
+};
+
+// ===== Édition du cadre de marque dans l'éditeur =====
+// Ouvre le cadre de l'entreprise active sur un fond d'exemple : tout est déplaçable/modifiable.
+document.getElementById('frameEditBtn').onclick = async () => {
+  const c = activeCompany();
+  if (!c) return alert("Choisis d'abord une entreprise active (menu en haut à gauche).");
+  try { await document.fonts.ready; } catch (_) {}
+  // Fond d'exemple neutre (dégradé) pour visualiser le cadre
+  const SW = 1080, SH = 1350;
+  const cv = document.createElement('canvas');
+  cv.width = SW; cv.height = SH;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, SW, SH);
+  grad.addColorStop(0, '#cfc4ec'); grad.addColorStop(1, '#7e6ab8');
+  g.fillStyle = grad; g.fillRect(0, 0, SW, SH);
+  g.fillStyle = 'rgba(255,255,255,.4)'; g.font = '600 44px Inter'; g.textAlign = 'center';
+  g.fillText("Exemple d'affiche", SW / 2, SH / 2);
+  await new Promise((res) => { const im = new Image(); im.onload = () => { setBgImage(im); res(); }; im.src = cv.toDataURL(); });
+  bgUrl = null; currentDesign.id = null;
+  layers = c.frame && c.frame.length
+    ? await denormalizeFrameLayers(c.frame, canvas.width, canvas.height)
+    : await buildBrandFrameLayers(canvas.width, canvas.height, c);
+  selected = null;
+  render();
+  document.querySelector('.nav-btn[data-view="editor"]').click();
+  designStatus(`Cadre de « ${c.name} » — déplace/modifie les éléments puis « Enregistrer le cadre ».`);
+};
+// Sauvegarde le cadre (coordonnées relatives -> s'adapte à tous les formats d'affiche).
+document.getElementById('frameSaveBtn').onclick = async () => {
+  const c = activeCompany();
+  if (!c) return alert("Choisis d'abord une entreprise active.");
+  if (!layers.length) return alert('Le cadre est vide — ajoute au moins un élément (logo, texte, icône).');
+  const btn = document.getElementById('frameSaveBtn');
+  btn.disabled = true;
+  try {
+    const frame = normalizeFrameLayers(layers, canvas.width, canvas.height);
+    await window.api.frameSave(c.id, frame);
+    c.frame = frame; // met à jour le cache local
+    designStatus(`✓ Cadre de « ${c.name} » enregistré — il s'appliquera sur tes prochaines affiches.`);
+  } catch (e) {
+    alert("Échec de l'enregistrement du cadre : " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 document.getElementById('addText').onclick = () => {
@@ -2512,10 +2677,10 @@ function qualityOptions(r) {
   }
   const m = findModel('image', r.model);
   if (m.res) {
-    return [{ v: '1K', label: 'Standard (1K)' }, { v: '2K', label: 'Élevée (2K)' }, { v: '4K', label: 'Maximum (4K)' }];
+    return [{ v: '1K', label: 'Standard (1K)' }, { v: '2K', label: 'Élevée (2K)' }];
   }
   // Modèle image sans réglage de résolution : on propose de monter en gamme via Nano Banana Pro.
-  return [{ v: 'std', label: 'Standard' }, { v: '2K', label: 'Élevée (HD)' }, { v: '4K', label: 'Maximum (4K)' }];
+  return [{ v: 'std', label: 'Standard' }, { v: '2K', label: 'Élevée (HD)' }];
 }
 function defaultQuality(r) {
   if (r.kind === 'video') return r.params.resolution || '720p';
@@ -2650,6 +2815,9 @@ function openRecipe(r) {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', !!r.proLayers);
   });
+  // Cadre de marque : seulement pour les recettes image classiques (en Pro c'est déjà des calques).
+  const gqFrame = document.getElementById('gqFrame');
+  if (gqFrame) gqFrame.classList.toggle('hidden', !!r.proLayers || r.kind !== 'image');
   // Assistant en 2 temps pour TOUTES les recettes image : 1) textes, 2) idées visuelles.
   // (vidéo : un seul bouton d'idées, pas de texte rendu à l'écran)
   document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image');
@@ -3161,9 +3329,12 @@ document.getElementById('guidedGenerate').onclick = async () => {
   const style = STYLES[r.kind].find((s) => s.id === styleSel.value);
   const useStyle = style && style.t && !r.needsImage && !r.proLayers; // prompts dédiés conservés
   // Affiche Pro : pas de directive de langue ni de coordonnées dans l'image (tout est en calques).
+  // Cadre de marque appliqué après génération ? -> logo + contacts viennent du cadre, pas de l'IA.
+  const frameOn = r.kind === 'image' && !r.proLayers && document.getElementById('guidedApplyFrame').checked && !!activeCompany();
   let prompt = (useStyle ? buildStylePrompt(style, answers.subject) : r.build(answers) + ART_DIRECTION) + (r.proLayers ? '' : langDirective(guidedLang()));
   if (document.getElementById('guidedUseBrand').checked && activeCompany()) prompt += brandSuffix(activeCompany());
-  if (!r.proLayers && document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
+  if (!r.proLayers && !frameOn && document.getElementById('guidedShowContact').checked && activeCompany()) prompt += contactDirective(activeCompany());
+  if (frameOn) prompt += " Laisse la zone tout en bas de l'image relativement calme et dégagée (une barre de contact y sera superposée).";
 
   const eff = effectiveRecipe(r, document.getElementById('guidedQuality').value);
   const btn = document.getElementById('guidedGenerate');
@@ -3202,9 +3373,9 @@ document.getElementById('guidedGenerate').onclick = async () => {
     }
 
     // 3) Logo : selon le mode choisi (placé par l'IA / incrusté exact / aucun)
-    // Affiche Pro : le logo est un calque ajouté dans l'éditeur, pas dans l'image générée.
+    // Affiche Pro : calque dans l'éditeur. Cadre actif : le logo vient du cadre.
     const logoMode = document.getElementById('guidedLogoMode').value;
-    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers;
+    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers && !frameOn;
     const overlayLogoAfter = hasLogo && logoMode === 'exact';
     if (hasLogo && logoMode === 'ai') {
       const logoKie = await uploadCompanyLogo(statusEl); // re-héberge le vrai logo et le donne au modèle
@@ -3235,6 +3406,16 @@ document.getElementById('guidedGenerate').onclick = async () => {
           statusEl.textContent = '✓ Terminé (logo ajouté).';
         } catch (_) {
           statusEl.textContent = '✓ Terminé (logo non ajouté).';
+        }
+      }
+      // Cadre de marque : logo + réseaux superposés directement sur l'affiche
+      if (frameOn) {
+        statusEl.innerHTML = '<span class="spinner"></span>Application du cadre de marque…';
+        try {
+          finalUrl = await applyBrandFrame(finalUrl);
+          statusEl.textContent = '✓ Terminé (cadre de marque appliqué).';
+        } catch (_) {
+          statusEl.textContent = '✓ Terminé (cadre non appliqué — vérifie ton cadre dans l\'éditeur).';
         }
       }
       showImageResult(resultEl, finalUrl, answers.subject);

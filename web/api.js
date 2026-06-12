@@ -51,7 +51,7 @@
     return {
       id: c.id, name: c.name, category: c.category || '', colors: c.colors || [], website: c.website || '', info: c.info || '',
       email: c.email || '', phone: c.phone || '', whatsapp: c.whatsapp || '', facebook: c.facebook || '', instagram: c.instagram || '',
-      logoFile: c.logo_url || null, createdAt: c.created_at,
+      logoFile: c.logo_url || null, frame: c.frame || null, createdAt: c.created_at,
     };
   }
   function triggerDownload(href, name) {
@@ -129,6 +129,12 @@
     // Incruste le VRAI logo (exact) sur une image générée -> renvoie l'URL de l'image finale
     overlayLogo: (payload) => backend('/api/overlay-logo', { method: 'POST', body: payload }),
     companyDelete: async (id) => { const { error } = await window.SB.from('companies').delete().eq('id', id); if (error) throw new Error(error.message); return { ok: true }; },
+    // Cadre de marque (logo + réseaux en calques relatifs) attaché à l'entreprise.
+    frameSave: async (companyId, frame) => {
+      const { error } = await window.SB.from('companies').update({ frame }).eq('id', companyId);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    },
 
     // ---- Galerie (Supabase) ----
     galleryAdd: async (item) => {
