@@ -568,8 +568,8 @@ async function loadAdminPacks() {
 const FEATURE_DEFS = [
   { key: 'signup', label: 'Inscriptions', desc: 'Création de nouveaux comptes' },
   { key: 'video', label: 'Génération vidéo', desc: 'Vue Vidéo + recettes vidéo guidées' },
-  { key: 'image_edit', label: 'Modification IA', desc: 'Retouche des images par instruction' },
-  { key: 'ai_assistant', label: 'Assistant IA', desc: 'Idées et amélioration de texte' },
+  { key: 'image_edit', label: 'Modification SnapFiche', desc: 'Retouche des images par instruction' },
+  { key: 'ai_assistant', label: 'Assistant SnapFiche', desc: 'Idées et amélioration de texte' },
 ];
 function renderFeatureFlags(features) {
   const wrap = document.getElementById('featureFlags');
@@ -1595,10 +1595,10 @@ function showImageResult(container, url, prompt, history, galleryId) {
   const edit = document.createElement('div');
   edit.className = 'edit-ai';
   edit.innerHTML =
-    '<div class="edit-title">Modifier avec l\'IA <span class="edit-model-tag">Snap Max · ~30 cr</span></div>' +
+    '<div class="edit-title">Modifier avec SnapFiche <span class="edit-model-tag">Snap Max · ~30 cr</span></div>' +
     '<textarea class="edit-input edit-input-big" rows="3" placeholder="Décris ta modification : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne, corrige le numéro de téléphone…"></textarea>' +
     '<div class="edit-row"><button class="edit-btn">Appliquer la modification</button></div>' +
-    '<div class="edit-hint">L\'IA reformule ta demande à partir du prompt d\'origine, puis Snap Max applique UNIQUEMENT ce changement — le reste de l\'affiche est conservé.</div>' +
+    '<div class="edit-hint">SnapFiche reformule ta demande à partir du prompt d\'origine, puis applique UNIQUEMENT ce changement — le reste de l\'affiche est conservé.</div>' +
     '<div class="edit-status"></div>';
   const input = edit.querySelector('.edit-input');
   const ebtn = edit.querySelector('.edit-btn');
@@ -2955,7 +2955,7 @@ async function loadGallery() {
       // de versions (Annuler possible), les modifs sont resynchronisées dans la galerie.
       if (featureOn('image_edit')) {
         const aiBtn = document.createElement('button');
-        aiBtn.textContent = 'Modifier IA';
+        aiBtn.textContent = 'Modifier';
         aiBtn.onclick = () => {
           document.querySelector('.nav-btn[data-view="image"]').click();
           const resultEl = document.getElementById('imgResult');
@@ -2986,7 +2986,7 @@ async function loadGallery() {
 const RECIPES = [
   {
     id: 'poster-pro', icon: 'layers', title: 'Affiche Pro (texte modifiable)',
-    desc: "L'IA crée le visuel SANS texte — titre, description, logo et contacts sont posés en calques 100 % modifiables.",
+    desc: "SnapFiche crée le visuel SANS texte — titre, description, logo et contacts sont posés en calques 100 % modifiables.",
     kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
     proLayers: true,
     ask: [
@@ -3405,7 +3405,7 @@ const IDEA_ANGLES = [
   'futurisme chrome et iridescent', 'vaporwave nostalgique', 'naturel organique (bois, lin, végétal)', 'art déco géométrique doré',
   // Tendances 2026
   'neon-noir (rouge/noir, néons, flou de mouvement)', 'acid fade (dégradés prismatiques saturés, fluide psychédélique)',
-  'croquis fait main authentique (anti-perfection IA)', 'art nouveau moderne (lignes organiques + abstraction)',
+  'croquis fait main authentique (anti-perfection numérique)', 'art nouveau moderne (lignes organiques + abstraction)',
   'scrapbooking (papier, autocollants, notes manuscrites)', 'typographie liquide (lettres fondues chromées)',
   'folk art (motifs artisanaux, fleurs, oiseaux)', 'maximalisme chromatique électrique',
   'mixed media scanné et surtravaillé (textures denses)', 'duotone réactif haute énergie',
@@ -3428,13 +3428,13 @@ const SECTOR_ANGLE_MAP = [
       'photographie lifestyle authentique', 'comparatif avant / après', 'coupe anatomique didactique',
       'rendu 3D doux (clay render)', 'chronologie / étapes numérotées visuelles', 'mythes vs réalités en deux colonnes',
       'illustration ligne continue minimaliste', 'naturel organique (bois, lin, végétal)', 'photo studio fond coloré uni',
-      'croquis fait main authentique (anti-perfection IA)', 'schéma technique stylisé'],
+      'croquis fait main authentique (anti-perfection numérique)', 'schéma technique stylisé'],
   },
   {
     match: /resto|caf[ée]|food|cuisine|p[âa]tiss|boulang|traiteur|pizz|burger|gastro|chef/i,
     angles: ['macro photographie ultra détaillée', 'golden hour chaleureuse', 'flat lay vu de dessus',
       'photographie lifestyle authentique', 'photo en lévitation (objets flottants)', 'collage magazine rétro',
-      'croquis fait main authentique (anti-perfection IA)', 'folk art (motifs artisanaux, fleurs, oiseaux)',
+      'croquis fait main authentique (anti-perfection numérique)', 'folk art (motifs artisanaux, fleurs, oiseaux)',
       'aquarelle douce', 'typographie géante en vedette', 'pop colorée énergique', 'naturel organique (bois, lin, végétal)'],
   },
   {
@@ -3468,7 +3468,7 @@ const SECTOR_ANGLE_MAP = [
   {
     match: /[ée]duc|[ée]cole|formation|cours|coach|universit|cr[èe]che|enfant/i,
     angles: ['infographie pédagogique élégante', 'illustration flat moderne et colorée', 'chronologie / étapes numérotées visuelles',
-      'croquis fait main authentique (anti-perfection IA)', 'scrapbooking (papier, autocollants, notes manuscrites)',
+      'croquis fait main authentique (anti-perfection numérique)', 'scrapbooking (papier, autocollants, notes manuscrites)',
       'style bande dessinée pop', 'pop colorée énergique', 'mythes vs réalités en deux colonnes',
       'typographie géante en vedette', 'papier découpé en relief (paper cut)'],
   },
@@ -3668,7 +3668,7 @@ document.getElementById('aiIdeas').onclick = async () => {
   btn.disabled = true;
   document.getElementById('aiSuggestions').innerHTML = '';
   statusEl.className = 'ai-status';
-  statusEl.innerHTML = '<span class="spinner"></span>L\'IA réfléchit…';
+  statusEl.innerHTML = '<span class="spinner"></span>SnapFiche réfléchit…';
   try {
     const c = activeCompany();
     const cat = c && c.category ? `, secteur : ${c.category}` : '';

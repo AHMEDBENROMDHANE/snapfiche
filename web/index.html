@@ -143,7 +143,7 @@
             </select>
           </div>
           <div class="gq ai-assistant">
-            <label>Assistant IA</label>
+            <label>Assistant SnapFiche</label>
             <div class="ai-actions">
               <button id="aiTexts" type="button" class="mini hidden">1 · Proposer des textes</button>
               <button id="aiIdeas" type="button" class="mini">Proposer des idées</button>
@@ -181,7 +181,7 @@
             <label>Logo de l'entreprise</label>
             <div class="ai-actions">
               <select id="guidedLogoMode">
-                <option value="ai" selected>Placé par l'IA (plus intégré / inspiré)</option>
+                <option value="ai" selected>Placé par SnapFiche (plus intégré / inspiré)</option>
                 <option value="exact">Incrusté exact (badge, logo identique)</option>
                 <option value="none">Aucun logo</option>
               </select>
@@ -194,7 +194,7 @@
               </select>
             </div>
           </div>
-          <label class="brand-toggle" id="gqLogoToggle"><input type="checkbox" id="guidedUseLogo" checked /> Intégrer le logo dans l'image (placé par l'IA)</label>
+          <label class="brand-toggle" id="gqLogoToggle"><input type="checkbox" id="guidedUseLogo" checked /> Intégrer le logo dans l'image (placé par SnapFiche)</label>
           <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" /> Intégrer les infos & réseaux sociaux dans l'image</label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
           <div class="gq" id="gqStyleLib">
@@ -218,7 +218,7 @@
 
       <!-- VUE IMAGE -->
       <section id="view-image" class="view">
-        <h1>Génération d'image IA</h1>
+        <h1>Génération d'image SnapFiche</h1>
         <p class="subtitle">Texte → image, ou transformez vos images : référence de style, personnage, produit…</p>
         <div class="gen-layout">
         <div class="gen-left">
@@ -226,7 +226,7 @@
           placeholder="Ex : affiche de concert électro, néons violets, typographie audacieuse, fond urbain nocturne"></textarea>
         <!-- Charte + logo appliqués automatiquement -->
         <label class="brand-toggle hidden"><input type="checkbox" id="imgUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle"><input type="checkbox" id="imgUseLogo" checked /> Intégrer le logo dans l'image (placé par l'IA)</label>
+        <label class="brand-toggle"><input type="checkbox" id="imgUseLogo" checked /> Intégrer le logo dans l'image (placé par SnapFiche)</label>
         <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> Intégrer les infos & réseaux sociaux dans l'image</label>
 
         <!-- Images sources (édition / fusion / multi-références) -->
@@ -281,7 +281,7 @@
 
       <!-- VUE VIDÉO -->
       <section id="view-video" class="view">
-        <h1>Génération de vidéo IA</h1>
+        <h1>Génération de vidéo SnapFiche</h1>
         <p class="subtitle">Texte → vidéo, ou animez vos images : début, fin, références.</p>
         <div class="gen-layout">
         <div class="gen-left">
@@ -289,7 +289,7 @@
           placeholder="Ex : travelling cinématique sur une ville futuriste au coucher du soleil, lumière dorée"></textarea>
         <!-- Charte + logo appliqués automatiquement -->
         <label class="brand-toggle hidden"><input type="checkbox" id="vidUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="vidBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseLogo" checked /> Ajouter le logo de l'entreprise (intégré par l'IA)</label>
+        <label class="brand-toggle hidden"><input type="checkbox" id="vidUseLogo" checked /> Ajouter le logo de l'entreprise (intégré par SnapFiche)</label>
 
         <!-- Image source (image-to-video) : début et/ou fin -->
         <div class="source-box">
@@ -433,7 +433,7 @@
       <!-- VUE ENTREPRISES -->
       <section id="view-company" class="view">
         <h1>Entreprises</h1>
-        <p class="subtitle">Chaque entreprise a sa charte (logo, couleurs, site, infos). Elle guide l'IA et alimente l'éditeur.</p>
+        <p class="subtitle">Chaque entreprise a sa charte (logo, couleurs, site, infos). Elle guide SnapFiche dans toutes tes créations.</p>
         <div id="accountBanner" class="account-banner hidden"></div>
 
         <!-- ASSISTANT PAS-À-PAS (comptes Particulier, 1re marque) -->
@@ -501,7 +501,7 @@
           <!-- Étape 4 : Identité visuelle -->
           <div class="wiz-step hidden" data-step="4">
             <h3>Identité visuelle</h3>
-            <p class="subtitle">Couleurs de marque et consignes pour l'IA.</p>
+            <p class="subtitle">Couleurs de marque et consignes pour SnapFiche.</p>
             <div class="field">
               <span>Couleurs de marque <span class="wiz-tag hidden" data-for="wizColors">récupéré ✓</span></span>
               <div class="colors-editor">
@@ -513,7 +513,7 @@
                 </div>
               </div>
             </div>
-            <label>Informations / consignes IA <span class="wiz-tag hidden" data-for="wizInfo">récupéré ✓</span>
+            <label>Informations / consignes SnapFiche <span class="wiz-tag hidden" data-for="wizInfo">récupéré ✓</span>
               <textarea id="wizInfo" rows="4" placeholder="Ton, style visuel, slogan, public cible, mentions à inclure/éviter…"></textarea>
             </label>
           </div>
@@ -595,7 +595,7 @@
                 <button id="companyLogoClear" type="button" class="mini hidden">✕ Retirer</button>
               </div>
             </div>
-            <label>Informations / consignes IA
+            <label>Informations / consignes SnapFiche
               <textarea id="companyInfo" rows="4" placeholder="Secteur, ton, style visuel, slogan, public cible, mentions à inclure/éviter…"></textarea>
             </label>
             <div class="row">
