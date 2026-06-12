@@ -1886,8 +1886,33 @@ function drawLayerOnto(g, l) {
   }
 }
 
-// Icônes vectorielles (réseaux & contact) dessinées en primitives — nettes à toute taille.
+// Tracés vectoriels officiels (viewBox 24) — qualité HD à toute taille via Path2D.
+const ICON_PATHS = {
+  whatsapp: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z',
+  instagram: 'M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z',
+  facebook: 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z',
+  phone: 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z',
+  globe: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z',
+  mail: 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',
+};
+const _iconPathCache = {};
+
+// Icônes HD : tracé vectoriel officiel (Path2D) si disponible, sinon primitives de secours.
 function drawIconShape(g, name, x, y, s, color) {
+  const d = ICON_PATHS[name];
+  if (d) {
+    if (!_iconPathCache[name]) _iconPathCache[name] = new Path2D(d);
+    g.save();
+    g.translate(x, y);
+    g.scale(s / 24, s / 24);
+    g.fillStyle = color;
+    g.fill(_iconPathCache[name]);
+    g.restore();
+    return;
+  }
+  drawIconShapeLegacy(g, name, x, y, s, color);
+}
+function drawIconShapeLegacy(g, name, x, y, s, color) {
   g.save();
   g.translate(x, y);
   const u = s / 24;
@@ -2093,12 +2118,7 @@ async function buildBrandFrameLayers(W, H, c) {
     const barX = (W - barW) / 2;
     const barY = H - barH - H * 0.03;
     out.push({ type: 'rect', x: barX, y: barY, w: barW, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.66)' });
-    let x = (W - total) / 2;
-    for (let i = 0; i < items.length; i++) {
-      out.push({ type: 'icon', name: items[i].icon, x, y: barY + pad, size: s, color: '#ffffff' });
-      out.push({ type: 'text', text: items[i].text, x: x + s + gap, y: barY + pad + Math.round(s * 0.1), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
-      x += widths[i] + itemGap;
-    }
+    out.push(...contactRowLayers(items, (W - total) / 2, barY + pad, s, fs, gap, itemGap, '#ffffff', widths));
   }
   return out;
 }
@@ -2127,12 +2147,16 @@ function measureContactRow(items, s, fs, gap, itemGap, font) {
   const widths = items.map((it) => s + gap + ctx.measureText(it.text).width);
   return { widths, total: widths.reduce((a, b) => a + b, 0) + itemGap * (items.length - 1) };
 }
+// Groupes de calques : déplacer un membre déplace tout le groupe (icône + son texte).
+let _gidSeq = 0;
+function newGid() { return 'g' + (++_gidSeq) + '_' + Math.random().toString(36).slice(2, 6); }
 function contactRowLayers(items, startX, y, s, fs, gap, itemGap, color, widths) {
   const out = [];
   let x = startX;
   for (let i = 0; i < items.length; i++) {
-    out.push({ type: 'icon', name: items[i].icon, x, y, size: s, color });
-    out.push({ type: 'text', text: items[i].text, x: x + s + gap, y: y + Math.round(s * 0.1), size: fs, color, font: 'Poppins', bold: false });
+    const gid = newGid(); // l'icône et son texte bougent ensemble
+    out.push({ type: 'icon', name: items[i].icon, x, y, size: s, color, gid });
+    out.push({ type: 'text', text: items[i].text, x: x + s + gap, y: y + Math.round(s * 0.1), size: fs, color, font: 'Poppins', bold: false, gid });
     x += widths[i] + itemGap;
   }
   return out;
@@ -2194,9 +2218,10 @@ const FRAME_TEMPLATES = [
       let x = (W - total) / 2;
       const y = H - chipH - W * 0.032;
       for (let i = 0; i < items.length; i++) {
-        out.push({ type: 'rect', x, y, w: chipWs[i], h: chipH, r: chipH / 2, color: 'rgba(20,16,28,0.5)' });
-        out.push({ type: 'icon', name: items[i].icon, x: x + pad, y: y + (chipH - s) / 2, size: s, color: '#ffffff' });
-        out.push({ type: 'text', text: items[i].text, x: x + pad + s + gap, y: y + (chipH - s) / 2 + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+        const gid = newGid(); // la pastille entière (fond + icône + texte) bouge ensemble
+        out.push({ type: 'rect', x, y, w: chipWs[i], h: chipH, r: chipH / 2, color: 'rgba(20,16,28,0.5)', gid });
+        out.push({ type: 'icon', name: items[i].icon, x: x + pad, y: y + (chipH - s) / 2, size: s, color: '#ffffff', gid });
+        out.push({ type: 'text', text: items[i].text, x: x + pad + s + gap, y: y + (chipH - s) / 2 + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false, gid });
         x += chipWs[i] + chipGap;
       }
       out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.13)));
@@ -2269,8 +2294,9 @@ const FRAME_TEMPLATES = [
         y += logoH + pad * 0.7;
       }
       for (const it of items) {
-        out.push({ type: 'icon', name: it.icon, x: cx + pad, y, size: s, color: '#ffffff' });
-        out.push({ type: 'text', text: it.text, x: cx + pad + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+        const gid = newGid(); // icône + texte liés
+        out.push({ type: 'icon', name: it.icon, x: cx + pad, y, size: s, color: '#ffffff', gid });
+        out.push({ type: 'text', text: it.text, x: cx + pad + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false, gid });
         y += lh;
       }
       return out;
@@ -2472,7 +2498,7 @@ document.getElementById('framesClose').onclick = () => document.getElementById('
 // Coordonnées relatives (fractions de largeur/hauteur) -> le cadre s'adapte à tout format.
 function normalizeFrameLayers(ls, W, H) {
   return ls.map((l) => {
-    const base = { type: l.type, nx: l.x / W, ny: l.y / H };
+    const base = { type: l.type, nx: l.x / W, ny: l.y / H, gid: l.gid || null };
     if (l.type === 'rect') return { ...base, nw: l.w / W, nh: l.h / H, nr: (l.r || 0) / W, color: l.color, glow: l.glow || null };
     if (l.type === 'grad') return { ...base, nw: l.w / W, nh: l.h / H, color: l.color, alpha: l.alpha != null ? l.alpha : 0.85, dir: l.dir || null };
     if (l.type === 'icon') return { ...base, ns: l.size / W, name: l.name, color: l.color };
@@ -2483,18 +2509,19 @@ function normalizeFrameLayers(ls, W, H) {
 async function denormalizeFrameLayers(ls, W, H) {
   const out = [];
   for (const l of ls || []) {
-    if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color, glow: l.glow || undefined });
-    else if (l.type === 'grad') out.push({ type: 'grad', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, color: l.color, alpha: l.alpha, dir: l.dir || undefined });
-    else if (l.type === 'icon') out.push({ type: 'icon', x: l.nx * W, y: l.ny * H, size: l.ns * W, name: l.name, color: l.color });
+    const gid = l.gid || undefined; // groupe préservé (icône + texte liés)
+    if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color, glow: l.glow || undefined, gid });
+    else if (l.type === 'grad') out.push({ type: 'grad', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, color: l.color, alpha: l.alpha, dir: l.dir || undefined, gid });
+    else if (l.type === 'icon') out.push({ type: 'icon', x: l.nx * W, y: l.ny * H, size: l.ns * W, name: l.name, color: l.color, gid });
     else if (l.type === 'image' && l.src) {
       await new Promise((res) => {
         const im = new Image();
-        im.onload = () => { out.push({ type: 'image', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, img: im }); res(); };
+        im.onload = () => { out.push({ type: 'image', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, img: im, gid }); res(); };
         im.onerror = res;
         im.src = l.src;
       });
     } else if (l.type === 'text') {
-      out.push({ type: 'text', x: l.nx * W, y: l.ny * H, size: Math.round(l.ns * W), text: l.text, color: l.color, font: l.font, bold: l.bold, shadow: l.shadow, align: l.align || undefined, maxW: l.nmaxw ? l.nmaxw * W : undefined });
+      out.push({ type: 'text', x: l.nx * W, y: l.ny * H, size: Math.round(l.ns * W), text: l.text, color: l.color, font: l.font, bold: l.bold, shadow: l.shadow, align: l.align || undefined, maxW: l.nmaxw ? l.nmaxw * W : undefined, gid });
     }
   }
   return out;
@@ -2814,7 +2841,11 @@ canvas.addEventListener('mousedown', (e) => {
   const pos = canvasPos(e);
   const hit = hitTest(pos);
   selected = hit;
-  if (hit) drag = { dx: pos.x - hit.x, dy: pos.y - hit.y };
+  if (hit) {
+    // Membres du même groupe (icône + texte) : ils suivront le déplacement.
+    const mates = hit.gid ? layers.filter((l) => l !== hit && l.gid === hit.gid) : [];
+    drag = { dx: pos.x - hit.x, dy: pos.y - hit.y, group: mates.map((l) => ({ l, ox: l.x - hit.x, oy: l.y - hit.y })) };
+  }
   syncToolsFromSelected();
   render();
 });
@@ -2839,6 +2870,11 @@ canvas.addEventListener('mousemove', (e) => {
   const pos = canvasPos(e);
   selected.x = pos.x - drag.dx;
   selected.y = pos.y - drag.dy;
+  // Le groupe suit (icône + texte restent alignés)
+  for (const m of drag.group || []) {
+    m.l.x = selected.x + m.ox;
+    m.l.y = selected.y + m.oy;
+  }
   render();
 });
 window.addEventListener('mouseup', () => (drag = null));
