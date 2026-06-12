@@ -1852,10 +1852,11 @@ function drawLayerOnto(g, l) {
     if (l.glow) { g.fill(); } // double passe -> halo néon plus marqué
     g.restore();
   } else if (l.type === 'grad') {
-    // Fondu dégradé : transparent en haut -> couleur en bas (style Instagram)
+    // Fondu dégradé : transparent -> couleur (vers le bas par défaut, 'up' = vers le haut)
     const gr = g.createLinearGradient(0, l.y, 0, l.y + l.h);
-    gr.addColorStop(0, hexToRgba(l.color, 0));
-    gr.addColorStop(1, hexToRgba(l.color, l.alpha != null ? l.alpha : 0.85));
+    const a = l.alpha != null ? l.alpha : 0.85;
+    gr.addColorStop(0, hexToRgba(l.color, l.dir === 'up' ? a : 0));
+    gr.addColorStop(1, hexToRgba(l.color, l.dir === 'up' ? 0 : a));
     g.save(); g.fillStyle = gr; g.fillRect(l.x, l.y, l.w, l.h); g.restore();
   } else if (l.type === 'icon') {
     drawIconShape(g, l.name, l.x, l.y, l.size, l.color);
@@ -2275,6 +2276,136 @@ const FRAME_TEMPLATES = [
       return out;
     },
   },
+  {
+    id: 'topbar', name: 'Bandeau magazine', desc: 'Bande de charte en HAUT, esprit éditorial',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c);
+      const barH = Math.round(W * 0.085);
+      out.push({ type: 'rect', x: 0, y: 0, w: W, h: barH, r: 0, color: hexToRgba(brand, 0.92) });
+      out.push({ type: 'rect', x: 0, y: barH, w: W, h: Math.max(2, W * 0.003), r: 0, color: 'rgba(255,255,255,0.85)' });
+      const im = await getLogoImage(c);
+      if (im) {
+        const lh = barH * 0.62, lw = lh * (im.naturalWidth / im.naturalHeight);
+        out.push({ type: 'image', img: im, x: W * 0.04, y: (barH - lh) / 2, w: lw, h: lh });
+      }
+      if (items.length) {
+        const s = Math.round(W * 0.026), fs = Math.round(s * 0.8), gap = Math.round(W * 0.009), itemGap = Math.round(W * 0.026);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        out.push(...contactRowLayers(items, (W - total) / 2, H - s - W * 0.03, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      return out;
+    },
+  },
+  {
+    id: 'cinema', name: 'Cinéma', desc: 'Double fondu haut + bas, ambiance film',
+    build: async (W, H, c) => {
+      const out = [];
+      const items = contactItems(c);
+      out.push({ type: 'grad', x: 0, y: 0, w: W, h: H * 0.14, color: '#0d0a14', alpha: 0.8, dir: 'up' });
+      out.push({ type: 'grad', x: 0, y: H - H * 0.18, w: W, h: H * 0.18, color: '#0d0a14', alpha: 0.85 });
+      if (items.length) {
+        const s = Math.round(W * 0.028), fs = Math.round(s * 0.8), gap = Math.round(W * 0.009), itemGap = Math.round(W * 0.03);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        out.push(...contactRowLayers(items, (W - total) / 2, H - s - W * 0.035, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      const im = await getLogoImage(c);
+      if (im) {
+        const lw = W * 0.13, lh = lw * (im.naturalHeight / im.naturalWidth);
+        out.push({ type: 'image', img: im, x: (W - lw) / 2, y: W * 0.03, w: lw, h: lh });
+      }
+      return out;
+    },
+  },
+  {
+    id: 'split', name: 'Split bicolore', desc: 'Bloc logo couleur charte + bloc contacts sombre',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c).slice(0, 4);
+      const barH = Math.round(W * 0.095);
+      const leftW = Math.round(W * 0.3);
+      out.push({ type: 'rect', x: 0, y: H - barH, w: leftW, h: barH, r: 0, color: hexFull(brand) });
+      out.push({ type: 'rect', x: leftW, y: H - barH, w: W - leftW, h: barH, r: 0, color: 'rgba(12,9,20,0.78)' });
+      const im = await getLogoImage(c);
+      if (im) {
+        const lh = barH * 0.58, lw = lh * (im.naturalWidth / im.naturalHeight);
+        out.push({ type: 'image', img: im, x: (leftW - lw) / 2, y: H - barH + (barH - lh) / 2, w: lw, h: lh });
+      }
+      if (items.length) {
+        const s = Math.round(W * 0.026), fs = Math.round(s * 0.78), gap = Math.round(W * 0.008), itemGap = Math.round(W * 0.024);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        out.push(...contactRowLayers(items, leftW + (W - leftW - total) / 2, H - barH + (barH - s) / 2, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      return out;
+    },
+  },
+  {
+    id: 'neonframe', name: 'Contour néon', desc: 'Bordure lumineuse complète, parfait événementiel',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const inset = Math.round(W * 0.025), th = Math.max(2, Math.round(W * 0.005));
+      const col = hexFull(brand);
+      out.push({ type: 'rect', x: inset, y: inset, w: W - inset * 2, h: th, r: th, color: col, glow: col });
+      out.push({ type: 'rect', x: inset, y: H - inset - th, w: W - inset * 2, h: th, r: th, color: col, glow: col });
+      out.push({ type: 'rect', x: inset, y: inset, w: th, h: H - inset * 2, r: th, color: col, glow: col });
+      out.push({ type: 'rect', x: W - inset - th, y: inset, w: th, h: H - inset * 2, r: th, color: col, glow: col });
+      const items = contactItems(c).slice(0, 3);
+      if (items.length) {
+        const s = Math.round(W * 0.026), fs = Math.round(s * 0.8), gap = Math.round(W * 0.009), itemGap = Math.round(W * 0.028), pad = Math.round(W * 0.015);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        const bh = s + pad * 2;
+        const by = H - inset - th - bh - W * 0.015;
+        out.push({ type: 'rect', x: (W - total) / 2 - pad * 1.6, y: by, w: total + pad * 3.2, h: bh, r: bh / 2, color: 'rgba(12,9,20,0.6)' });
+        out.push(...contactRowLayers(items, (W - total) / 2, by + pad, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      out.push(...(await logoLayer(c, W * 0.055, W * 0.05, W * 0.13)));
+      return out;
+    },
+  },
+  {
+    id: 'sticker', name: 'Sticker rond', desc: 'Pastille circulaire glass avec ton logo',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const D = Math.round(W * 0.21);
+      const sx = W - D - W * 0.04, sy = H - D - W * 0.04;
+      out.push({ type: 'rect', x: sx, y: sy, w: D, h: D, r: D / 2, color: 'rgba(255,255,255,0.88)' });
+      out.push({ type: 'rect', x: sx, y: sy, w: D, h: D, r: D / 2, color: hexToRgba(brand, 0.14) });
+      const im = await getLogoImage(c);
+      if (im) {
+        const lw = D * 0.62, lh = lw * (im.naturalHeight / im.naturalWidth);
+        out.push({ type: 'image', img: im, x: sx + (D - lw) / 2, y: sy + (D - Math.min(lh, D * 0.62)) / 2, w: lw, h: lh });
+      }
+      const site = (c && c.website) ? c.website.replace(/^https?:[/][/]/, '').replace(/[/]$/, '') : '';
+      if (site) {
+        out.push({ type: 'text', text: site, x: W * 0.05, y: H - W * 0.055, size: Math.round(W * 0.024), color: '#ffffff', font: 'Poppins', bold: false, shadow: true });
+      }
+      return out;
+    },
+  },
+  {
+    id: 'floatbar', name: 'Barre flottante', desc: 'Pastille arrondie teintée charte, détachée du bord',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c);
+      const s = Math.round(W * 0.029), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.03), pad = Math.round(W * 0.022);
+      if (items.length) {
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        const barH = s + pad * 2;
+        const barW = Math.min(W * 0.92, total + pad * 3.4);
+        const bx = (W - barW) / 2, by = H - barH - W * 0.04;
+        out.push({ type: 'rect', x: bx, y: by, w: barW, h: barH, r: barH / 2, color: hexToRgba(brand, 0.55) });
+        out.push({ type: 'rect', x: bx, y: by, w: barW, h: Math.max(2, W * 0.0035), r: W * 0.002, color: 'rgba(255,255,255,0.8)' });
+        out.push(...contactRowLayers(items, (W - total) / 2, by + pad, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.14)));
+      return out;
+    },
+  },
 ];
 
 // Fond d'exemple (dégradé neutre) pour visualiser les cadres.
@@ -2343,7 +2474,7 @@ function normalizeFrameLayers(ls, W, H) {
   return ls.map((l) => {
     const base = { type: l.type, nx: l.x / W, ny: l.y / H };
     if (l.type === 'rect') return { ...base, nw: l.w / W, nh: l.h / H, nr: (l.r || 0) / W, color: l.color, glow: l.glow || null };
-    if (l.type === 'grad') return { ...base, nw: l.w / W, nh: l.h / H, color: l.color, alpha: l.alpha != null ? l.alpha : 0.85 };
+    if (l.type === 'grad') return { ...base, nw: l.w / W, nh: l.h / H, color: l.color, alpha: l.alpha != null ? l.alpha : 0.85, dir: l.dir || null };
     if (l.type === 'icon') return { ...base, ns: l.size / W, name: l.name, color: l.color };
     if (l.type === 'image') return { ...base, nw: l.w / W, nh: l.h / H, src: l.img ? l.img.src : null };
     return { ...base, ns: l.size / W, text: l.text, color: l.color, font: l.font, bold: !!l.bold, shadow: !!l.shadow, align: l.align || null, nmaxw: l.maxW ? l.maxW / W : null };
@@ -2353,7 +2484,7 @@ async function denormalizeFrameLayers(ls, W, H) {
   const out = [];
   for (const l of ls || []) {
     if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color, glow: l.glow || undefined });
-    else if (l.type === 'grad') out.push({ type: 'grad', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, color: l.color, alpha: l.alpha });
+    else if (l.type === 'grad') out.push({ type: 'grad', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, color: l.color, alpha: l.alpha, dir: l.dir || undefined });
     else if (l.type === 'icon') out.push({ type: 'icon', x: l.nx * W, y: l.ny * H, size: l.ns * W, name: l.name, color: l.color });
     else if (l.type === 'image' && l.src) {
       await new Promise((res) => {
@@ -3097,7 +3228,7 @@ function openRecipe(r, opts) {
     : 'Images de référence (optionnel — style, personnage, produit… max 6)';
   // Affiche Pro : langue / coordonnées deviennent des calques -> réglages inutiles ici.
   // (gqLogo reste masqué en permanence : logo appliqué automatiquement, mode 'ai' par défaut.)
-  ['gqLang', 'gqContact'].forEach((id) => {
+  ['gqLang', 'gqContact', 'gqLogoToggle'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', !!r.proLayers);
   });
@@ -3109,6 +3240,8 @@ function openRecipe(r, opts) {
   if (af) af.checked = opts && 'frame' in opts ? opts.frame : !!activeCompany();
   const sck = document.getElementById('guidedShowContact');
   if (sck && opts && 'frame' in opts) sck.checked = !opts.frame; // IA gère -> elle dessine aussi les contacts
+  const ulg = document.getElementById('guidedUseLogo');
+  if (ulg) ulg.checked = true; // logo intégré par défaut (ignoré si le cadre est appliqué : il le porte déjà)
   // Assistant en 2 temps pour TOUTES les recettes image : 1) textes, 2) idées visuelles.
   // (vidéo : un seul bouton d'idées, pas de texte rendu à l'écran)
   document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image');
@@ -3666,7 +3799,8 @@ document.getElementById('guidedGenerate').onclick = async () => {
     // 3) Logo : selon le mode choisi (placé par l'IA / incrusté exact / aucun)
     // Affiche Pro : calque dans l'éditeur. Cadre actif : le logo vient du cadre.
     const logoMode = document.getElementById('guidedLogoMode').value;
-    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers && !frameOn;
+    const hasLogo = eff.kind === 'image' && c && c.logoFile && !r.proLayers && !frameOn
+      && document.getElementById('guidedUseLogo').checked; // case « Intégrer le logo »
     const overlayLogoAfter = hasLogo && logoMode === 'exact';
     if (hasLogo && logoMode === 'ai') {
       const logoKie = await uploadCompanyLogo(statusEl); // re-héberge le vrai logo et le donne au modèle

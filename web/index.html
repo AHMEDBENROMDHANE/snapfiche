@@ -198,7 +198,8 @@
             </div>
           </div>
           <label class="brand-toggle" id="gqFrame"><input type="checkbox" id="guidedApplyFrame" checked /> Appliquer mon cadre de marque (logo + réseaux en bordure)</label>
-          <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" /> Afficher aussi les coordonnées dans l'image (dessinées par l'IA)</label>
+          <label class="brand-toggle" id="gqLogoToggle"><input type="checkbox" id="guidedUseLogo" checked /> Intégrer le logo dans l'image (placé par l'IA)</label>
+          <label class="brand-toggle" id="gqContact"><input type="checkbox" id="guidedShowContact" /> Intégrer les infos & réseaux sociaux dans l'image</label>
           <label class="brand-toggle"><input type="checkbox" id="guidedKeepStyle" /> Garder le même style que la dernière création <span id="guidedStyleHint" class="brand-hint"></span></label>
           <div id="guidedSummary" class="guided-summary"></div>
           <div class="row">
@@ -225,8 +226,8 @@
           placeholder="Ex : affiche de concert électro, néons violets, typographie audacieuse, fond urbain nocturne"></textarea>
         <!-- Charte + logo appliqués automatiquement -->
         <label class="brand-toggle hidden"><input type="checkbox" id="imgUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="imgBrandHint" class="brand-hint"></span></label>
-        <label class="brand-toggle hidden"><input type="checkbox" id="imgUseLogo" checked /> Ajouter le logo de l'entreprise (intégré par l'IA)</label>
-        <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> Afficher les coordonnées sur l'image</label>
+        <label class="brand-toggle"><input type="checkbox" id="imgUseLogo" checked /> Intégrer le logo dans l'image (placé par l'IA)</label>
+        <label class="brand-toggle"><input type="checkbox" id="imgShowContact" /> Intégrer les infos & réseaux sociaux dans l'image</label>
 
         <!-- Images sources (édition / fusion / multi-références) -->
         <div class="source-box">
@@ -369,7 +370,7 @@
             </div>
             <div class="tool-group">
               <strong>Cadre de marque</strong>
-              <button id="frameTemplatesBtn">Choisir un modèle (6 styles)</button>
+              <button id="frameTemplatesBtn">Choisir un modèle (12 styles)</button>
               <button id="frameEditBtn">Modifier mon cadre</button>
               <button id="frameSaveBtn" class="primary">Enregistrer le cadre</button>
               <p class="hint">Logo + réseaux sociaux en bordure — défini une fois, appliqué d'un clic sur toutes tes affiches.</p>
