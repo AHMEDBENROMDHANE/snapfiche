@@ -144,11 +144,12 @@
       if (error) throw new Error(error.message);
       return { id: data.id, type: data.type, prompt: data.prompt, companyId: data.company_id, file: data.url, url: data.url, history: data.history || [], createdAt: data.created_at };
     },
-    // Met à jour une création (après une modification IA : nouvelle url + historique des versions).
+    // Met à jour une création (après une modification IA : nouvelle url + historique + prompt versionné).
     galleryUpdate: async (id, fields) => {
       const row = {};
       if (fields.url) row.url = fields.url;
       if (fields.history) row.history = fields.history;
+      if (fields.prompt != null) row.prompt = fields.prompt;
       const { error } = await window.SB.from('gallery').update(row).eq('id', id);
       if (error) throw new Error(error.message);
       return { ok: true };

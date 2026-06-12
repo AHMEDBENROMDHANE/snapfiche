@@ -1575,15 +1575,10 @@ function showImageResult(container, url, prompt, history, galleryId) {
   const edit = document.createElement('div');
   edit.className = 'edit-ai';
   edit.innerHTML =
-    '<div class="edit-title">Modifier avec l\'IA</div>' +
-    '<div class="edit-row"><input type="text" class="edit-input" placeholder="Ex : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne…" />' +
-    '<select class="edit-model">' +
-      '<option value="bytedance/seedream-v4-edit">Snap Plus — Retouche fidèle (recommandé · ~5 cr)</option>' +
-      '<option value="nano-banana-pro">Snap Max — Ultra HD (qualité max · ~30 cr)</option>' +
-      '<option value="qwen/image-edit">Snap — Éco (~2 cr)</option>' +
-    '</select>' +
-    '<button class="edit-btn">Modifier</button></div>' +
-    '<div class="edit-hint">Seul le changement demandé est appliqué — le format, la mise en page et le reste sont conservés.</div>' +
+    '<div class="edit-title">Modifier avec l\'IA <span class="edit-model-tag">Snap Max · ~30 cr</span></div>' +
+    '<textarea class="edit-input edit-input-big" rows="3" placeholder="Décris ta modification : change le titre en « SOLDES -50% », fond plus sombre, ajoute des ballons, enlève la personne, corrige le numéro de téléphone…"></textarea>' +
+    '<div class="edit-row"><button class="edit-btn">Appliquer la modification</button></div>' +
+    '<div class="edit-hint">L\'IA reformule ta demande à partir du prompt d\'origine, puis Snap Max applique UNIQUEMENT ce changement — le reste de l\'affiche est conservé.</div>' +
     '<div class="edit-status"></div>';
   const input = edit.querySelector('.edit-input');
   const ebtn = edit.querySelector('.edit-btn');
@@ -1593,30 +1588,49 @@ function showImageResult(container, url, prompt, history, galleryId) {
     if (!instr) return;
     ebtn.disabled = true;
     estatus.className = 'edit-status';
-    estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
     try {
-      const model = edit.querySelector('.edit-model').value;
       // Ratio de l'affiche source -> on le force pour éviter tout recadrage / changement de taille
       const ar = nearestAspect(img.naturalWidth, img.naturalHeight);
-      // Consigne de préservation : le modèle ne touche QUE ce qui est demandé
-      const guarded = editGuardPrompt(instr, ar);
-      let payload;
-      if (model === 'qwen/image-edit') {
-        payload = { prompt: guarded, image_url: url };                                       // Snap (éco) : conserve la toile source
-      } else if (model === 'nano-banana-pro') {
-        payload = { prompt: guarded, image_input: [url], aspect_ratio: ar, resolution: '2K', output_format: 'png' }; // Snap Max : ratio forcé
-      } else {
-        payload = { prompt: guarded, image_urls: [url] };                                    // Snap Plus : éditeur fidèle, garde les dims source
-      }
-      const descriptor = { api: 'jobs', model, input: payload };
+
+      // 1) Reformulation : l'assistant comprend la modif dans le contexte du prompt d'origine
+      //    et écrit une instruction optimisée pour Nano Banana (Snap Max).
+      estatus.innerHTML = '<span class="spinner"></span>Analyse de ta demande…';
+      let editPrompt = null;
+      try {
+        const SYS =
+          "Tu es prompt engineer expert du modèle d'édition d'image Nano Banana. On te donne le prompt d'origine d'une affiche et une demande de modification (souvent en français familier, parfois vague). " +
+          "Tu écris UNE instruction d'édition en anglais, claire, précise et exécutable : décris exactement le changement à appliquer (textes exacts entre guillemets s'il y en a), " +
+          "et précise que tout le reste (composition, style, couleurs, typographies, logo, autres textes) doit rester strictement identique. Réponds UNIQUEMENT par l'instruction, sans guillemets autour ni commentaire.";
+        const USR = `Prompt d'origine de l'affiche : ${prompt || '(inconnu)'}\nDemande de modification de l'utilisateur : ${instr}`;
+        const rr = await window.api.aiChat({ model: AI_MODEL, messages: [{ role: 'system', content: SYS }, { role: 'user', content: USR }] });
+        if (rr.text && rr.text.trim().length > 10) editPrompt = rr.text.trim();
+      } catch (_) { /* repli : instruction brute */ }
+      const guarded = editGuardPrompt(editPrompt || instr, ar);
+
+      // 2) Ré-upload de la photo de sortie chez kie (URL stable pour le modèle)
+      estatus.innerHTML = '<span class="spinner"></span>Préparation de l\'image…';
+      let srcUrl = url;
+      try {
+        const up = await window.api.uploadFile({ remoteUrl: url, fileName: 'edit-source.png' });
+        if (up && up.url) srcUrl = up.url;
+      } catch (_) { /* repli : URL d'origine */ }
+
+      // 3) Snap Max (nano-banana-pro) uniquement — la meilleure fidélité de retouche
+      estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
+      const descriptor = {
+        api: 'jobs',
+        model: 'nano-banana-pro',
+        input: { prompt: guarded, image_input: [srcUrl], aspect_ratio: ar, resolution: '2K', output_format: 'png' },
+      };
       const { taskId } = await window.api.generate(descriptor);
       const res = await pollUntilDone({ api: 'jobs', taskId }, estatus, 'Modification');
       refreshBalance();
-      // ré-affiche le résultat modifié (édition itérative + historique pour Annuler)
-      // et met à jour l'élément de galerie correspondant (nouvelle version + historique)
+
+      // 4) Versionne le prompt avec la photo (galerie + affichage) + historique pour Annuler
+      const newPrompt = (prompt ? prompt + '\n' : '') + '· Modif : ' + instr;
       const newHistory = [...history, url];
-      if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: res.resultUrl, history: newHistory }); } catch (_) {} }
-      showImageResult(container, res.resultUrl, prompt, newHistory, galleryId || null);
+      if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: res.resultUrl, history: newHistory, prompt: newPrompt }); } catch (_) {} }
+      showImageResult(container, res.resultUrl, newPrompt, newHistory, galleryId || null);
     } catch (e) {
       estatus.textContent = '✗ ' + e.message;
       estatus.className = 'edit-status error';
@@ -1624,7 +1638,7 @@ function showImageResult(container, url, prompt, history, galleryId) {
     }
   };
   ebtn.onclick = runEdit;
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runEdit(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runEdit(); } });
   container.appendChild(edit);
 }
 
