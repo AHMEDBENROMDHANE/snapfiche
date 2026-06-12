@@ -2082,6 +2082,228 @@ async function buildBrandFrameLayers(W, H, c) {
   return out;
 }
 
+// ===== 6 modèles de cadres tendance, générés avec les infos de l'entreprise =====
+// Logo de l'entreprise en Image (data URL, mise en cache).
+async function getLogoImage(c) {
+  if (!c || !c.logoFile) return null;
+  if (c._logoImg) return c._logoImg;
+  try {
+    let du = await window.api.mediaDataUrl(c.logoFile);
+    if (!du.startsWith('data:')) du = await window.api.fetchDataUrl(du);
+    const im = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = du;
+    });
+    c._logoImg = im;
+    return im;
+  } catch (_) { return null; }
+}
+// Mesure une rangée de contacts (icône + texte) pour la centrer.
+function measureContactRow(items, s, fs, gap, itemGap, font) {
+  ctx.font = `${fs}px ${font || 'Poppins'}`;
+  const widths = items.map((it) => s + gap + ctx.measureText(it.text).width);
+  return { widths, total: widths.reduce((a, b) => a + b, 0) + itemGap * (items.length - 1) };
+}
+function contactRowLayers(items, startX, y, s, fs, gap, itemGap, color, widths) {
+  const out = [];
+  let x = startX;
+  for (let i = 0; i < items.length; i++) {
+    out.push({ type: 'icon', name: items[i].icon, x, y, size: s, color });
+    out.push({ type: 'text', text: items[i].text, x: x + s + gap, y: y + Math.round(s * 0.1), size: fs, color, font: 'Poppins', bold: false });
+    x += widths[i] + itemGap;
+  }
+  return out;
+}
+async function logoLayer(c, x, y, w) {
+  const im = await getLogoImage(c);
+  if (!im) return [];
+  return [{ type: 'image', img: im, x, y, w, h: w * (im.naturalHeight / im.naturalWidth) }];
+}
+
+const FRAME_TEMPLATES = [
+  {
+    id: 'classic', name: 'Classique', desc: 'Pastille sombre arrondie, logo en haut',
+    build: (W, H, c) => buildBrandFrameLayers(W, H, c),
+  },
+  {
+    id: 'glass', name: 'Verre dépoli', desc: 'Bandeau glassmorphism, texte sombre',
+    build: async (W, H, c) => {
+      const out = [];
+      const items = contactItems(c);
+      const s = Math.round(W * 0.032), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.032), pad = Math.round(W * 0.022);
+      const barH = s + pad * 2;
+      out.push({ type: 'rect', x: W * 0.03, y: H - barH - W * 0.03, w: W * 0.94, h: barH, r: barH / 2, color: 'rgba(255,255,255,0.78)' });
+      if (items.length) {
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        out.push(...contactRowLayers(items, (W - total) / 2, H - barH - W * 0.03 + pad, s, fs, gap, itemGap, '#17131f', widths));
+      }
+      // logo sur pastille de verre en haut à droite
+      const lw = W * 0.14;
+      const im = await getLogoImage(c);
+      if (im) {
+        const lh = lw * (im.naturalHeight / im.naturalWidth);
+        out.push({ type: 'rect', x: W * 0.945 - lw - W * 0.018, y: W * 0.028, w: lw + W * 0.036, h: lh + W * 0.036, r: W * 0.02, color: 'rgba(255,255,255,0.78)' });
+        out.push({ type: 'image', img: im, x: W * 0.945 - lw, y: W * 0.046, w: lw, h: lh });
+      }
+      return out;
+    },
+  },
+  {
+    id: 'band', name: 'Bandeau de marque', desc: 'Bande pleine couleur de ta charte',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c);
+      const bandH = Math.round(W * 0.082);
+      out.push({ type: 'rect', x: 0, y: H - bandH, w: W, h: bandH, r: 0, color: brand });
+      if (items.length) {
+        const s = Math.round(W * 0.03), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.03);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        out.push(...contactRowLayers(items, (W - total) / 2, H - bandH + (bandH - s) / 2, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.15)));
+      return out;
+    },
+  },
+  {
+    id: 'badge', name: 'Badge carte', desc: 'Carte de visite blanche, contacts empilés',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c).slice(0, 4);
+      const s = Math.round(W * 0.026), fs = Math.round(s * 0.85), gap = Math.round(W * 0.012), pad = Math.round(W * 0.026), lh = Math.round(s * 1.65);
+      ctx.font = `${fs}px Poppins`;
+      const maxTextW = Math.max(0, ...items.map((it) => ctx.measureText(it.text).width));
+      const im = await getLogoImage(c);
+      const lw = W * 0.11;
+      const logoH = im ? lw * (im.naturalHeight / im.naturalWidth) : 0;
+      const cardW = Math.max(s + gap + maxTextW, lw) + pad * 2;
+      const realCardH = pad * 2 + (im ? logoH + pad * 0.7 : 0) + items.length * lh;
+      const cx = W * 0.045, cy = H - realCardH - W * 0.045;
+      out.push({ type: 'rect', x: cx, y: cy, w: cardW, h: realCardH, r: W * 0.02, color: 'rgba(255,255,255,0.92)' });
+      let y = cy + pad;
+      if (im) {
+        out.push({ type: 'image', img: im, x: cx + pad, y, w: lw, h: logoH });
+        y += logoH + pad * 0.7;
+      }
+      for (const it of items) {
+        out.push({ type: 'icon', name: it.icon, x: cx + pad, y, size: s, color: brand });
+        out.push({ type: 'text', text: it.text, x: cx + pad + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#17131f', font: 'Poppins', bold: false });
+        y += lh;
+      }
+      return out;
+    },
+  },
+  {
+    id: 'minimal', name: 'Minimal vertical', desc: 'Discret, contacts empilés + filet couleur',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c).slice(0, 4);
+      const s = Math.round(W * 0.026), fs = Math.round(s * 0.85), gap = Math.round(W * 0.012), lh = Math.round(s * 1.7);
+      const stackH = items.length * lh - (lh - s);
+      const sx = W * 0.055, sy = H - stackH - W * 0.05;
+      if (items.length) {
+        out.push({ type: 'rect', x: W * 0.04, y: sy - W * 0.005, w: W * 0.006, h: stackH + W * 0.01, r: W * 0.003, color: brand });
+        let y = sy;
+        for (const it of items) {
+          out.push({ type: 'icon', name: it.icon, x: sx, y, size: s, color: '#ffffff' });
+          out.push({ type: 'text', text: it.text, x: sx + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false, shadow: true });
+          y += lh;
+        }
+      }
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.13)));
+      return out;
+    },
+  },
+  {
+    id: 'border', name: 'Contour élégant', desc: 'Fin liseré encadrant + contacts intégrés',
+    build: async (W, H, c) => {
+      const out = [];
+      const inset = Math.round(W * 0.028), th = Math.max(2, Math.round(W * 0.004));
+      const col = 'rgba(255,255,255,0.85)';
+      out.push({ type: 'rect', x: inset, y: inset, w: W - inset * 2, h: th, r: 0, color: col });
+      out.push({ type: 'rect', x: inset, y: H - inset - th, w: W - inset * 2, h: th, r: 0, color: col });
+      out.push({ type: 'rect', x: inset, y: inset, w: th, h: H - inset * 2, r: 0, color: col });
+      out.push({ type: 'rect', x: W - inset - th, y: inset, w: th, h: H - inset * 2, r: 0, color: col });
+      const items = contactItems(c);
+      if (items.length) {
+        const s = Math.round(W * 0.028), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.028), pad = Math.round(W * 0.016);
+        const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
+        const barH = s + pad * 2;
+        const by = H - inset - th - barH - W * 0.012;
+        out.push({ type: 'rect', x: (W - total) / 2 - pad * 1.6, y: by, w: total + pad * 3.2, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.55)' });
+        out.push(...contactRowLayers(items, (W - total) / 2, by + pad, s, fs, gap, itemGap, '#ffffff', widths));
+      }
+      out.push(...(await logoLayer(c, W * 0.06, W * 0.055, W * 0.13)));
+      return out;
+    },
+  },
+];
+
+// Fond d'exemple (dégradé neutre) pour visualiser les cadres.
+function drawSampleBg(g, W, H) {
+  const grad = g.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, '#cfc4ec');
+  grad.addColorStop(1, '#7e6ab8');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(255,255,255,.35)';
+  g.font = `600 ${Math.round(W * 0.045)}px Inter`;
+  g.textAlign = 'center';
+  g.fillText("Exemple d'affiche", W / 2, H / 2);
+  g.textAlign = 'left';
+}
+
+// Galerie des 6 modèles : aperçus réels générés avec les infos de l'entreprise.
+async function showFrameTemplates() {
+  const c = activeCompany();
+  if (!c) return alert("Choisis d'abord une entreprise active (menu en haut à gauche).");
+  const modal = document.getElementById('framesModal');
+  const grid = document.getElementById('framesGrid');
+  modal.classList.remove('hidden');
+  grid.innerHTML = '<p class="empty"><span class="spinner"></span>Génération des aperçus…</p>';
+  try { await document.fonts.ready; } catch (_) {}
+  grid.innerHTML = '';
+  const PW = 480, PH = 600;
+  for (const t of FRAME_TEMPLATES) {
+    try {
+      const cv = document.createElement('canvas');
+      cv.width = PW; cv.height = PH;
+      const g = cv.getContext('2d');
+      drawSampleBg(g, PW, PH);
+      const ls = await t.build(PW, PH, c);
+      for (const l of ls) drawLayerOnto(g, l);
+      const card = document.createElement('div');
+      card.className = 'design-card';
+      card.innerHTML = `<img src="${cv.toDataURL('image/jpeg', 0.85)}" alt="${esc(t.name)}" /><div class="dc-meta"><span class="dc-name">${esc(t.name)}</span></div><div class="dc-desc">${esc(t.desc)}</div>`;
+      card.onclick = () => applyFrameTemplate(t).catch((e) => alert('Échec : ' + e.message));
+      grid.appendChild(card);
+    } catch (_) {}
+  }
+}
+// Charge un modèle dans l'éditeur (sur fond d'exemple) pour personnalisation.
+async function applyFrameTemplate(t) {
+  const c = activeCompany();
+  document.getElementById('framesModal').classList.add('hidden');
+  const SW = 1080, SH = 1350;
+  const cv = document.createElement('canvas');
+  cv.width = SW; cv.height = SH;
+  drawSampleBg(cv.getContext('2d'), SW, SH);
+  await new Promise((res) => { const im = new Image(); im.onload = () => { setBgImage(im); res(); }; im.src = cv.toDataURL(); });
+  bgUrl = null;
+  currentDesign.id = null;
+  layers = await t.build(canvas.width, canvas.height, c);
+  selected = null;
+  render();
+  document.querySelector('.nav-btn[data-view="editor"]').click();
+  designStatus(`Modèle « ${t.name} » chargé — ajuste les éléments puis « Enregistrer le cadre ».`);
+}
+document.getElementById('frameTemplatesBtn').onclick = showFrameTemplates;
+document.getElementById('framesClose').onclick = () => document.getElementById('framesModal').classList.add('hidden');
+
 // Coordonnées relatives (fractions de largeur/hauteur) -> le cadre s'adapte à tout format.
 function normalizeFrameLayers(ls, W, H) {
   return ls.map((l) => {

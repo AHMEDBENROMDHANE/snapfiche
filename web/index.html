@@ -369,7 +369,8 @@
             </div>
             <div class="tool-group">
               <strong>Cadre de marque</strong>
-              <button id="frameEditBtn">Modifier le cadre</button>
+              <button id="frameTemplatesBtn">Choisir un modèle (6 styles)</button>
+              <button id="frameEditBtn">Modifier mon cadre</button>
               <button id="frameSaveBtn" class="primary">Enregistrer le cadre</button>
               <p class="hint">Logo + réseaux sociaux en bordure — défini une fois, appliqué d'un clic sur toutes tes affiches.</p>
             </div>
@@ -742,6 +743,18 @@
         <div class="modal-actions">
           <button id="saveKey" class="primary">Enregistrer</button>
           <button id="closeSettings">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODALE : MODÈLES DE CADRE (générés avec les infos de l'entreprise) -->
+    <div id="framesModal" class="modal hidden">
+      <div class="modal-box designs-box">
+        <h2>Modèles de cadre</h2>
+        <p class="hint">Générés automatiquement avec les infos de ton entreprise — choisis un style, puis personnalise-le dans l'éditeur.</p>
+        <div id="framesGrid" class="designs-grid frames-grid"></div>
+        <div class="modal-actions">
+          <button id="framesClose">Fermer</button>
         </div>
       </div>
     </div>
