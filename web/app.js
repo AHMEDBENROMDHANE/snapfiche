@@ -8,6 +8,7 @@ const ICONS = {
   film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',
   briefcase: '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>',
   layers: '<path d="M12 2l10 6-10 6L2 8z"/><path d="M2 14l10 6 10-6"/>',
+  frame: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16.5h18M7.5 16.5V21"/><circle cx="7" cy="7" r="1.6"/>',
   shirt: '<path d="M4 7l4-3 2 2h4l2-2 4 3-2 3-2-1v11H8V9L6 10z"/>',
 };
 function svgIcon(name, cls) {
@@ -254,6 +255,7 @@ async function setActiveCompany(id) {
   updateBrandHints();
   updateEditorBrand();
   renderCompanyList();
+  renderGuidedCards(); // carte cadre + boutons par carte dépendent de l'entreprise active
 }
 document.getElementById('activeCompany').onchange = (e) => setActiveCompany(e.target.value);
 
@@ -721,6 +723,7 @@ async function loadCompanies() {
   updateBrandHints();
   updateEditorBrand();
   applyAccountUI();
+  renderGuidedCards(); // workflow guidé : carte cadre selon l'entreprise active
 }
 
 // --- Formulaire entreprise ---
@@ -1828,12 +1831,32 @@ function textLines(l, g) {
   return out;
 }
 
+// Couleur hex normalisée + conversion en rgba (transparences de marque).
+function hexFull(h) {
+  h = String(h || '#7c3aed').replace('#', '');
+  if (h.length === 3) h = h.split('').map((x) => x + x).join('');
+  return '#' + h.slice(0, 6);
+}
+function hexToRgba(h, a) {
+  const x = hexFull(h).slice(1);
+  return `rgba(${parseInt(x.slice(0, 2), 16)},${parseInt(x.slice(2, 4), 16)},${parseInt(x.slice(4, 6), 16)},${a})`;
+}
+
 // Dessine un calque sur n'importe quel contexte canvas (application du cadre de marque).
 function drawLayerOnto(g, l) {
   if (l.type === 'rect') {
-    g.save(); g.fillStyle = l.color;
+    g.save();
+    if (l.glow) { g.shadowColor = l.glow; g.shadowBlur = Math.max(8, (l.h || 10) * 2.2); }
+    g.fillStyle = l.color;
     g.beginPath(); g.roundRect(l.x, l.y, l.w, l.h, l.r || 0); g.fill();
+    if (l.glow) { g.fill(); } // double passe -> halo néon plus marqué
     g.restore();
+  } else if (l.type === 'grad') {
+    // Fondu dégradé : transparent en haut -> couleur en bas (style Instagram)
+    const gr = g.createLinearGradient(0, l.y, 0, l.y + l.h);
+    gr.addColorStop(0, hexToRgba(l.color, 0));
+    gr.addColorStop(1, hexToRgba(l.color, l.alpha != null ? l.alpha : 0.85));
+    g.save(); g.fillStyle = gr; g.fillRect(l.x, l.y, l.w, l.h); g.restore();
   } else if (l.type === 'icon') {
     drawIconShape(g, l.name, l.x, l.y, l.size, l.color);
   } else if (l.type === 'image' && l.img) {
@@ -1919,11 +1942,8 @@ function render() {
     ctx.textAlign = 'left';
   }
   for (const l of layers) {
-    if (l.type === 'rect') {
-      ctx.save();
-      ctx.fillStyle = l.color;
-      ctx.beginPath(); ctx.roundRect(l.x, l.y, l.w, l.h, l.r || 0); ctx.fill();
-      ctx.restore();
+    if (l.type === 'rect' || l.type === 'grad') {
+      drawLayerOnto(ctx, l);
       l._w = l.w; l._h = l.h;
     } else if (l.type === 'icon') {
       drawIconShape(ctx, l.name, l.x, l.y, l.size, l.color);
@@ -2124,120 +2144,134 @@ async function logoLayer(c, x, y, w) {
 
 const FRAME_TEMPLATES = [
   {
-    id: 'classic', name: 'Classique', desc: 'Pastille sombre arrondie, logo en haut',
-    build: (W, H, c) => buildBrandFrameLayers(W, H, c),
-  },
-  {
-    id: 'glass', name: 'Verre dépoli', desc: 'Bandeau glassmorphism, texte sombre',
+    id: 'brandbar', name: 'Barre translucide', desc: 'Bandeau pleine largeur teinté de ta charte + liseré',
     build: async (W, H, c) => {
       const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
       const items = contactItems(c);
-      const s = Math.round(W * 0.032), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.032), pad = Math.round(W * 0.022);
+      const s = Math.round(W * 0.03), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.032), pad = Math.round(W * 0.022);
       const barH = s + pad * 2;
-      out.push({ type: 'rect', x: W * 0.03, y: H - barH - W * 0.03, w: W * 0.94, h: barH, r: barH / 2, color: 'rgba(255,255,255,0.78)' });
+      const line = Math.max(2, Math.round(W * 0.004));
+      out.push({ type: 'rect', x: 0, y: H - barH, w: W, h: barH, r: 0, color: hexToRgba(brand, 0.42) });
+      out.push({ type: 'rect', x: 0, y: H - barH - line, w: W, h: line, r: 0, color: hexToRgba(brand, 0.95) });
       if (items.length) {
         const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
-        out.push(...contactRowLayers(items, (W - total) / 2, H - barH - W * 0.03 + pad, s, fs, gap, itemGap, '#17131f', widths));
+        out.push(...contactRowLayers(items, (W - total) / 2, H - barH + pad, s, fs, gap, itemGap, '#ffffff', widths));
       }
-      // logo sur pastille de verre en haut à droite
-      const lw = W * 0.14;
-      const im = await getLogoImage(c);
-      if (im) {
-        const lh = lw * (im.naturalHeight / im.naturalWidth);
-        out.push({ type: 'rect', x: W * 0.945 - lw - W * 0.018, y: W * 0.028, w: lw + W * 0.036, h: lh + W * 0.036, r: W * 0.02, color: 'rgba(255,255,255,0.78)' });
-        out.push({ type: 'image', img: im, x: W * 0.945 - lw, y: W * 0.046, w: lw, h: lh });
-      }
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.14)));
       return out;
     },
   },
   {
-    id: 'band', name: 'Bandeau de marque', desc: 'Bande pleine couleur de ta charte',
+    id: 'fade', name: 'Fondu dégradé', desc: "Bas de l'image fondu au noir, style Instagram",
     build: async (W, H, c) => {
       const out = [];
       const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
       const items = contactItems(c);
-      const bandH = Math.round(W * 0.082);
-      out.push({ type: 'rect', x: 0, y: H - bandH, w: W, h: bandH, r: 0, color: brand });
+      out.push({ type: 'grad', x: 0, y: H - H * 0.2, w: W, h: H * 0.2, color: '#0d0a14', alpha: 0.85 });
+      const s = Math.round(W * 0.03), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.032);
       if (items.length) {
-        const s = Math.round(W * 0.03), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.03);
         const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
-        out.push(...contactRowLayers(items, (W - total) / 2, H - bandH + (bandH - s) / 2, s, fs, gap, itemGap, '#ffffff', widths));
+        const y = H - s - W * 0.035;
+        out.push({ type: 'rect', x: (W - W * 0.12) / 2, y: y - W * 0.022, w: W * 0.12, h: Math.max(2, W * 0.0045), r: W * 0.002, color: hexToRgba(brand, 0.95) });
+        out.push(...contactRowLayers(items, (W - total) / 2, y, s, fs, gap, itemGap, '#ffffff', widths));
       }
-      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.15)));
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.14)));
       return out;
     },
   },
   {
-    id: 'badge', name: 'Badge carte', desc: 'Carte de visite blanche, contacts empilés',
+    id: 'chips', name: 'Pastilles de verre', desc: 'Chaque contact dans sa pastille glass',
     build: async (W, H, c) => {
       const out = [];
-      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
       const items = contactItems(c).slice(0, 4);
-      const s = Math.round(W * 0.026), fs = Math.round(s * 0.85), gap = Math.round(W * 0.012), pad = Math.round(W * 0.026), lh = Math.round(s * 1.65);
-      ctx.font = `${fs}px Poppins`;
-      const maxTextW = Math.max(0, ...items.map((it) => ctx.measureText(it.text).width));
-      const im = await getLogoImage(c);
-      const lw = W * 0.11;
-      const logoH = im ? lw * (im.naturalHeight / im.naturalWidth) : 0;
-      const cardW = Math.max(s + gap + maxTextW, lw) + pad * 2;
-      const realCardH = pad * 2 + (im ? logoH + pad * 0.7 : 0) + items.length * lh;
-      const cx = W * 0.045, cy = H - realCardH - W * 0.045;
-      out.push({ type: 'rect', x: cx, y: cy, w: cardW, h: realCardH, r: W * 0.02, color: 'rgba(255,255,255,0.92)' });
-      let y = cy + pad;
-      if (im) {
-        out.push({ type: 'image', img: im, x: cx + pad, y, w: lw, h: logoH });
-        y += logoH + pad * 0.7;
-      }
-      for (const it of items) {
-        out.push({ type: 'icon', name: it.icon, x: cx + pad, y, size: s, color: brand });
-        out.push({ type: 'text', text: it.text, x: cx + pad + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#17131f', font: 'Poppins', bold: false });
-        y += lh;
-      }
-      return out;
-    },
-  },
-  {
-    id: 'minimal', name: 'Minimal vertical', desc: 'Discret, contacts empilés + filet couleur',
-    build: async (W, H, c) => {
-      const out = [];
-      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
-      const items = contactItems(c).slice(0, 4);
-      const s = Math.round(W * 0.026), fs = Math.round(s * 0.85), gap = Math.round(W * 0.012), lh = Math.round(s * 1.7);
-      const stackH = items.length * lh - (lh - s);
-      const sx = W * 0.055, sy = H - stackH - W * 0.05;
-      if (items.length) {
-        out.push({ type: 'rect', x: W * 0.04, y: sy - W * 0.005, w: W * 0.006, h: stackH + W * 0.01, r: W * 0.003, color: brand });
-        let y = sy;
-        for (const it of items) {
-          out.push({ type: 'icon', name: it.icon, x: sx, y, size: s, color: '#ffffff' });
-          out.push({ type: 'text', text: it.text, x: sx + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false, shadow: true });
-          y += lh;
-        }
+      const s = Math.round(W * 0.027), fs = Math.round(s * 0.82), gap = Math.round(W * 0.009), pad = Math.round(W * 0.016), chipGap = Math.round(W * 0.014);
+      ctx.font = fs + 'px Poppins';
+      const chipWs = items.map((it) => s + gap + ctx.measureText(it.text).width + pad * 2);
+      const total = chipWs.reduce((a, b) => a + b, 0) + chipGap * Math.max(0, items.length - 1);
+      const chipH = s + pad * 1.4;
+      let x = (W - total) / 2;
+      const y = H - chipH - W * 0.032;
+      for (let i = 0; i < items.length; i++) {
+        out.push({ type: 'rect', x, y, w: chipWs[i], h: chipH, r: chipH / 2, color: 'rgba(20,16,28,0.5)' });
+        out.push({ type: 'icon', name: items[i].icon, x: x + pad, y: y + (chipH - s) / 2, size: s, color: '#ffffff' });
+        out.push({ type: 'text', text: items[i].text, x: x + pad + s + gap, y: y + (chipH - s) / 2 + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+        x += chipWs[i] + chipGap;
       }
       out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.13)));
       return out;
     },
   },
   {
-    id: 'border', name: 'Contour élégant', desc: 'Fin liseré encadrant + contacts intégrés',
+    id: 'neon', name: 'Ligne néon', desc: 'Barre sombre + ligne lumineuse de ta couleur',
     build: async (W, H, c) => {
       const out = [];
-      const inset = Math.round(W * 0.028), th = Math.max(2, Math.round(W * 0.004));
-      const col = 'rgba(255,255,255,0.85)';
-      out.push({ type: 'rect', x: inset, y: inset, w: W - inset * 2, h: th, r: 0, color: col });
-      out.push({ type: 'rect', x: inset, y: H - inset - th, w: W - inset * 2, h: th, r: 0, color: col });
-      out.push({ type: 'rect', x: inset, y: inset, w: th, h: H - inset * 2, r: 0, color: col });
-      out.push({ type: 'rect', x: W - inset - th, y: inset, w: th, h: H - inset * 2, r: 0, color: col });
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
       const items = contactItems(c);
+      const s = Math.round(W * 0.03), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.032), pad = Math.round(W * 0.022);
+      const barH = s + pad * 2;
+      out.push({ type: 'rect', x: 0, y: H - barH, w: W, h: barH, r: 0, color: 'rgba(10,8,16,0.62)' });
+      out.push({ type: 'rect', x: W * 0.06, y: H - barH - Math.max(2, W * 0.0045), w: W * 0.88, h: Math.max(2, W * 0.0045), r: W * 0.003, color: hexFull(brand), glow: hexFull(brand) });
       if (items.length) {
-        const s = Math.round(W * 0.028), fs = Math.round(s * 0.8), gap = Math.round(W * 0.01), itemGap = Math.round(W * 0.028), pad = Math.round(W * 0.016);
         const { widths, total } = measureContactRow(items, s, fs, gap, itemGap);
-        const barH = s + pad * 2;
-        const by = H - inset - th - barH - W * 0.012;
-        out.push({ type: 'rect', x: (W - total) / 2 - pad * 1.6, y: by, w: total + pad * 3.2, h: barH, r: barH / 2, color: 'rgba(12,9,20,0.55)' });
-        out.push(...contactRowLayers(items, (W - total) / 2, by + pad, s, fs, gap, itemGap, '#ffffff', widths));
+        out.push(...contactRowLayers(items, (W - total) / 2, H - barH + pad, s, fs, gap, itemGap, '#ffffff', widths));
       }
-      out.push(...(await logoLayer(c, W * 0.06, W * 0.055, W * 0.13)));
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.14)));
+      return out;
+    },
+  },
+  {
+    id: 'dock', name: 'Dock latéral', desc: "Colonne d'icônes translucide sur le côté",
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c).slice(0, 5);
+      const s = Math.round(W * 0.034), pad = Math.round(W * 0.016);
+      if (items.length) {
+        const dockW = s + pad * 2;
+        const dockH = items.length * (s + pad) + pad;
+        const dx = W - dockW - W * 0.03;
+        const dy = H - dockH - W * 0.03;
+        out.push({ type: 'rect', x: dx, y: dy, w: dockW, h: dockH, r: dockW / 2, color: hexToRgba(brand, 0.5) });
+        items.forEach((it, i) => {
+          out.push({ type: 'icon', name: it.icon, x: dx + pad, y: dy + pad + i * (s + pad), size: s, color: '#ffffff' });
+        });
+      }
+      const site = (c && c.website) ? c.website.replace(/^https?:[/][/]/, '').replace(/[/]$/, '') : '';
+      if (site) {
+        out.push({ type: 'text', text: site, x: W * 0.05, y: H - W * 0.055, size: Math.round(W * 0.024), color: '#ffffff', font: 'Poppins', bold: false, shadow: true });
+      }
+      out.push(...(await logoLayer(c, W * 0.045, W * 0.04, W * 0.14)));
+      return out;
+    },
+  },
+  {
+    id: 'glasscard', name: 'Badge verre teinté', desc: 'Carte glass aux couleurs de ta charte',
+    build: async (W, H, c) => {
+      const out = [];
+      const brand = (c && c.colors && c.colors[0]) || '#7c3aed';
+      const items = contactItems(c).slice(0, 4);
+      const s = Math.round(W * 0.026), fs = Math.round(s * 0.85), gap = Math.round(W * 0.012), pad = Math.round(W * 0.026), lh = Math.round(s * 1.65);
+      ctx.font = fs + 'px Poppins';
+      const maxTextW = Math.max(0, ...items.map((it) => ctx.measureText(it.text).width));
+      const im = await getLogoImage(c);
+      const lw = W * 0.11;
+      const logoH = im ? lw * (im.naturalHeight / im.naturalWidth) : 0;
+      const cardW = Math.max(s + gap + maxTextW, lw) + pad * 2;
+      const cardH = pad * 2 + (im ? logoH + pad * 0.7 : 0) + items.length * lh;
+      const cx = W * 0.045, cy = H - cardH - W * 0.045;
+      out.push({ type: 'rect', x: cx, y: cy, w: cardW, h: cardH, r: W * 0.022, color: hexToRgba(brand, 0.4) });
+      out.push({ type: 'rect', x: cx, y: cy, w: cardW, h: Math.max(2, W * 0.004), r: W * 0.002, color: hexToRgba(brand, 0.95) });
+      let y = cy + pad;
+      if (im) {
+        out.push({ type: 'image', img: im, x: cx + pad, y, w: lw, h: logoH });
+        y += logoH + pad * 0.7;
+      }
+      for (const it of items) {
+        out.push({ type: 'icon', name: it.icon, x: cx + pad, y, size: s, color: '#ffffff' });
+        out.push({ type: 'text', text: it.text, x: cx + pad + s + gap, y: y + Math.round(s * 0.08), size: fs, color: '#ffffff', font: 'Poppins', bold: false });
+        y += lh;
+      }
       return out;
     },
   },
@@ -2308,7 +2342,8 @@ document.getElementById('framesClose').onclick = () => document.getElementById('
 function normalizeFrameLayers(ls, W, H) {
   return ls.map((l) => {
     const base = { type: l.type, nx: l.x / W, ny: l.y / H };
-    if (l.type === 'rect') return { ...base, nw: l.w / W, nh: l.h / H, nr: (l.r || 0) / W, color: l.color };
+    if (l.type === 'rect') return { ...base, nw: l.w / W, nh: l.h / H, nr: (l.r || 0) / W, color: l.color, glow: l.glow || null };
+    if (l.type === 'grad') return { ...base, nw: l.w / W, nh: l.h / H, color: l.color, alpha: l.alpha != null ? l.alpha : 0.85 };
     if (l.type === 'icon') return { ...base, ns: l.size / W, name: l.name, color: l.color };
     if (l.type === 'image') return { ...base, nw: l.w / W, nh: l.h / H, src: l.img ? l.img.src : null };
     return { ...base, ns: l.size / W, text: l.text, color: l.color, font: l.font, bold: !!l.bold, shadow: !!l.shadow, align: l.align || null, nmaxw: l.maxW ? l.maxW / W : null };
@@ -2317,7 +2352,8 @@ function normalizeFrameLayers(ls, W, H) {
 async function denormalizeFrameLayers(ls, W, H) {
   const out = [];
   for (const l of ls || []) {
-    if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color });
+    if (l.type === 'rect') out.push({ type: 'rect', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, r: (l.nr || 0) * W, color: l.color, glow: l.glow || undefined });
+    else if (l.type === 'grad') out.push({ type: 'grad', x: l.nx * W, y: l.ny * H, w: l.nw * W, h: l.nh * H, color: l.color, alpha: l.alpha });
     else if (l.type === 'icon') out.push({ type: 'icon', x: l.nx * W, y: l.ny * H, size: l.ns * W, name: l.name, color: l.color });
     else if (l.type === 'image' && l.src) {
       await new Promise((res) => {
@@ -2531,20 +2567,14 @@ document.getElementById('designNewBtn').onclick = () => {
 
 // ===== Édition du cadre de marque dans l'éditeur =====
 // Ouvre le cadre de l'entreprise active sur un fond d'exemple : tout est déplaçable/modifiable.
-document.getElementById('frameEditBtn').onclick = async () => {
+async function editBrandFrame() {
   const c = activeCompany();
   if (!c) return alert("Choisis d'abord une entreprise active (menu en haut à gauche).");
   try { await document.fonts.ready; } catch (_) {}
-  // Fond d'exemple neutre (dégradé) pour visualiser le cadre
   const SW = 1080, SH = 1350;
   const cv = document.createElement('canvas');
   cv.width = SW; cv.height = SH;
-  const g = cv.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, SW, SH);
-  grad.addColorStop(0, '#cfc4ec'); grad.addColorStop(1, '#7e6ab8');
-  g.fillStyle = grad; g.fillRect(0, 0, SW, SH);
-  g.fillStyle = 'rgba(255,255,255,.4)'; g.font = '600 44px Inter'; g.textAlign = 'center';
-  g.fillText("Exemple d'affiche", SW / 2, SH / 2);
+  drawSampleBg(cv.getContext('2d'), SW, SH);
   await new Promise((res) => { const im = new Image(); im.onload = () => { setBgImage(im); res(); }; im.src = cv.toDataURL(); });
   bgUrl = null; currentDesign.id = null;
   layers = c.frame && c.frame.length
@@ -2554,7 +2584,8 @@ document.getElementById('frameEditBtn').onclick = async () => {
   render();
   document.querySelector('.nav-btn[data-view="editor"]').click();
   designStatus(`Cadre de « ${c.name} » — déplace/modifie les éléments puis « Enregistrer le cadre ».`);
-};
+}
+document.getElementById('frameEditBtn').onclick = () => editBrandFrame();
 // Sauvegarde le cadre (coordonnées relatives -> s'adapte à tous les formats d'affiche).
 document.getElementById('frameSaveBtn').onclick = async () => {
   const c = activeCompany();
@@ -2566,6 +2597,7 @@ document.getElementById('frameSaveBtn').onclick = async () => {
     const frame = normalizeFrameLayers(layers, canvas.width, canvas.height);
     await window.api.frameSave(c.id, frame);
     c.frame = frame; // met à jour le cache local
+    renderGuidedCards(); // la carte « Crée ton cadre » devient « Charte & cadre »
     designStatus(`✓ Cadre de « ${c.name} » enregistré — il s'appliquera sur tes prochaines affiches.`);
   } catch (e) {
     alert("Échec de l'enregistrement du cadre : " + e.message);
@@ -2980,9 +3012,24 @@ function guidedVideoDescriptor(modelId, params, prompt, images) {
   return { api: 'jobs', model: m.id, input };
 }
 
+// Carte « cadre de marque » : 1re étape tant qu'il n'existe pas, puis carte « Charte & cadre ».
+function buildFrameCard(hasFrame) {
+  const card = document.createElement('div');
+  card.className = 'guided-card frame-card' + (hasFrame ? '' : ' frame-card-first');
+  card.innerHTML = hasFrame
+    ? `<div class="gicon">${svgIcon('frame', 'ico-card')}</div><h4>Charte & cadre</h4><p>Modifier ton cadre de marque (logo + réseaux) ou choisir un autre modèle.</p><span class="gtag">Cadre enregistré ✓</span>`
+    : `<div class="gicon">${svgIcon('frame', 'ico-card')}</div><h4>1 · Crée ton cadre de marque</h4><p>Logo + réseaux en bordure de tes affiches — à faire une fois, appliqué ensuite automatiquement. 6 modèles tendance générés avec tes infos.</p><span class="gtag">Commence par ici</span>`;
+  card.onclick = () => { if (hasFrame) editBrandFrame(); else showFrameTemplates(); };
+  return card;
+}
+
 function renderGuidedCards() {
   const grid = document.getElementById('guidedCards');
   grid.innerHTML = '';
+  const c = activeCompany();
+  const hasFrame = !!(c && c.frame && c.frame.length);
+  // Étape 1 du workflow : créer son cadre (mise en avant tant qu'il n'existe pas)
+  if (c && !hasFrame) grid.appendChild(buildFrameCard(false));
   RECIPES.filter((r) => {
     if (r.proLayers && !featureOn('poster_pro')) return false;
     if (r.kind === 'video' && !featureOn('video')) return false;
@@ -2992,11 +3039,28 @@ function renderGuidedCards() {
     card.className = 'guided-card';
     card.innerHTML = `<div class="gicon">${svgIcon(r.icon, 'ico-card')}</div><h4>${r.title}</h4><p>${r.desc}</p><span class="gtag">${r.kind === 'video' ? 'Vidéo' : 'Image'} · réglages auto</span>`;
     card.onclick = () => openRecipe(r);
+    // Choix par carte : appliquer le cadre de marque ou laisser l'IA tout dessiner
+    if (r.kind === 'image' && !r.proLayers && c) {
+      const acts = document.createElement('div');
+      acts.className = 'card-actions';
+      const b1 = document.createElement('button');
+      b1.type = 'button'; b1.className = 'mini card-act card-act-frame';
+      b1.textContent = '+ Mon cadre';
+      b1.onclick = (e) => { e.stopPropagation(); openRecipe(r, { frame: true }); };
+      const b2 = document.createElement('button');
+      b2.type = 'button'; b2.className = 'mini card-act';
+      b2.textContent = "L'IA gère";
+      b2.onclick = (e) => { e.stopPropagation(); openRecipe(r, { frame: false }); };
+      acts.append(b1, b2);
+      card.appendChild(acts);
+    }
     grid.appendChild(card);
   });
+  // Cadre déjà créé : la carte de gestion reste accessible en fin de liste
+  if (c && hasFrame) grid.appendChild(buildFrameCard(true));
 }
 
-function openRecipe(r) {
+function openRecipe(r, opts) {
   guidedRecipe = r;
   document.getElementById('guidedCards').classList.add('hidden');
   document.getElementById('guidedPanel').classList.remove('hidden');
@@ -3040,6 +3104,11 @@ function openRecipe(r) {
   // Cadre de marque : seulement pour les recettes image classiques (en Pro c'est déjà des calques).
   const gqFrame = document.getElementById('gqFrame');
   if (gqFrame) gqFrame.classList.toggle('hidden', !!r.proLayers || r.kind !== 'image');
+  // Choix fait depuis la carte : « + Mon cadre » ou « L'IA gère »
+  const af = document.getElementById('guidedApplyFrame');
+  if (af) af.checked = opts && 'frame' in opts ? opts.frame : !!activeCompany();
+  const sck = document.getElementById('guidedShowContact');
+  if (sck && opts && 'frame' in opts) sck.checked = !opts.frame; // IA gère -> elle dessine aussi les contacts
   // Assistant en 2 temps pour TOUTES les recettes image : 1) textes, 2) idées visuelles.
   // (vidéo : un seul bouton d'idées, pas de texte rendu à l'écran)
   document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image');

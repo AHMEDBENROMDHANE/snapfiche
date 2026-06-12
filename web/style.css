@@ -264,6 +264,13 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .ref-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ref-row select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
 .guided-card h4 { font-size: 16px; margin: 8px 0 4px; }
+/* Carte « cadre de marque » : étape 1 du workflow, mise en avant tant que non créé */
+.frame-card-first { border: 1.5px solid var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md); }
+.frame-card-first .gtag { background: var(--accent-grad); color: #fff; }
+/* Choix par carte : + Mon cadre / L'IA gère */
+.card-actions { display: flex; gap: 6px; margin-top: 10px; }
+.card-act { font-size: 11.5px; padding: 4px 9px; }
+.card-act-frame { border-color: var(--accent) !important; color: var(--accent-2) !important; font-weight: 600; }
 .guided-card p { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 .guided-card .gtag { font-size: 11px; color: var(--accent-2); background: var(--accent-soft); padding: 3px 8px; border-radius: 6px; display: inline-block; font-weight: 600; }
 .guided-panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px; max-width: 720px; box-shadow: var(--shadow-sm); animation: fadeUp var(--t-med) both; }
