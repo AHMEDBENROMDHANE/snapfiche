@@ -1545,7 +1545,7 @@ imgGenerate.onclick = async () => {
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, "Génération de l'image", imgGenToken);
     statusEl.textContent = res.credits != null ? `✓ Image générée. (−${res.credits} crédits)` : '✓ Image générée.';
-    showImageResult(resultEl, res.resultUrl, prompt2); // prompt complet -> variantes/déclinaisons fidèles
+    showImageResult(resultEl, res.resultUrl, prompt2, [], undefined, taskId); // prompt complet + taskId (signalement)
     refreshBalance();
   } catch (e) {
     statusEl.textContent = (e.message === 'Génération annulée.' ? '■ ' : '✗ ') + e.message;
@@ -1580,7 +1580,7 @@ function showImageGrid(container, urls, prompt) {
 // Affiche une image générée : enregistrée AUTOMATIQUEMENT dans la galerie, éditable par IA
 // avec historique des versions (Annuler), synchronisé avec l'élément de galerie (galleryId).
 //   galleryId : undefined = nouvelle création (auto-save) · string = élément existant · null = non enregistré
-function showImageResult(container, url, prompt, history, galleryId) {
+function showImageResult(container, url, prompt, history, galleryId, taskId) {
   history = history || []; // pile des images précédentes (pour Annuler)
   container.innerHTML = '';
   const img = document.createElement('img');
@@ -1683,6 +1683,38 @@ function showImageResult(container, url, prompt, history, galleryId) {
     }
   };
   actions.appendChild(styleBtn);
+
+  // Signaler un problème : SnapFiche vérifie l'image et rembourse si le défaut est réel.
+  if (taskId) {
+    const repBtn = document.createElement('button');
+    repBtn.textContent = 'Signaler un problème';
+    repBtn.title = 'Un défaut sur cette création ? SnapFiche vérifie et te rembourse si justifié.';
+    repBtn.onclick = async () => {
+      const complaint = window.prompt('Décris le problème (ex : texte illisible, voiture déformée, hors-sujet…) :', '');
+      if (complaint === null || !complaint.trim()) return;
+      repBtn.disabled = true;
+      repBtn.textContent = 'Vérification…';
+      try {
+        const r = await window.api.report(taskId, complaint.trim());
+        if (r.verdict === 'refund') {
+          repBtn.textContent = r.refunded > 0 ? `✓ Remboursé (+${r.refunded} cr)` : '✓ Problème confirmé';
+          refreshBalance();
+        } else if (r.verdict === 'already') {
+          repBtn.textContent = 'Déjà traité';
+        } else {
+          repBtn.disabled = false;
+          repBtn.textContent = 'Signaler un problème';
+        }
+        alert(r.message || 'Merci, ton signalement a été traité.');
+      } catch (e) {
+        repBtn.disabled = false;
+        repBtn.textContent = 'Signaler un problème';
+        alert('Échec : ' + e.message);
+      }
+    };
+    actions.appendChild(repBtn);
+  }
+
   if (history.length) {
     const undoBtn = document.createElement('button');
     undoBtn.textContent = `↩ Annuler la modif (${history.length})`;
@@ -4129,7 +4161,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
           statusEl.textContent = '✓ Terminé (logo non ajouté).';
         }
       }
-      showImageResult(resultEl, finalUrl, prompt); // prompt complet (charte incluse) -> variantes/déclinaisons fidèles
+      showImageResult(resultEl, finalUrl, prompt, [], undefined, taskId); // + taskId (signalement)
       // Affiche Pro : ouvre l'éditeur avec titre/description/logo/contacts en calques modifiables
       if (r.proLayers) {
         statusEl.innerHTML = '<span class="spinner"></span>Composition des calques (titre, contacts)…';

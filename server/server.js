@@ -457,7 +457,8 @@ app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) =>
   if (!bal.unlimited && bal.credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ~${cost}, solde ${bal.credits}).`, need: cost, have: bal.credits });
   try {
     const taskId = await kie.generate(KIE_API_KEY, descriptor);
-    await q('insert into tasks(task_id,user_id,api,model,estimate) values($1,$2,$3,$4,$5) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, descriptor.model || '', cost]);
+    const promptTxt = (descriptor.input && descriptor.input.prompt) ? String(descriptor.input.prompt).slice(0, 2000) : '';
+    await q('insert into tasks(task_id,user_id,api,model,estimate,prompt) values($1,$2,$3,$4,$5,$6) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, descriptor.model || '', cost, promptTxt]);
     res.json({ taskId });
   } catch (e) {
     if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
@@ -485,7 +486,7 @@ app.post('/api/poll', auth, async (req, res) => {
         const charge = bal.unlimited ? 0 : Math.max(0, Math.round(result.credits != null ? result.credits : t.rows[0].estimate));
         // Admin : on ne débite pas la base (le compte kie.ai a déjà été facturé en réel).
         if (charge > 0 && !bal.admin) await changeCredits(req.user.id, -charge, 'generation');
-        await q('update tasks set charged=true where task_id=$1', [taskId]);
+        await q('update tasks set charged=true, charge=$2, result_url=$3 where task_id=$1', [taskId, charge, result.resultUrl || null]);
         result.charged = charge;
       }
       _kieCache.at = 0; // génération terminée -> le solde kie a bougé, on rafraîchira
@@ -495,6 +496,50 @@ app.post('/api/poll', auth, async (req, res) => {
     if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
     res.status(502).json({ error: e.message });
   }
+});
+
+// Signalement d'un problème sur une création -> SnapFiche juge (vision) et rembourse si justifié.
+app.post('/api/report', auth, rateLimit('report', 8, 60000), async (req, res) => {
+  const taskId = String((req.body && req.body.taskId) || '');
+  const complaint = String((req.body && req.body.complaint) || '').trim().slice(0, 500);
+  if (!taskId || complaint.length < 3) return res.status(400).json({ error: 'Décris le problème (quelques mots).' });
+  const t = await q('select prompt, result_url, charge, refunded, charged from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
+  if (!t.rows[0]) return res.status(404).json({ error: 'Création introuvable.' });
+  const task = t.rows[0];
+  if (task.refunded) return res.status(409).json({ verdict: 'already', message: 'Cette création a déjà été remboursée.' });
+  if (!task.result_url) return res.status(400).json({ error: 'Création non finalisée.' });
+
+  // Jugement par vision : on montre l'image + le prompt + la plainte à SnapFiche.
+  const SYS =
+    "Tu es contrôleur qualité d'un générateur d'affiches. On te donne le BRIEF demandé, la PLAINTE du client et l'IMAGE produite. " +
+    "Décide si la plainte est LÉGITIME : défaut réel et visible (texte illisible/charabia, sujet absent ou erroné, membres/objets déformés, image floue/coupée, hors-sujet par rapport au brief). " +
+    "N'accepte PAS les motifs subjectifs (goût, 'je préfère autre chose', détail mineur) ni les plaintes non vérifiables sur l'image. En cas de doute, refuse. " +
+    "Réponds STRICTEMENT en JSON: {\"refund\": true|false, \"reason\": \"phrase courte en français pour le client\"}.";
+  const USR = `BRIEF : ${task.prompt || '(non précisé)'}\nPLAINTE DU CLIENT : ${complaint}`;
+  let verdict = { refund: false, reason: '' };
+  try {
+    const raw = await kie.chat(KIE_API_KEY, 'gemini-2.5-flash', [
+      { role: 'system', content: SYS },
+      { role: 'user', content: [{ type: 'text', text: USR }, { type: 'image_url', image_url: { url: task.result_url } }] },
+    ]);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) { const j = JSON.parse(m[0]); verdict = { refund: !!j.refund, reason: String(j.reason || '').slice(0, 200) }; }
+  } catch (e) {
+    return res.status(502).json({ error: 'Analyse impossible pour le moment, réessaie.' });
+  }
+
+  if (verdict.refund && task.charge > 0) {
+    // Remboursement (une seule fois) + trace dans l'historique de crédits.
+    const r = await q('update tasks set refunded=true where task_id=$1 and refunded=false', [taskId]);
+    if (r.rowCount > 0) await changeCredits(req.user.id, task.charge, 'remboursement signalement');
+  } else if (verdict.refund && task.charge === 0) {
+    await q('update tasks set refunded=true where task_id=$1', [taskId]); // rien à rembourser (gratuit) mais on note
+  }
+  res.json({
+    verdict: verdict.refund ? 'refund' : 'reject',
+    refunded: verdict.refund ? task.charge : 0,
+    message: verdict.reason || (verdict.refund ? 'Problème confirmé, crédits remboursés.' : 'Après vérification, la création correspond au brief — pas de remboursement.'),
+  });
 });
 
 app.post('/api/chat', auth, rateLimit('chat', 30, 60000), async (req, res) => {

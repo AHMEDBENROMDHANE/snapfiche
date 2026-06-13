@@ -92,6 +92,7 @@
 
     // ---- Génération (via backend) ----
     generate: (descriptor) => backend('/api/generate', { method: 'POST', body: descriptor }),
+    report: (taskId, complaint) => backend('/api/report', { method: 'POST', body: { taskId, complaint } }),
     poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),
     aiChat: (payload) => backend('/api/chat', { method: 'POST', body: payload }),
     uploadFile: (payload) => backend('/api/upload', { method: 'POST', body: payload }),
