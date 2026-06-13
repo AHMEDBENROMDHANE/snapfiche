@@ -446,14 +446,16 @@ async function loadUserPacks() {
       card.className = 'pack-card' + (p.promo_active ? ' promo' : '');
       const badge = p.promo_active ? 'PROMO' : p.badge;
       const priceHtml = p.promo_active
-        ? `<div class="pack-price"><s class="pack-old">${(+p.price_tnd).toFixed(2)}</s> ${(+p.promo_price_tnd).toFixed(2)} <small>TND</small></div>` +
+        ? `<div class="pack-price"><s class="pack-old">${(+p.price_tnd).toFixed(2)}</s> ${(+p.promo_price_tnd).toFixed(2)} <small>TND TTC</small></div>` +
           (p.promo_until ? `<div class="pack-promo-until">jusqu'au ${new Date(p.promo_until).toLocaleDateString('fr-FR')}</div>` : '')
-        : `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND</small></div>`;
+        : `<div class="pack-price">${(+p.price_tnd).toFixed(2)} <small>TND TTC</small></div>`;
+      const equiv = Math.floor(p.credits / 30);
       card.innerHTML =
         (badge ? `<span class="pack-badge">${esc(badge)}</span>` : '') +
         `<h3>${esc(p.name)}</h3>` +
         `<div class="pack-credits">${p.credits} crédits</div>` +
         priceHtml +
+        `<div class="pack-equiv">≈ ${equiv} affiches HD (2K) · soit ${((p.promo_active ? +p.promo_price_tnd : +p.price_tnd) / equiv).toFixed(2)} DT l'affiche</div>` +
         `<button class="primary pack-buy">Choisir ce pack</button>`;
       card.querySelector('.pack-buy').onclick = () =>
         alert('Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');

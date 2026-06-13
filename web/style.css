@@ -501,6 +501,7 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .pack-card.promo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow-md); }
 .pack-old { font-size: 17px; color: var(--muted); font-weight: 600; margin-right: 6px; }
 .pack-promo-until { font-size: 12px; color: var(--accent-2); font-weight: 600; margin: -8px 0 12px; }
+.pack-equiv { font-size: 12px; color: var(--muted); margin: -6px 0 14px; }
 
 /* ============ Bibliothèque d'affiches (designs rééditables) ============ */
 .designs-box { width: 680px; max-width: 94vw; }
