@@ -3135,7 +3135,12 @@ const RECIPES = [
   {
     id: 'social-post', icon: 'smartphone', title: 'Post réseaux sociaux',
     desc: 'Visuel carré pour Instagram, Facebook, LinkedIn.',
-    kind: 'image', model: 'seedream/4.5-text-to-image', params: { aspect_ratio: '1:1' },
+    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '1:1' },
+    qualityChoices: [
+      { v: '1k', label: '1K — recommandé réseaux (~24 cr)', model: 'nano-banana-pro', resolution: '1K' },
+      { v: '2k', label: '2K — qualité max (~30 cr)', model: 'nano-banana-pro', resolution: '2K' },
+    ],
+    defaultQuality: '1k',
     ask: [{ key: 'subject', label: 'Quel message / sujet du post ?', ph: 'Ex : promotion -20% sur toute la boutique ce week-end' }],
     build: (a) => `Visuel carré pour les réseaux sociaux, moderne et accrocheur. Message : ${a.subject}. Composition claire, texte court bien lisible, couleurs vives, optimisé pour le mobile.`,
   },

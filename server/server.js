@@ -472,6 +472,12 @@ app.post('/api/poll', auth, async (req, res) => {
     const own = await q('select 1 from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
     if (!own.rows.length) return res.status(404).json({ error: 'Tâche introuvable.' });
     const result = await kie.poll(KIE_API_KEY, { api, taskId });
+    // Échec de tâche pour crédits kie insuffisants : message brut renvoyé dans failMsg
+    // -> on le masque (message propre) et on alerte l'admin.
+    if (result.failed && isKieOutOfCredits(result.error)) {
+      await flagKieOutOfCredits(result.error);
+      return res.status(503).json({ error: KIE_DOWN_MSG });
+    }
     if (result.done) {
       const t = await q('select charged, estimate from tasks where task_id=$1 and user_id=$2', [taskId, req.user.id]);
       if (t.rows[0] && !t.rows[0].charged) {
