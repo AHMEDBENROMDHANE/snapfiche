@@ -1686,31 +1686,33 @@ function showImageResult(container, url, prompt, history, galleryId) {
   }
   container.appendChild(actions);
 
-  // Déclinaison multi-formats : la même affiche en story / carré / paysage (1 clic chacun).
-  // Construite quand l'image est chargée (le format courant est alors connu et exclu).
-  const declRow = document.createElement('div');
-  declRow.className = 'decline-row';
-  container.appendChild(declRow);
-  const buildDecl = () => {
-    const FORMATS = [
-      { r: '9:16', label: 'Story 9:16' },
-      { r: '1:1', label: 'Carré 1:1' },
-      { r: '4:5', label: 'Portrait 4:5' },
-      { r: '16:9', label: 'Paysage 16:9' },
-    ];
-    const currentAr = nearestAspect(img.naturalWidth, img.naturalHeight);
-    declRow.innerHTML = '<span class="decline-label">Décliner en :</span>';
-    FORMATS.filter((f) => f.r !== currentAr).forEach((f) => {
-      const b = document.createElement('button');
-      b.className = 'mini';
-      b.textContent = f.label;
-      b.title = `Recrée cette affiche au format ${f.label} (~30 cr)`;
-      b.onclick = () => regenAt(f.r, b, f.label);
-      declRow.appendChild(b);
-    });
-  };
-  if (img.complete && img.naturalWidth) buildDecl();
-  else img.addEventListener('load', buildDecl, { once: true });
+  // Déclinaison multi-formats : EN PAUSE — régénérer à un autre ratio produit une
+  // image différente (pas la même affiche reformatée). À reprendre via outpainting.
+  const ENABLE_DECLINE = false;
+  if (ENABLE_DECLINE) {
+    const declRow = document.createElement('div');
+    declRow.className = 'decline-row';
+    container.appendChild(declRow);
+    const buildDecl = () => {
+      const FORMATS = [
+        { r: '9:16', label: 'Story 9:16' },
+        { r: '1:1', label: 'Carré 1:1' },
+        { r: '4:5', label: 'Portrait 4:5' },
+        { r: '16:9', label: 'Paysage 16:9' },
+      ];
+      const currentAr = nearestAspect(img.naturalWidth, img.naturalHeight);
+      declRow.innerHTML = '<span class="decline-label">Décliner en :</span>';
+      FORMATS.filter((f) => f.r !== currentAr).forEach((f) => {
+        const b = document.createElement('button');
+        b.className = 'mini';
+        b.textContent = f.label;
+        b.onclick = () => regenAt(f.r, b, f.label);
+        declRow.appendChild(b);
+      });
+    };
+    if (img.complete && img.naturalWidth) buildDecl();
+    else img.addEventListener('load', buildDecl, { once: true });
+  }
 
   // ---- Édition par IA (langage naturel) ----
   if (!featureOn('image_edit')) return; // fonctionnalité désactivée par l'admin
