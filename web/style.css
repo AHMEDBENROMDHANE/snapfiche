@@ -266,7 +266,7 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-align: center; padding: 22px 16px; border: 2px dashed var(--border); border-radius: var(--r-md); background: var(--panel-2); color: var(--muted); transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast); }
 .dropzone:hover { border-color: var(--accent); color: var(--accent-2); }
 .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-2); }
-.dropzone.filled { border-style: solid; border-color: var(--ok); color: var(--ok); background: rgba(22,163,74,.06); }
+.dropzone.filled { border-style: solid; border-color: var(--accent); color: var(--accent-2); background: var(--accent-soft); }
 .dropzone .dz-ico { font-size: 26px; line-height: 1; font-weight: 700; }
 .dropzone .dz-text { font-size: 13px; font-weight: 600; }
 /* Recette « tenue/décor/produit » : import en avant et obligatoire */
