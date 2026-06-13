@@ -128,14 +128,30 @@ async function getFeatures() {
 }
 
 // Solde + statut illimité. Illimité si : profil illimité OU mode gratuit global actif.
+// Solde kie.ai mis en cache (15 s) pour éviter d'appeler kie à chaque requête.
+let _kieCache = { at: 0, data: null };
+async function getKieBalanceCached(force) {
+  if (!force && _kieCache.data && Date.now() - _kieCache.at < 15000) return _kieCache.data;
+  const d = await kie.getCredits(KIE_API_KEY);
+  _kieCache = { at: Date.now(), data: d };
+  return d;
+}
+
 async function getBalance(uid) {
   const [r, settings] = await Promise.all([
     q('select credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [uid]),
     getSettings(),
   ]);
   if (!r.rows[0]) return { credits: 0, unlimited: settings.free_mode === true };
-  // Le mode gratuit global ne s'applique PAS aux admins : ils testent sur un solde réel.
-  const freeMode = settings.free_mode === true && !r.rows[0].is_admin;
+  // Admin : le solde affiché EST le vrai solde kie.ai et les générations consomment
+  // directement le compte kie (aucun crédit SnapFiche artificiel, pas de débit en base).
+  if (r.rows[0].is_admin) {
+    let kieCredits = r.rows[0].credits;
+    try { kieCredits = Math.floor((await getKieBalanceCached()).credits); } catch (_) {}
+    return { credits: kieCredits, unlimited: false, admin: true };
+  }
+  // Le mode gratuit global ne s'applique PAS aux admins.
+  const freeMode = settings.free_mode === true;
   return { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited || freeMode };
 }
 async function changeCredits(uid, delta, reason) {
@@ -189,13 +205,14 @@ app.get('/api/credits', auth, async (req, res) => {
 
 // Profil de l'utilisateur : type de compte (particulier/entreprise) + nb d'entreprises.
 app.get('/api/me', auth, async (req, res) => {
-  const [p, cc, features] = await Promise.all([
-    q('select account_type, credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [req.user.id]),
+  const [p, cc, features, bal] = await Promise.all([
+    q('select account_type, coalesce(is_admin,false) as is_admin from profiles where id=$1', [req.user.id]),
     q('select count(*)::int as n from companies where user_id=$1', [req.user.id]),
     getFeatures(),
+    getBalance(req.user.id),
   ]);
   const row = p.rows[0] || {};
-  res.json({ accountType: row.account_type || null, credits: row.credits || 0, unlimited: !!row.unlimited, isAdmin: !!row.is_admin, companyCount: cc.rows[0].n, features });
+  res.json({ accountType: row.account_type || null, credits: bal.credits, unlimited: bal.unlimited, isAdmin: !!row.is_admin, companyCount: cc.rows[0].n, features });
 });
 
 // Choix / changement du type de compte. Particulier = 1 entreprise ; Entreprise = plusieurs.
@@ -276,7 +293,7 @@ app.get('/api/admin/overview', auth, requireAdmin, async (_req, res) => {
 // Admin : solde réel du compte kie.ai (l'argent réel derrière les générations).
 app.get('/api/admin/kie-balance', auth, requireAdmin, async (_req, res) => {
   try {
-    const b = await kie.getCredits(KIE_API_KEY);
+    const b = await getKieBalanceCached(true); // force : valeur fraîche au clic
     res.json({ credits: b.credits, usd: b.usd });
   } catch (e) {
     res.status(502).json({ error: e.message });
@@ -460,10 +477,12 @@ app.post('/api/poll', auth, async (req, res) => {
       if (t.rows[0] && !t.rows[0].charged) {
         const bal = await getBalance(req.user.id);
         const charge = bal.unlimited ? 0 : Math.max(0, Math.round(result.credits != null ? result.credits : t.rows[0].estimate));
-        if (charge > 0) await changeCredits(req.user.id, -charge, 'generation');
+        // Admin : on ne débite pas la base (le compte kie.ai a déjà été facturé en réel).
+        if (charge > 0 && !bal.admin) await changeCredits(req.user.id, -charge, 'generation');
         await q('update tasks set charged=true where task_id=$1', [taskId]);
         result.charged = charge;
       }
+      _kieCache.at = 0; // génération terminée -> le solde kie a bougé, on rafraîchira
     }
     res.json(result);
   } catch (e) {
@@ -478,7 +497,7 @@ app.post('/api/chat', auth, rateLimit('chat', 30, 60000), async (req, res) => {
   if (!bal.unlimited && bal.credits < 1) return res.status(402).json({ error: 'Crédits insuffisants.' });
   try {
     const text = await kie.chat(KIE_API_KEY, req.body.model || 'gemini-2.5-flash', req.body.messages);
-    if (!bal.unlimited) await changeCredits(req.user.id, -1, 'assistant');
+    if (!bal.unlimited && !bal.admin) await changeCredits(req.user.id, -1, 'assistant');
     res.json({ text });
   } catch (e) {
     if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
