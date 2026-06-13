@@ -3142,7 +3142,13 @@ const RECIPES = [
   {
     id: 'story', icon: 'smartphone', title: 'Story / Reel',
     desc: 'Visuel vertical plein écran (Stories, TikTok, Shorts).',
-    kind: 'image', model: 'seedream/4.5-text-to-image', params: { aspect_ratio: '9:16' },
+    kind: 'image', model: 'flux-kontext-max', params: { aspect_ratio: '9:16' },
+    qualityChoices: [
+      { v: 'pro', label: 'Snap Pro — rapide (~12 cr)', model: 'flux-kontext-max' },
+      { v: 'max1k', label: 'Snap Max — 1K (~24 cr)', model: 'nano-banana-pro', resolution: '1K' },
+      { v: 'max2k', label: 'Snap Max — 2K, qualité max (~30 cr)', model: 'nano-banana-pro', resolution: '2K' },
+    ],
+    defaultQuality: 'max1k',
     ask: [{ key: 'subject', label: 'Quel message de la story ?', ph: 'Ex : nouvelle collection été disponible en ligne' }],
     build: (a) => `Visuel vertical plein écran (story / reel), dynamique et impactant. Message : ${a.subject}. Accroche en haut, appel à l'action en bas, style tendance réseaux sociaux.`,
   },
@@ -3279,6 +3285,7 @@ function langDirective(lang) {
 
 // Options de qualité proposées à l'utilisateur, selon la recette.
 function qualityOptions(r) {
+  if (r.qualityChoices) return r.qualityChoices.map((c) => ({ v: c.v, label: c.label }));
   if (r.kind === 'video') {
     return [{ v: '720p', label: 'Standard (720p)' }, { v: '1080p', label: 'Élevée (1080p HD)' }];
   }
@@ -3290,6 +3297,7 @@ function qualityOptions(r) {
   return [{ v: 'std', label: 'Standard' }, { v: '2K', label: 'Élevée (HD)' }];
 }
 function defaultQuality(r) {
+  if (r.qualityChoices) return r.defaultQuality || r.qualityChoices[0].v;
   if (r.kind === 'video') return r.params.resolution || '720p';
   const m = findModel('image', r.model);
   return m.res ? r.params.resolution || '1K' : 'std';
@@ -3297,6 +3305,13 @@ function defaultQuality(r) {
 // Recette « effective » après application du choix de qualité (peut changer le modèle).
 function effectiveRecipe(r, quality) {
   const eff = { kind: r.kind, model: r.model, params: { ...r.params } };
+  // Choix de qualité personnalisés par recette (modèle + résolution explicites).
+  if (r.qualityChoices) {
+    const c = r.qualityChoices.find((x) => x.v === quality) || r.qualityChoices[0];
+    eff.model = c.model;
+    if (c.resolution) eff.params.resolution = c.resolution; else delete eff.params.resolution;
+    return eff;
+  }
   if (r.kind === 'video') {
     eff.params.resolution = quality;
     return eff;
