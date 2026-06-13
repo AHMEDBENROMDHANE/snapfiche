@@ -1561,12 +1561,10 @@ imgGenerate.onclick = async () => {
 // balayage lumineux + messages qui défilent.
 const GEN_MSGS = ['Composition de la scène…', 'Application de la charte…', 'Réglage des lumières…', 'Peaufinage des détails…', 'Presque prêt…'];
 function showGenLoading(container, ratio, title) {
-  const [aw, ah] = (ratio || '1:1').split(':').map(Number);
-  const pad = ah && aw ? Math.min(140, (ah / aw) * 100) : 100; // ratio -> hauteur du cadre
+  // Logo pulsé seul (sans cadre carré), centré, avec messages dessous.
   container.innerHTML =
     `<div class="gen-loading">` +
-    `<div class="gen-frame" style="padding-bottom:${pad}%"><div class="gen-sheen"></div>` +
-    `<div class="gen-logo-wrap"><img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" /><div class="gen-ring"></div></div></div>` +
+    `<div class="gen-logo-wrap"><img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" /><div class="gen-ring"></div></div>` +
     `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
     `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
     `</div>`;
