@@ -1520,7 +1520,7 @@ imgGenerate.onclick = async () => {
   imgGenerate.disabled = true;
   imgGenToken = { cancelled: false };
   document.getElementById('imgCancel').classList.remove('hidden');
-  resultEl.innerHTML = '';
+  showGenLoading(resultEl, document.getElementById('imgRatio').value, "Génération de l'image…");
   statusEl.className = 'status';
   statusEl.innerHTML = '<span class="spinner"></span>Préparation…';
   try {
@@ -1555,6 +1555,25 @@ imgGenerate.onclick = async () => {
     document.getElementById('imgCancel').classList.add('hidden');
   }
 };
+
+// Animation pendant la génération / modification : carte « atelier » au format cible,
+// balayage lumineux + messages qui défilent.
+const GEN_MSGS = ['Composition de la scène…', 'Application de la charte…', 'Réglage des lumières…', 'Peaufinage des détails…', 'Presque prêt…'];
+function showGenLoading(container, ratio, title) {
+  const [aw, ah] = (ratio || '1:1').split(':').map(Number);
+  const pad = ah && aw ? Math.min(140, (ah / aw) * 100) : 100; // ratio -> hauteur du cadre
+  container.innerHTML =
+    `<div class="gen-loading">` +
+    `<div class="gen-frame" style="padding-bottom:${pad}%"><div class="gen-sheen"></div>` +
+    `<svg class="gen-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6 7 18.2l1.9-5.8L4 8.8h6.1z"/></svg></div>` +
+    `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
+    `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
+    `</div>`;
+  let i = 0;
+  const el = container.querySelector('#genMsg');
+  const timer = setInterval(() => { i = (i + 1) % GEN_MSGS.length; if (el && el.isConnected) el.textContent = GEN_MSGS[i]; else clearInterval(timer); }, 2200);
+  return () => clearInterval(timer);
+}
 
 // Grille de propositions (batch) : on clique celle qu'on préfère -> elle s'ouvre en grand
 // (avec toutes les actions) et s'enregistre alors dans la galerie. Les autres sont jetées.
@@ -1625,6 +1644,7 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
     const old = btn.textContent;
     btn.disabled = true;
     btn.textContent = '⏳ ' + label + '…';
+    showGenLoading(container, ratio, reframe ? `Reformatage en ${label}…` : 'Nouvelle variante…');
     try {
       let input;
       if (reframe) {
@@ -1727,6 +1747,29 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
   }
   container.appendChild(actions);
 
+  // Pellicule des versions : toutes les étapes (ancienne → … → actuelle), cliquables pour revenir.
+  if (history.length) {
+    const versions = [...history, url]; // la dernière = version actuelle
+    const strip = document.createElement('div');
+    strip.className = 'film-strip';
+    strip.innerHTML = '<span class="film-label">Versions</span>';
+    versions.forEach((u, i) => {
+      const isCurrent = i === versions.length - 1;
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'film-cell' + (isCurrent ? ' current' : '');
+      cell.title = isCurrent ? 'Version actuelle' : `Revenir à la version ${i + 1}`;
+      cell.innerHTML = `<img src="${esc(u)}" loading="lazy" alt="Version ${i + 1}" /><span class="film-tag">${isCurrent ? 'Actuelle' : 'v' + (i + 1)}</span>`;
+      if (!isCurrent) cell.onclick = async () => {
+        const newHist = history.slice(0, i); // on revient à la version i, l'historique avant elle
+        if (galleryId) { try { await window.api.galleryUpdate(galleryId, { url: u, history: newHist }); } catch (_) {} }
+        showImageResult(container, u, prompt, newHist, galleryId || null);
+      };
+      strip.appendChild(cell);
+    });
+    container.appendChild(strip);
+  }
+
   // Déclinaison multi-formats par OUTPAINTING : étend la même affiche au nouveau format.
   const declRow = document.createElement('div');
   declRow.className = 'decline-row';
@@ -1799,6 +1842,7 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
 
       // 3) Snap Max (nano-banana-pro) uniquement — la meilleure fidélité de retouche
       estatus.innerHTML = '<span class="spinner"></span>Modification en cours…';
+      showGenLoading(container, ar, 'Modification en cours…');
       const descriptor = {
         api: 'jobs',
         model: 'nano-banana-pro',
@@ -4061,7 +4105,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
   btn.disabled = true;
   guidedGenToken = { cancelled: false };
   document.getElementById('guidedCancel').classList.remove('hidden');
-  resultEl.innerHTML = '';
+  showGenLoading(resultEl, (eff.params && eff.params.aspect_ratio) || '1:1', r.kind === 'video' ? 'Génération de la vidéo…' : 'Création en cours…');
   statusEl.className = 'status';
   statusEl.innerHTML = '<span class="spinner"></span>Préparation…';
   try {

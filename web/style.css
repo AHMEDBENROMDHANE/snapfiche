@@ -360,6 +360,27 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
 .decline-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .decline-row .decline-label { font-size: 12.5px; color: var(--muted); font-weight: 600; font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
+/* Animation pendant la génération / modification */
+@keyframes gen-sheen { 0% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes gen-spark { 0%,100% { transform: scale(.9); opacity: .55; } 50% { transform: scale(1.15); opacity: 1; } }
+@keyframes gen-pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+.gen-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.gen-frame { position: relative; width: 100%; max-width: 360px; height: 0; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(135deg, var(--panel-2), var(--accent-soft)); border: 1px solid var(--border); }
+.gen-frame .gen-sheen { position: absolute; inset: 0; width: 60%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.75), transparent); animation: gen-sheen 1.4s ease-in-out infinite; }
+.gen-frame .gen-spark { position: absolute; top: 50%; left: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; color: var(--accent); animation: gen-spark 1.6s ease-in-out infinite; }
+.gen-loading-text { font-weight: 700; font-family: 'Plus Jakarta Sans','Inter',sans-serif; }
+.gen-loading-sub { font-size: 13px; color: var(--muted); animation: gen-pulse 2s ease-in-out infinite; }
+
+/* Pellicule des versions (modif) */
+.film-strip { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); overflow-x: auto; }
+.film-label { font-size: 12px; font-weight: 700; color: var(--muted); font-family: 'Space Grotesk','Inter',sans-serif; flex-shrink: 0; padding: 0 4px; }
+.film-cell { position: relative; flex-shrink: 0; width: 64px; height: 64px; padding: 0; border: 2px solid var(--border); border-radius: 9px; overflow: hidden; cursor: pointer; background: var(--panel); transition: border-color var(--t-fast), transform var(--t-fast); }
+.film-cell:hover { border-color: var(--accent); transform: translateY(-2px); }
+.film-cell.current { border-color: var(--accent); cursor: default; }
+.film-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.film-cell .film-tag { position: absolute; inset: auto 0 0 0; background: rgba(23,19,31,.7); color: #fff; font-size: 9px; font-weight: 700; text-align: center; padding: 1px; }
+.film-cell.current .film-tag { background: var(--accent); }
+
 /* Batch : grille de propositions à choisir */
 .variant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .variant-cell { position: relative; padding: 0; border: 2px solid var(--border); border-radius: var(--r-md); overflow: hidden; cursor: pointer; background: var(--panel-2); transition: border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast); animation: fadeUp var(--t-med) both; }
