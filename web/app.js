@@ -761,6 +761,7 @@ async function loadCompanies() {
   updateEditorBrand();
   applyAccountUI();
   renderGuidedCards(); // workflow guidé : carte cadre selon l'entreprise active
+  renderRecentCreations(); // 4 dernières créations en tuiles metro
 }
 
 // --- Formulaire entreprise ---
@@ -3496,9 +3497,39 @@ function renderGuidedCards() {
   });
 }
 
+// Les 4 dernières créations en tuiles « metro » (1 grande + 3 petites) sur l'accueil guidé.
+async function renderRecentCreations() {
+  const sec = document.getElementById('recentSection');
+  const metro = document.getElementById('recentMetro');
+  if (!sec || !metro) return;
+  try {
+    const all = await window.api.galleryList();
+    const items = all.filter((g) => g.type === 'image').slice(0, 4);
+    if (!items.length) { sec.classList.add('hidden'); return; }
+    metro.innerHTML = '';
+    items.forEach((it, i) => {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'metro-cell' + (i === 0 ? ' metro-big' : '');
+      cell.innerHTML = `<img src="${esc(it.url)}" loading="lazy" alt="Création" /><span class="metro-open">Rouvrir</span>`;
+      cell.onclick = () => {
+        document.querySelector('.nav-btn[data-view="image"]').click();
+        const resultEl = document.getElementById('imgResult');
+        showImageResult(resultEl, it.url, it.prompt || '', it.history || [], it.id);
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      metro.appendChild(cell);
+    });
+    // Visible seulement sur l'écran des cartes (masqué quand un objectif est ouvert).
+    const panelOpen = !document.getElementById('guidedPanel').classList.contains('hidden');
+    sec.classList.toggle('hidden', panelOpen);
+  } catch (_) { sec.classList.add('hidden'); }
+}
+
 function openRecipe(r, opts) {
   guidedRecipe = r;
   document.getElementById('guidedCards').classList.add('hidden');
+  document.getElementById('recentSection').classList.add('hidden');
   document.getElementById('guidedPanel').classList.remove('hidden');
   document.getElementById('guidedTitle').innerHTML = svgIcon(r.icon, 'ico-title') + ' ' + r.title;
   document.getElementById('guidedDesc').textContent = r.desc;
@@ -3590,6 +3621,7 @@ document.getElementById('guidedBack').onclick = () => {
   document.getElementById('guidedPanel').classList.add('hidden');
   document.getElementById('guidedCards').classList.remove('hidden');
   guidedRecipe = null;
+  renderRecentCreations(); // rafraîchit la pellicule des dernières créations
 };
 document.getElementById('guidedQuality').onchange = updateGuidedSummary;
 document.getElementById('guidedLogoMode').onchange = (e) => {
