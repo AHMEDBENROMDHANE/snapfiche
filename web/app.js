@@ -1619,17 +1619,26 @@ function showImageResult(container, url, prompt, history, galleryId) {
 
   actions.appendChild(saveBtn);
 
-  // Régénération au même prompt (variante) ou dans un autre format (déclinaison) — Snap Max 2K.
-  async function regenAt(ratio, btn, label) {
+  // Régénération Snap Max 2K. reframe=true -> outpainting : on part de l'IMAGE actuelle
+  // et on étend la scène au nouveau format (même sujet/voiture/ambiance) ; sinon variante (prompt).
+  async function regenAt(ratio, btn, label, reframe) {
     const old = btn.textContent;
     btn.disabled = true;
     btn.textContent = '⏳ ' + label + '…';
     try {
-      const { taskId } = await window.api.generate({
-        api: 'jobs',
-        model: 'nano-banana-pro',
-        input: { prompt: prompt || 'affiche professionnelle', aspect_ratio: ratio, resolution: '2K', output_format: 'png' },
-      });
+      let input;
+      if (reframe) {
+        let srcUrl = url;
+        try { const up = await window.api.uploadFile({ remoteUrl: url, fileName: 'reframe-src.png' }); if (up && up.url) srcUrl = up.url; } catch (_) {}
+        const outpaintPrompt =
+          `Reformate cette affiche au format ${ratio}. Garde EXACTEMENT la même scène, le même sujet/voiture/personnes, les mêmes couleurs, le même style et les mêmes textes. ` +
+          `Étends naturellement l'arrière-plan (ciel, décor, sol) pour remplir le nouveau cadre sans déformer ni recadrer les éléments existants. Repositionne harmonieusement le sujet dans le nouveau format. Rendu cohérent et continu. ` +
+          (prompt ? `Contexte de l'affiche : ${String(prompt).slice(0, 300)}.` : '');
+        input = { prompt: outpaintPrompt, image_input: [srcUrl], aspect_ratio: ratio, resolution: '2K', output_format: 'png' };
+      } else {
+        input = { prompt: prompt || 'affiche professionnelle', aspect_ratio: ratio, resolution: '2K', output_format: 'png' };
+      }
+      const { taskId } = await window.api.generate({ api: 'jobs', model: 'nano-banana-pro', input });
       let resultUrl = null;
       for (let t = 0; t < 70 && !resultUrl; t++) {
         await new Promise((s) => setTimeout(s, 2500));
@@ -1686,33 +1695,30 @@ function showImageResult(container, url, prompt, history, galleryId) {
   }
   container.appendChild(actions);
 
-  // Déclinaison multi-formats : EN PAUSE — régénérer à un autre ratio produit une
-  // image différente (pas la même affiche reformatée). À reprendre via outpainting.
-  const ENABLE_DECLINE = false;
-  if (ENABLE_DECLINE) {
-    const declRow = document.createElement('div');
-    declRow.className = 'decline-row';
-    container.appendChild(declRow);
-    const buildDecl = () => {
-      const FORMATS = [
-        { r: '9:16', label: 'Story 9:16' },
-        { r: '1:1', label: 'Carré 1:1' },
-        { r: '4:5', label: 'Portrait 4:5' },
-        { r: '16:9', label: 'Paysage 16:9' },
-      ];
-      const currentAr = nearestAspect(img.naturalWidth, img.naturalHeight);
-      declRow.innerHTML = '<span class="decline-label">Décliner en :</span>';
-      FORMATS.filter((f) => f.r !== currentAr).forEach((f) => {
-        const b = document.createElement('button');
-        b.className = 'mini';
-        b.textContent = f.label;
-        b.onclick = () => regenAt(f.r, b, f.label);
-        declRow.appendChild(b);
-      });
-    };
-    if (img.complete && img.naturalWidth) buildDecl();
-    else img.addEventListener('load', buildDecl, { once: true });
-  }
+  // Déclinaison multi-formats par OUTPAINTING : étend la même affiche au nouveau format.
+  const declRow = document.createElement('div');
+  declRow.className = 'decline-row';
+  container.appendChild(declRow);
+  const buildDecl = () => {
+    const FORMATS = [
+      { r: '9:16', label: 'Story 9:16' },
+      { r: '1:1', label: 'Carré 1:1' },
+      { r: '4:5', label: 'Portrait 4:5' },
+      { r: '16:9', label: 'Paysage 16:9' },
+    ];
+    const currentAr = nearestAspect(img.naturalWidth, img.naturalHeight);
+    declRow.innerHTML = '<span class="decline-label">Décliner en :</span>';
+    FORMATS.filter((f) => f.r !== currentAr).forEach((f) => {
+      const b = document.createElement('button');
+      b.className = 'mini';
+      b.textContent = f.label;
+      b.title = `Reformate la MÊME affiche au format ${f.label} (~30 cr)`;
+      b.onclick = () => regenAt(f.r, b, f.label, true); // reframe = outpainting
+      declRow.appendChild(b);
+    });
+  };
+  if (img.complete && img.naturalWidth) buildDecl();
+  else img.addEventListener('load', buildDecl, { once: true });
 
   // ---- Édition par IA (langage naturel) ----
   if (!featureOn('image_edit')) return; // fonctionnalité désactivée par l'admin
