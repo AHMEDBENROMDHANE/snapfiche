@@ -24,6 +24,7 @@ const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorize
 const q = (sql, params) => pool.query(sql, params);
 
 const app = express();
+app.set('trust proxy', true); // derrière nginx/Plesk : récupérer la vraie IP via X-Forwarded-For
 app.disable('x-powered-by');
 app.use(express.json({ limit: '12mb' }));
 app.use(cors({ origin: ALLOWED_ORIGIN ? ALLOWED_ORIGIN.split(',') : true }));
@@ -197,12 +198,30 @@ app.post('/api/account-type', auth, async (req, res) => {
 });
 
 // ---- Inscription (publique) : compte confirmé immédiatement, sans e-mail de validation ----
+// Limites anti-abus des comptes d'essai (mêmes IP / même appareil).
+const SIGNUP_MAX_PER_IP = 3;   // sur 30 jours
+const SIGNUP_MAX_PER_FP = 2;   // par appareil (empreinte navigateur)
 app.post('/api/signup', rateLimit('signup', 5, 60000), async (req, res) => {
   if (!(await getFeatures()).signup) return res.status(403).json({ error: 'Les inscriptions sont temporairement fermées.' });
   const email = String((req.body && req.body.email) || '').trim().toLowerCase();
   const password = String((req.body && req.body.password) || '');
+  const fp = String((req.body && req.body.fp) || '').trim().slice(0, 64);
+  const ip = (req.ip || '').replace(/^::ffff:/, '');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (8 caractères minimum).' });
+
+  // Blocage des essais multiples depuis la même IP ou le même appareil (30 derniers jours).
+  try {
+    if (ip) {
+      const r = await q("select count(*)::int n from signup_log where ip=$1 and created_at > now() - interval '30 days'", [ip]);
+      if (r.rows[0].n >= SIGNUP_MAX_PER_IP) return res.status(429).json({ error: 'Trop de comptes créés depuis cette connexion. Contacte-nous si c\'est une erreur.' });
+    }
+    if (fp) {
+      const r = await q("select count(*)::int n from signup_log where fingerprint=$1 and created_at > now() - interval '30 days'", [fp]);
+      if (r.rows[0].n >= SIGNUP_MAX_PER_FP) return res.status(429).json({ error: 'Un compte d\'essai existe déjà sur cet appareil. Connecte-toi ou prends un pack.' });
+    }
+  } catch (_) { /* en cas d'erreur de log, on n'empêche pas l'inscription */ }
+
   const { data, error } = await supa.auth.admin.createUser({ email, password, email_confirm: true });
   if (error) {
     if (/already|registered|exists/i.test(error.message)) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
@@ -211,6 +230,7 @@ app.post('/api/signup', rateLimit('signup', 5, 60000), async (req, res) => {
   // Crédits de bienvenue (utiles quand le mode illimité sera désactivé).
   // Le trigger Supabase crée déjà le profil à 0 crédit -> upsert + mise à niveau.
   await q('insert into profiles(id,email,credits) values($1,$2,$3) on conflict (id) do update set credits=$3 where profiles.credits=0', [data.user.id, email, 100]);
+  try { await q('insert into signup_log(email, ip, fingerprint) values($1,$2,$3)', [email, ip || null, fp || null]); } catch (_) {}
   res.json({ ok: true });
 });
 

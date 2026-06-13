@@ -57,6 +57,25 @@ document.addEventListener('DOMContentLoaded', () => {
     else refreshSession();
   };
 
+  // Empreinte d'appareil (anti multi-comptes) : signature stable du navigateur/matériel.
+  // NB : l'adresse MAC n'est pas accessible depuis le web — cette empreinte joue le même rôle.
+  function deviceFingerprint() {
+    try {
+      const n = navigator;
+      const parts = [
+        n.userAgent, n.language, (n.languages || []).join(','), n.platform,
+        n.hardwareConcurrency, n.deviceMemory, n.maxTouchPoints,
+        screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ].join('|');
+      let h = 0;
+      for (let i = 0; i < parts.length; i++) { h = (h * 31 + parts.charCodeAt(i)) | 0; }
+      let stored = localStorage.getItem('sf_fp');
+      if (!stored) { stored = (h >>> 0).toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('sf_fp', stored); }
+      return ((h >>> 0).toString(36) + '_' + stored).slice(0, 64);
+    } catch (_) { return ''; }
+  }
+
   // Inscription via le backend : compte confirmé immédiatement (pas d'e-mail de validation),
   // puis connexion automatique.
   document.getElementById('signupBtn').onclick = async () => {
@@ -65,12 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const r = await fetch((window.CONFIG.BACKEND_URL || '') + '/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailEl.value.trim(), password: passEl.value }),
+        body: JSON.stringify({ email: emailEl.value.trim(), password: passEl.value, fp: deviceFingerprint() }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || 'Erreur HTTP ' + r.status);
       const { error } = await window.SB.auth.signInWithPassword({ email: emailEl.value.trim(), password: passEl.value });
       if (error) throw new Error(error.message);
+      sessionStorage.setItem('sf_just_signed_up', '1'); // déclenche la démo de bienvenue
       refreshSession();
     } catch (e) {
       setErr('Inscription échouée : ' + e.message);

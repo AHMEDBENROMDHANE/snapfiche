@@ -1519,6 +1519,27 @@ imgGenerate.onclick = async () => {
   }
 };
 
+// Grille de propositions (batch) : on clique celle qu'on préfère -> elle s'ouvre en grand
+// (avec toutes les actions) et s'enregistre alors dans la galerie. Les autres sont jetées.
+function showImageGrid(container, urls, prompt) {
+  container.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'variant-grid';
+  urls.forEach((u) => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'variant-cell';
+    cell.innerHTML = `<img src="${esc(u)}" loading="lazy" alt="Proposition" /><span class="variant-pick">Choisir</span>`;
+    cell.onclick = () => showImageResult(container, u, prompt, [], undefined); // auto-save à la sélection
+    grid.appendChild(cell);
+  });
+  container.appendChild(grid);
+  const hint = document.createElement('p');
+  hint.className = 'hint';
+  hint.textContent = 'Clique la proposition que tu préfères — elle sera enregistrée dans ta galerie.';
+  container.appendChild(hint);
+}
+
 // Affiche une image générée : enregistrée AUTOMATIQUEMENT dans la galerie, éditable par IA
 // avec historique des versions (Annuler), synchronisé avec l'élément de galerie (galleryId).
 //   galleryId : undefined = nouvelle création (auto-save) · string = élément existant · null = non enregistré
@@ -3077,14 +3098,14 @@ const RECIPES = [
   {
     id: 'social-post', icon: 'smartphone', title: 'Post réseaux sociaux',
     desc: 'Visuel carré pour Instagram, Facebook, LinkedIn.',
-    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '1:1', resolution: '2K' },
+    kind: 'image', model: 'seedream/4.5-text-to-image', params: { aspect_ratio: '1:1' },
     ask: [{ key: 'subject', label: 'Quel message / sujet du post ?', ph: 'Ex : promotion -20% sur toute la boutique ce week-end' }],
     build: (a) => `Visuel carré pour les réseaux sociaux, moderne et accrocheur. Message : ${a.subject}. Composition claire, texte court bien lisible, couleurs vives, optimisé pour le mobile.`,
   },
   {
     id: 'story', icon: 'smartphone', title: 'Story / Reel',
     desc: 'Visuel vertical plein écran (Stories, TikTok, Shorts).',
-    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '9:16', resolution: '2K' },
+    kind: 'image', model: 'seedream/4.5-text-to-image', params: { aspect_ratio: '9:16' },
     ask: [{ key: 'subject', label: 'Quel message de la story ?', ph: 'Ex : nouvelle collection été disponible en ligne' }],
     build: (a) => `Visuel vertical plein écran (story / reel), dynamique et impactant. Message : ${a.subject}. Accroche en haut, appel à l'action en bas, style tendance réseaux sociaux.`,
   },
@@ -3395,6 +3416,9 @@ function openRecipe(r, opts) {
   // Styles gardés : visibles pour les recettes image ; sélection remise à zéro à l'ouverture.
   const gqLib = document.getElementById('gqStyleLib');
   if (gqLib) gqLib.classList.toggle('hidden', r.kind !== 'image');
+  // Propositions multiples : images seulement (la vidéo coûte trop cher pour du batch).
+  const gqVar = document.getElementById('gqVariants');
+  if (gqVar) { gqVar.classList.toggle('hidden', r.kind !== 'image'); const sv = document.getElementById('guidedVariants'); if (sv) sv.value = '1'; }
   selectedStyleRef = null;
   renderStyleLibrary(true);
   updateIdeasAccess();
@@ -3970,6 +3994,28 @@ document.getElementById('guidedGenerate').onclick = async () => {
       eff.kind === 'image'
         ? guidedImageDescriptor(eff.model, eff.params, prompt, images)
         : guidedVideoDescriptor(eff.model, eff.params, prompt, images);
+
+    // Batch : plusieurs propositions d'un coup (images uniquement), puis l'utilisateur choisit.
+    const nVar = eff.kind === 'image' ? Math.min(3, Math.max(1, parseInt(document.getElementById('guidedVariants').value, 10) || 1)) : 1;
+    if (eff.kind === 'image' && nVar > 1 && !r.proLayers) {
+      statusEl.innerHTML = `<span class="spinner"></span>Génération de ${nVar} propositions…`;
+      const urls = await Promise.all(Array.from({ length: nVar }, async () => {
+        try {
+          const g = await window.api.generate(descriptor);
+          const rr = await pollUntilDone({ api: descriptor.api, taskId: g.taskId }, { textContent: '', innerHTML: '' }, '', guidedGenToken);
+          return rr.resultUrl;
+        } catch (_) { return null; }
+      }));
+      const ok = urls.filter(Boolean);
+      refreshBalance();
+      if (!ok.length) throw new Error('Aucune proposition générée — réessaie.');
+      lastStyleUrl = ok[0];
+      document.getElementById('guidedStyleHint').textContent = '✓ style mémorisé';
+      statusEl.textContent = `✓ ${ok.length} propositions — clique celle que tu préfères.`;
+      showImageGrid(resultEl, ok, prompt);
+      return; // le bloc finally réactive le bouton
+    }
+
     statusEl.innerHTML = '<span class="spinner"></span>Création en cours…' + (r.kind === 'video' ? ' (la vidéo peut prendre quelques minutes)' : '');
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: descriptor.api, taskId }, statusEl, r.kind === 'video' ? 'Génération de la vidéo' : "Génération de l'image", guidedGenToken);
@@ -4015,12 +4061,27 @@ document.getElementById('guidedGenerate').onclick = async () => {
 
 // (Le code d'accès de l'app de bureau est remplacé sur le web par la connexion Supabase — voir supabase.js)
 
+// Démo de bienvenue après inscription (affichée une fois).
+(function wireWelcome() {
+  const m = document.getElementById('welcomeModal');
+  const b = document.getElementById('welcomeStart');
+  if (b) b.onclick = () => m.classList.add('hidden');
+})();
+function maybeShowWelcome() {
+  if (sessionStorage.getItem('sf_just_signed_up') === '1') {
+    sessionStorage.removeItem('sf_just_signed_up');
+    const m = document.getElementById('welcomeModal');
+    if (m) m.classList.remove('hidden');
+  }
+}
+
 // ============ Initialisation ============
 (async () => {
   try {
     const s = await window.api.configStatus();
     activeCompanyId = s.activeCompanyId || null;
   } catch (_) {}
+  maybeShowWelcome();
   const justChose = await ensureAccountType(); // 1re connexion : choix Particulier / Entreprise
   renderGuidedCards();
   await loadCompanies();

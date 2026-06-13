@@ -347,6 +347,27 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
 .result-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .decline-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .decline-row .decline-label { font-size: 12.5px; color: var(--muted); font-weight: 600; font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+/* Batch : grille de propositions à choisir */
+.variant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.variant-cell { position: relative; padding: 0; border: 2px solid var(--border); border-radius: var(--r-md); overflow: hidden; cursor: pointer; background: var(--panel-2); transition: border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast); animation: fadeUp var(--t-med) both; }
+.variant-cell:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.variant-cell img { width: 100%; display: block; }
+.variant-cell .variant-pick { position: absolute; inset: auto 0 0 0; background: linear-gradient(transparent, rgba(124,58,237,.92)); color: #fff; font-weight: 700; font-size: 13px; padding: 16px 8px 8px; opacity: 0; transition: opacity var(--t-fast); }
+.variant-cell:hover .variant-pick { opacity: 1; }
+
+/* Démo de bienvenue */
+#welcomeModal { z-index: 1200; }
+.welcome-box { width: 480px; text-align: center; }
+.welcome-logo { height: 52px; object-fit: contain; margin: 0 auto; }
+.welcome-box h2 { font-size: 26px; }
+.welcome-box h2 b { color: var(--accent-2); }
+.welcome-sub { color: var(--muted); font-size: 14px; }
+.welcome-steps { display: flex; flex-direction: column; gap: 12px; text-align: left; margin: 8px 0 4px; }
+.wstep { display: flex; gap: 12px; align-items: flex-start; background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 14px; }
+.wstep-n { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-grad); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; }
+.wstep b { font-size: 14px; }
+.wstep span { font-size: 12.5px; color: var(--muted); }
 .result-actions button {
   background: var(--panel); border: 1px solid var(--border); color: var(--text);
   padding: 9px 14px; border-radius: 8px; cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);

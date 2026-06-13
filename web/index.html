@@ -175,6 +175,14 @@
             <label>Qualité</label>
             <select id="guidedQuality"></select>
           </div>
+          <div class="gq" id="gqVariants">
+            <label>Propositions à générer</label>
+            <select id="guidedVariants">
+              <option value="1" selected>1 visuel</option>
+              <option value="2">2 propositions (choisis la meilleure)</option>
+              <option value="3">3 propositions (choisis la meilleure)</option>
+            </select>
+          </div>
           <!-- Charte + logo appliqués automatiquement (entrées conservées masquées pour la logique) -->
           <label class="brand-toggle hidden"><input type="checkbox" id="guidedUseBrand" checked /> Appliquer la charte de l'entreprise active <span id="guidedBrandHint" class="brand-hint"></span></label>
           <div class="gq hidden" id="gqLogo">
@@ -744,6 +752,23 @@
         <div class="modal-actions">
           <button id="saveKey" class="primary">Enregistrer</button>
           <button id="closeSettings">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODALE : DÉMO DE BIENVENUE (après inscription) -->
+    <div id="welcomeModal" class="modal hidden">
+      <div class="modal-box welcome-box">
+        <img src="assets/logo.png" alt="SnapFiche" class="welcome-logo" />
+        <h2>Bienvenue sur Snap<b>Fiche</b> !</h2>
+        <p class="welcome-sub">100 crédits offerts pour découvrir. Voilà comment créer ta première affiche en 1 minute :</p>
+        <div class="welcome-steps">
+          <div class="wstep"><span class="wstep-n">1</span><div><b>Ton activité</b><br><span>Renseigne ta marque (nom, logo, couleurs) — une fois pour toutes.</span></div></div>
+          <div class="wstep"><span class="wstep-n">2</span><div><b>Choisis un objectif</b><br><span>Affiche, post réseaux, story, vidéo… SnapFiche choisit les bons réglages.</span></div></div>
+          <div class="wstep"><span class="wstep-n">3</span><div><b>Décris &amp; génère</b><br><span>Quelques mots, ou laisse SnapFiche proposer textes et visuels. Modifiable à volonté.</span></div></div>
+        </div>
+        <div class="modal-actions">
+          <button id="welcomeStart" class="primary">C'est parti</button>
         </div>
       </div>
     </div>
