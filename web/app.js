@@ -1508,7 +1508,7 @@ imgGenerate.onclick = async () => {
     const { taskId } = await window.api.generate(descriptor);
     const res = await pollUntilDone({ api: m.api, taskId }, statusEl, "Génération de l'image", imgGenToken);
     statusEl.textContent = res.credits != null ? `✓ Image générée. (−${res.credits} crédits)` : '✓ Image générée.';
-    showImageResult(resultEl, res.resultUrl, prompt);
+    showImageResult(resultEl, res.resultUrl, prompt2); // prompt complet -> variantes/déclinaisons fidèles
     refreshBalance();
   } catch (e) {
     statusEl.textContent = (e.message === 'Génération annulée.' ? '■ ' : '✗ ') + e.message;
@@ -1560,6 +1560,42 @@ function showImageResult(container, url, prompt, history, galleryId) {
   }
 
   actions.appendChild(saveBtn);
+
+  // Régénération au même prompt (variante) ou dans un autre format (déclinaison) — Snap Max 2K.
+  async function regenAt(ratio, btn, label) {
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ ' + label + '…';
+    try {
+      const { taskId } = await window.api.generate({
+        api: 'jobs',
+        model: 'nano-banana-pro',
+        input: { prompt: prompt || 'affiche professionnelle', aspect_ratio: ratio, resolution: '2K', output_format: 'png' },
+      });
+      let resultUrl = null;
+      for (let t = 0; t < 70 && !resultUrl; t++) {
+        await new Promise((s) => setTimeout(s, 2500));
+        const r = await window.api.poll({ api: 'jobs', taskId });
+        if (r.error) throw new Error(r.error);
+        if (r.done) resultUrl = r.resultUrl;
+      }
+      if (!resultUrl) throw new Error('Délai dépassé — réessaie.');
+      refreshBalance();
+      // nouvelle création (auto-enregistrée en galerie), l'originale reste en galerie
+      showImageResult(container, resultUrl, prompt, [], undefined);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = old;
+      alert('Échec : ' + e.message);
+    }
+  }
+  // Variante : même format, nouveau rendu
+  const varBtn = document.createElement('button');
+  varBtn.textContent = 'Variante (~30 cr)';
+  varBtn.title = 'Regénère une autre version avec le même prompt et le même format';
+  varBtn.onclick = () => regenAt(nearestAspect(img.naturalWidth, img.naturalHeight), varBtn, 'Variante');
+  actions.appendChild(varBtn);
+
   // Garder ce style : image + directive sauvegardées, resélectionnables dans le travail guidé
   const styleBtn = document.createElement('button');
   styleBtn.textContent = 'Garder ce style';
@@ -1591,6 +1627,32 @@ function showImageResult(container, url, prompt, history, galleryId) {
     actions.appendChild(undoBtn);
   }
   container.appendChild(actions);
+
+  // Déclinaison multi-formats : la même affiche en story / carré / paysage (1 clic chacun).
+  // Construite quand l'image est chargée (le format courant est alors connu et exclu).
+  const declRow = document.createElement('div');
+  declRow.className = 'decline-row';
+  container.appendChild(declRow);
+  const buildDecl = () => {
+    const FORMATS = [
+      { r: '9:16', label: 'Story 9:16' },
+      { r: '1:1', label: 'Carré 1:1' },
+      { r: '4:5', label: 'Portrait 4:5' },
+      { r: '16:9', label: 'Paysage 16:9' },
+    ];
+    const currentAr = nearestAspect(img.naturalWidth, img.naturalHeight);
+    declRow.innerHTML = '<span class="decline-label">Décliner en :</span>';
+    FORMATS.filter((f) => f.r !== currentAr).forEach((f) => {
+      const b = document.createElement('button');
+      b.className = 'mini';
+      b.textContent = f.label;
+      b.title = `Recrée cette affiche au format ${f.label} (~30 cr)`;
+      b.onclick = () => regenAt(f.r, b, f.label);
+      declRow.appendChild(b);
+    });
+  };
+  if (img.complete && img.naturalWidth) buildDecl();
+  else img.addEventListener('load', buildDecl, { once: true });
 
   // ---- Édition par IA (langage naturel) ----
   if (!featureOn('image_edit')) return; // fonctionnalité désactivée par l'admin
@@ -3927,7 +3989,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
           statusEl.textContent = '✓ Terminé (logo non ajouté).';
         }
       }
-      showImageResult(resultEl, finalUrl, answers.subject);
+      showImageResult(resultEl, finalUrl, prompt); // prompt complet (charte incluse) -> variantes/déclinaisons fidèles
       // Affiche Pro : ouvre l'éditeur avec titre/description/logo/contacts en calques modifiables
       if (r.proLayers) {
         statusEl.innerHTML = '<span class="spinner"></span>Composition des calques (titre, contacts)…';
