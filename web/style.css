@@ -261,7 +261,19 @@ nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .chip-img { margin-top: 8px; }
 .chip-img:empty { display: none; }
 .chip-preview { width: 100%; max-width: 320px; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow-md); display: block; animation: popIn var(--t-med) both; }
-.ref-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ref-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+/* Zone d'import (clique ou glisse-dépose) */
+.dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-align: center; padding: 22px 16px; border: 2px dashed var(--border); border-radius: var(--r-md); background: var(--panel-2); color: var(--muted); transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast); }
+.dropzone:hover { border-color: var(--accent); color: var(--accent-2); }
+.dropzone.drag { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-2); }
+.dropzone.filled { border-style: solid; border-color: var(--ok); color: var(--ok); background: rgba(22,163,74,.06); }
+.dropzone .dz-ico { font-size: 26px; line-height: 1; font-weight: 700; }
+.dropzone .dz-text { font-size: 13px; font-weight: 600; }
+/* Recette « tenue/décor/produit » : import en avant et obligatoire */
+.ref-required { background: var(--accent-soft); border: 1px solid #ddd3f7; border-radius: var(--r-md); padding: 14px; margin-bottom: 4px; }
+.ref-required .dropzone { background: #fff; padding: 30px 16px; }
+.ref-required .dz-ico { color: var(--accent); }
+.req { color: var(--danger); font-size: 11.5px; font-weight: 700; }
 .ref-row select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
 .guided-card h4 { font-size: 16px; margin: 8px 0 4px; }
 /* Carte « cadre de marque » : étape 1 du workflow, mise en avant tant que non créé */

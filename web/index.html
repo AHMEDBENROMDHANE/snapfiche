@@ -152,12 +152,14 @@
             <div id="aiStatus" class="ai-status"></div>
             <div id="aiSuggestions" class="ai-suggestions"></div>
           </div>
-          <div class="gq">
+          <div class="gq" id="gqRef">
             <label id="guidedRefLabel">Images de référence (optionnel — style, personnage, produit… max 6)</label>
+            <label class="dropzone" id="guidedDrop">
+              <input type="file" id="guidedRefFile" accept="image/*" multiple hidden />
+              <span class="dz-ico">＋</span>
+              <span class="dz-text" id="guidedDropText">Ajouter des images</span>
+            </label>
             <div class="ref-row">
-              <label class="filebtn">+ Ajouter des images
-                <input type="file" id="guidedRefFile" accept="image/*" multiple hidden />
-              </label>
               <select id="guidedRefMode">
                 <option value="inspire">S'inspirer du style</option>
                 <option value="character">Garder personnage / produit</option>

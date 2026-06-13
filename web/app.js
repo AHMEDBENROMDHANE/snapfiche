@@ -3439,9 +3439,25 @@ function openRecipe(r, opts) {
   document.getElementById('guidedBrandHint').textContent = activeCompany() ? `→ ${activeCompany().name}` : '→ aucune entreprise active';
   updateGuidedSummary();
   resetGuidedRef();
-  document.getElementById('guidedRefLabel').textContent = r.needsImage
-    ? 'Photos : la personne + le produit/vêtement (ex : femme + robe) — 1 à 6 images, obligatoire'
-    : 'Images de référence (optionnel — style, personnage, produit… max 6)';
+  // Bloc d'import des photos : en HAUT et obligatoire pour « Tenue · décor · produit ».
+  const gqRef = document.getElementById('gqRef');
+  const genLeft = document.querySelector('#guidedPanel .gen-left');
+  const refLabel = document.getElementById('guidedRefLabel');
+  const dropText = document.getElementById('guidedDropText');
+  if (gqRef && genLeft) {
+    if (r.needsImage) {
+      refLabel.innerHTML = 'Tes photos — la personne + le produit / vêtement <span class="req">* obligatoire</span><br><small>Ex : la photo de la personne ET la photo de la robe (1 à 6 images).</small>';
+      dropText.textContent = 'Importer les photos (clique ou glisse-dépose)';
+      gqRef.classList.add('ref-required');
+      genLeft.insertBefore(gqRef, genLeft.firstChild); // tout en haut
+    } else {
+      refLabel.innerHTML = 'Images de référence <small>(optionnel — style, personnage, produit… max 6)</small>';
+      dropText.textContent = 'Ajouter des images';
+      gqRef.classList.remove('ref-required');
+      const anchor = document.getElementById('gqStyleAuto');
+      if (anchor) genLeft.insertBefore(gqRef, anchor); else genLeft.appendChild(gqRef); // position normale
+    }
+  }
   // Affiche Pro : langue / coordonnées deviennent des calques -> réglages inutiles ici.
   // (gqLogo reste masqué en permanence : logo appliqué automatiquement, mode 'ai' par défaut.)
   ['gqLang', 'gqContact', 'gqLogoToggle'].forEach((id) => {
@@ -3501,14 +3517,27 @@ const guidedRefs = [];
   const sync = () => {
     clr.classList.toggle('hidden', !guidedRefs.length);
     renderThumbs(thumbs, guidedRefs, sync);
+    const dz = document.getElementById('guidedDrop');
+    const dzt = document.getElementById('guidedDropText');
+    if (dz) dz.classList.toggle('filled', guidedRefs.length > 0);
+    if (dzt) dzt.textContent = guidedRefs.length
+      ? `${guidedRefs.length} photo(s) ajoutée(s) — clique pour en ajouter`
+      : (guidedRecipe && guidedRecipe.needsImage ? 'Importer les photos (clique ou glisse-dépose)' : 'Ajouter des images');
   };
-  file.addEventListener('change', async (e) => {
-    const files = [...e.target.files].slice(0, GUIDED_MAX_REFS - guidedRefs.length);
+  const addFiles = async (fileList) => {
+    const files = [...fileList].filter((f) => f.type.startsWith('image/')).slice(0, GUIDED_MAX_REFS - guidedRefs.length);
     for (const f of files) guidedRefs.push(await readImageFile(f));
-    file.value = '';
     sync();
-  });
+  };
+  file.addEventListener('change', async (e) => { await addFiles(e.target.files); file.value = ''; });
   clr.onclick = () => { guidedRefs.length = 0; sync(); };
+  // Glisser-déposer sur la zone
+  const dz = document.getElementById('guidedDrop');
+  if (dz) {
+    ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag'); }));
+    dz.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
+  }
 })();
 function resetGuidedRef() {
   guidedRefs.length = 0;
