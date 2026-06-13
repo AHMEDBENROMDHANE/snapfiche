@@ -1565,7 +1565,7 @@ function showGenLoading(container, ratio, title) {
   container.innerHTML =
     `<div class="gen-loading">` +
     `<div class="gen-frame" style="padding-bottom:${pad}%"><div class="gen-sheen"></div>` +
-    `<svg class="gen-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6 7 18.2l1.9-5.8L4 8.8h6.1z"/></svg></div>` +
+    `<div class="gen-logo-wrap"><img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" /><div class="gen-ring"></div></div></div>` +
     `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
     `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
     `</div>`;
