@@ -130,13 +130,13 @@ async function getFeatures() {
 // Solde + statut illimité. Illimité si : profil illimité OU mode gratuit global actif.
 async function getBalance(uid) {
   const [r, settings] = await Promise.all([
-    q('select credits, coalesce(unlimited,false) as unlimited from profiles where id=$1', [uid]),
+    q('select credits, coalesce(unlimited,false) as unlimited, coalesce(is_admin,false) as is_admin from profiles where id=$1', [uid]),
     getSettings(),
   ]);
-  const freeMode = settings.free_mode === true;
-  return r.rows[0]
-    ? { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited || freeMode }
-    : { credits: 0, unlimited: freeMode };
+  if (!r.rows[0]) return { credits: 0, unlimited: settings.free_mode === true };
+  // Le mode gratuit global ne s'applique PAS aux admins : ils testent sur un solde réel.
+  const freeMode = settings.free_mode === true && !r.rows[0].is_admin;
+  return { credits: r.rows[0].credits, unlimited: r.rows[0].unlimited || freeMode };
 }
 async function changeCredits(uid, delta, reason) {
   await q('update profiles set credits = credits + $2 where id=$1', [uid, delta]);
