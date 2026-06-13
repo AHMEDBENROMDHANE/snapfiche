@@ -127,11 +127,6 @@
         <p class="subtitle">Choisissez votre objectif — l'app choisit les bons réglages et prépare le visuel ou la vidéo en appliquant automatiquement la charte de votre entreprise.</p>
         <div id="guidedCards" class="guided-cards"></div>
 
-        <div id="recentSection" class="recent-section hidden">
-          <h3 class="recent-title">Tes dernières créations</h3>
-          <div id="recentMetro" class="recent-metro"></div>
-        </div>
-
         <div id="guidedPanel" class="guided-panel hidden">
           <h3 id="guidedTitle"></h3>
           <p id="guidedDesc" class="subtitle"></p>
@@ -169,6 +164,7 @@
                 <option value="inspire">S'inspirer du style</option>
                 <option value="character">Garder personnage / produit</option>
               </select>
+              <button id="guidedRefFromGallery" type="button" class="mini">Mes créations</button>
               <button id="guidedRefClear" type="button" class="mini hidden">✕ Tout retirer</button>
             </div>
             <div id="guidedRefThumbs" class="thumbs"></div>
@@ -226,6 +222,10 @@
           </div><!-- /gen-left -->
           <div class="gen-right">
             <div id="guidedResult" class="result"><div class="result-placeholder">Ta création apparaîtra ici</div></div>
+            <div id="sessionSection" class="recent-section hidden">
+              <h3 class="recent-title">Créations de cette session</h3>
+              <div id="sessionMetro" class="recent-metro"></div>
+            </div>
           </div>
           </div><!-- /gen-layout -->
         </div>
@@ -762,6 +762,16 @@
           <button id="saveKey" class="primary">Enregistrer</button>
           <button id="closeSettings">Fermer</button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODALE : CHOISIR PARMI MES CRÉATIONS (pour l'upload de référence) -->
+    <div id="ownPickModal" class="modal hidden">
+      <div class="modal-box designs-box">
+        <h2>Mes créations</h2>
+        <p class="hint">Clique une création pour l'utiliser comme image de référence.</p>
+        <div id="ownPickGrid" class="designs-grid frames-grid"></div>
+        <div class="modal-actions"><button id="ownPickClose">Fermer</button></div>
       </div>
     </div>
 

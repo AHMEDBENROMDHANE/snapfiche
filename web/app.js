@@ -761,7 +761,6 @@ async function loadCompanies() {
   updateEditorBrand();
   applyAccountUI();
   renderGuidedCards(); // workflow guidé : carte cadre selon l'entreprise active
-  renderRecentCreations(); // 4 dernières créations en tuiles metro
 }
 
 // --- Formulaire entreprise ---
@@ -1732,6 +1731,40 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
       }
     };
     actions.appendChild(repBtn);
+  }
+
+  // Animer en vidéo : transforme l'affiche/le visuel en courte vidéo (image -> vidéo).
+  if (featureOn('video')) {
+    const animBtn = document.createElement('button');
+    animBtn.textContent = 'Animer en vidéo (~45 cr)';
+    animBtn.title = 'Crée une courte vidéo animée à partir de cette image (mouvement de caméra, vie)';
+    animBtn.onclick = async () => {
+      animBtn.disabled = true;
+      showGenLoading(container, '9:16', 'Animation en vidéo…');
+      try {
+        let srcUrl = url;
+        try { const up = await window.api.uploadFile({ remoteUrl: url, fileName: 'anim-src.png' }); if (up && up.url) srcUrl = up.url; } catch (_) {}
+        const motion = "Anime cette image en une courte vidéo cinématographique : léger mouvement de caméra (travelling/zoom lent), éléments vivants (lumière, vent, reflets). Garde EXACTEMENT la même scène, le même sujet et la même composition.";
+        const { taskId: vt } = await window.api.generate({
+          api: 'jobs', model: 'bytedance/seedance-2-fast',
+          input: { prompt: motion, first_frame_url: srcUrl, aspect_ratio: 'adaptive', resolution: '720p', duration: 5, generate_audio: false },
+        });
+        let videoUrl = null;
+        for (let t = 0; t < 90 && !videoUrl; t++) {
+          await new Promise((s) => setTimeout(s, 3000));
+          const rr = await window.api.poll({ api: 'jobs', taskId: vt });
+          if (rr.error) throw new Error(rr.error);
+          if (rr.done) videoUrl = rr.resultUrl;
+        }
+        if (!videoUrl) throw new Error('Délai dépassé — réessaie.');
+        refreshBalance();
+        showVideoResult(container, videoUrl, prompt);
+      } catch (e) {
+        alert('Échec : ' + e.message);
+        showImageResult(container, url, prompt, history, galleryId, taskId);
+      }
+    };
+    actions.appendChild(animBtn);
   }
 
   if (history.length) {
@@ -3496,38 +3529,36 @@ function renderGuidedCards() {
 }
 
 // Les 4 dernières créations en tuiles « metro » (1 grande + 3 petites) sur l'accueil guidé.
-async function renderRecentCreations() {
-  const sec = document.getElementById('recentSection');
-  const metro = document.getElementById('recentMetro');
+// Créations de la session en cours : ajoutées une par une à chaque génération,
+// réinitialisées au changement d'objectif (cadre).
+let sessionCreations = []; // { url, prompt }
+function resetSessionStrip() { sessionCreations = []; renderSessionStrip(); }
+function addSessionCreation(url, prompt) { sessionCreations.unshift({ url, prompt: prompt || '' }); renderSessionStrip(); }
+function renderSessionStrip() {
+  const sec = document.getElementById('sessionSection');
+  const metro = document.getElementById('sessionMetro');
   if (!sec || !metro) return;
-  try {
-    const all = await window.api.galleryList();
-    const items = all.filter((g) => g.type === 'image').slice(0, 4);
-    if (!items.length) { sec.classList.add('hidden'); return; }
-    metro.innerHTML = '';
-    items.forEach((it, i) => {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'metro-cell' + (i === 0 ? ' metro-big' : '');
-      cell.innerHTML = `<img src="${esc(it.url)}" loading="lazy" alt="Création" /><span class="metro-open">Rouvrir</span>`;
-      cell.onclick = () => {
-        document.querySelector('.nav-btn[data-view="image"]').click();
-        const resultEl = document.getElementById('imgResult');
-        showImageResult(resultEl, it.url, it.prompt || '', it.history || [], it.id);
-        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      };
-      metro.appendChild(cell);
-    });
-    // Visible seulement sur l'écran des cartes (masqué quand un objectif est ouvert).
-    const panelOpen = !document.getElementById('guidedPanel').classList.contains('hidden');
-    sec.classList.toggle('hidden', panelOpen);
-  } catch (_) { sec.classList.add('hidden'); }
+  if (!sessionCreations.length) { sec.classList.add('hidden'); metro.innerHTML = ''; return; }
+  metro.innerHTML = '';
+  sessionCreations.slice(0, 6).forEach((it, i) => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'metro-cell' + (i === 0 ? ' metro-big' : '');
+    cell.innerHTML = `<img src="${esc(it.url)}" loading="lazy" alt="Création" /><span class="metro-open">Rouvrir</span>`;
+    cell.onclick = () => {
+      const resultEl = document.getElementById('guidedResult');
+      showImageResult(resultEl, it.url, it.prompt || '', [], undefined);
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    metro.appendChild(cell);
+  });
+  sec.classList.remove('hidden');
 }
 
 function openRecipe(r, opts) {
   guidedRecipe = r;
   document.getElementById('guidedCards').classList.add('hidden');
-  document.getElementById('recentSection').classList.add('hidden');
+  resetSessionStrip(); // nouveau cadre -> on repart d'une session vierge
   document.getElementById('guidedPanel').classList.remove('hidden');
   document.getElementById('guidedTitle').innerHTML = svgIcon(r.icon, 'ico-title') + ' ' + r.title;
   document.getElementById('guidedDesc').textContent = r.desc;
@@ -3619,7 +3650,6 @@ document.getElementById('guidedBack').onclick = () => {
   document.getElementById('guidedPanel').classList.add('hidden');
   document.getElementById('guidedCards').classList.remove('hidden');
   guidedRecipe = null;
-  renderRecentCreations(); // rafraîchit la pellicule des dernières créations
 };
 document.getElementById('guidedQuality').onchange = updateGuidedSummary;
 document.getElementById('guidedLogoMode').onchange = (e) => {
@@ -3658,6 +3688,41 @@ const guidedRefs = [];
     ['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag'); }));
     dz.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
   }
+  // « Mes créations » : ajoute une création passée comme image de référence.
+  const gf = document.getElementById('guidedRefFromGallery');
+  if (gf) gf.onclick = () => showOwnPicker(async (item) => {
+    if (guidedRefs.length >= GUIDED_MAX_REFS) return alert('Maximum atteint.');
+    try {
+      let du = await window.api.mediaDataUrl(item.url);
+      if (!du.startsWith('data:')) du = await window.api.fetchDataUrl(du);
+      guidedRefs.push({ dataUrl: du, name: 'creation.png' });
+      sync();
+    } catch (e) { alert('Échec : ' + e.message); }
+  });
+})();
+
+// Picker des créations de l'utilisateur (galerie images) -> callback(item).
+async function showOwnPicker(onPick) {
+  const modal = document.getElementById('ownPickModal');
+  const grid = document.getElementById('ownPickGrid');
+  modal.classList.remove('hidden');
+  grid.innerHTML = '<p class="empty"><span class="spinner"></span>Chargement…</p>';
+  try {
+    const items = (await window.api.galleryList()).filter((g) => g.type === 'image');
+    if (!items.length) { grid.innerHTML = '<p class="empty">Aucune création enregistrée pour le moment.</p>'; return; }
+    grid.innerHTML = '';
+    items.forEach((it) => {
+      const card = document.createElement('div');
+      card.className = 'design-card';
+      card.innerHTML = `<img src="${esc(it.url)}" loading="lazy" alt="Création" />`;
+      card.onclick = () => { modal.classList.add('hidden'); onPick(it); };
+      grid.appendChild(card);
+    });
+  } catch (e) { grid.innerHTML = `<p class="empty">✗ ${esc(e.message)}</p>`; }
+}
+(function wireOwnPicker() {
+  const b = document.getElementById('ownPickClose');
+  if (b) b.onclick = () => document.getElementById('ownPickModal').classList.add('hidden');
 })();
 function resetGuidedRef() {
   guidedRefs.length = 0;
@@ -4263,6 +4328,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
       document.getElementById('guidedStyleHint').textContent = '✓ style mémorisé';
       statusEl.textContent = `✓ ${ok.length} propositions — clique celle que tu préfères.`;
       showImageGrid(resultEl, ok, prompt);
+      ok.forEach((u) => addSessionCreation(u, prompt)); // strip de session
       return; // le bloc finally réactive le bouton
     }
 
@@ -4286,6 +4352,7 @@ document.getElementById('guidedGenerate').onclick = async () => {
         }
       }
       showImageResult(resultEl, finalUrl, prompt, [], undefined, taskId); // + taskId (signalement)
+      addSessionCreation(finalUrl, prompt); // strip de session (une par une)
       // Affiche Pro : ouvre l'éditeur avec titre/description/logo/contacts en calques modifiables
       if (r.proLayers) {
         statusEl.innerHTML = '<span class="spinner"></span>Composition des calques (titre, contacts)…';
