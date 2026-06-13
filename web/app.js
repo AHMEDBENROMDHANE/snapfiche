@@ -3968,10 +3968,12 @@ document.getElementById('aiIdeas').onclick = async () => {
         "Tu proposes des mises en scène RÉALISTES et COHÉRENTES avec la nature de l'objet : un vêtement est PORTÉ par une personne adaptée (robe → femme, costume → homme, chaussures aux pieds…), " +
         "une boisson est tenue ou versée, un objet est utilisé dans son contexte naturel. JAMAIS l'objet seul qui flotte. " +
         "Tu décris à chaque fois : qui (mannequin/personne), l'action, le décor, la lumière, l'ambiance.";
+      const wish = (subjectField() && subjectField().value.trim()) || '';
       const USR =
         `Identifie d'abord ce produit, puis propose 5 mises en scène différentes et crédibles pour le valoriser` +
         (c ? ` (marque « ${c.name} »${c.category ? ', ' + c.category : ''})` : '') + '. ' +
-        `Une proposition par ligne, concrète et imagée. Exemple : « Une femme élégante porte la robe, marchant dans une ruelle blanche de Sidi Bou Saïd au coucher du soleil ». ` +
+        (wish ? `CONSIGNE PRIORITAIRE du client à respecter ABSOLUMENT dans CHAQUE proposition : « ${wish} » (lieu, décor ou ambiance imposés). ` : '') +
+        `Une proposition par ligne, concrète et imagée. Exemple : « Une femme élégante porte la robe, marchant sur la plage de Sidi Bou Saïd au coucher du soleil ». ` +
         `Pas de numéro, pas de puce, pas d'introduction.`;
       const text = (await window.api.aiChat({
         model: AI_MODEL,
