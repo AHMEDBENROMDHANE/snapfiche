@@ -85,6 +85,8 @@
     adminPackUpdate: async (id, fields) => backend('/api/admin/packs/' + id, { method: 'POST', body: fields }),
     adminPackDelete: async (id) => backend('/api/admin/packs/' + id, { method: 'DELETE' }),
     adminDaily: async () => backend('/api/admin/daily'),
+    adminKieBalance: async () => backend('/api/admin/kie-balance'),
+    adminKieAck: async () => backend('/api/admin/kie-ack', { method: 'POST' }),
     adminSettings: async () => backend('/api/admin/settings'),
     adminSetSettings: async (fields) => backend('/api/admin/settings', { method: 'POST', body: fields }),
 

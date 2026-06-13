@@ -165,6 +165,15 @@ function estimateCost(d) {
   return 8;
 }
 
+// Erreur kie « crédits/solde insuffisant » : on la masque au client et on alerte l'admin.
+function isKieOutOfCredits(msg) {
+  return /insufficient|balance|top.?up|not enough|solde|crédit insuffisant|credit/i.test(String(msg || ''));
+}
+async function flagKieOutOfCredits(msg) {
+  try { await setSetting('kie_alert', { at: new Date().toISOString(), msg: String(msg || '').slice(0, 200) }); } catch (_) {}
+}
+const KIE_DOWN_MSG = 'Service de création momentanément indisponible. Réessaie dans quelques minutes — aucun crédit ne t\'a été débité.';
+
 // ---------------- Routes ----------------
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'snapfiche-api' }));
 
@@ -255,11 +264,28 @@ app.get('/api/admin/overview', auth, requireAdmin, async (_req, res) => {
        from credit_ledger l join profiles p on p.id = l.user_id
        order by l.created_at desc limit 12`),
   ]);
+  const settings = await getSettings();
   res.json({
     users: users.rows[0].n, usersWeek: usersWeek.rows[0].n,
     companies: companies.rows[0].n, tasks: tasks.rows[0].n,
     creditsSpent: spent.rows[0].n, recent: recent.rows,
+    kieAlert: settings.kie_alert || null, // dernière alerte « crédits kie.ai insuffisants »
   });
+});
+
+// Admin : solde réel du compte kie.ai (l'argent réel derrière les générations).
+app.get('/api/admin/kie-balance', auth, requireAdmin, async (_req, res) => {
+  try {
+    const b = await kie.getCredits(KIE_API_KEY);
+    res.json({ credits: b.credits, usd: b.usd });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+// Admin : acquitter l'alerte kie (après recharge).
+app.post('/api/admin/kie-ack', auth, requireAdmin, async (_req, res) => {
+  await setSetting('kie_alert', null);
+  res.json({ ok: true });
 });
 
 // Liste des utilisateurs (recherche par e-mail).
@@ -417,6 +443,7 @@ app.post('/api/generate', auth, rateLimit('gen', 20, 60000), async (req, res) =>
     await q('insert into tasks(task_id,user_id,api,model,estimate) values($1,$2,$3,$4,$5) on conflict (task_id) do nothing', [taskId, req.user.id, descriptor.api, descriptor.model || '', cost]);
     res.json({ taskId });
   } catch (e) {
+    if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
     res.status(502).json({ error: e.message });
   }
 });
@@ -440,6 +467,7 @@ app.post('/api/poll', auth, async (req, res) => {
     }
     res.json(result);
   } catch (e) {
+    if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
     res.status(502).json({ error: e.message });
   }
 });
@@ -453,6 +481,7 @@ app.post('/api/chat', auth, rateLimit('chat', 30, 60000), async (req, res) => {
     if (!bal.unlimited) await changeCredits(req.user.id, -1, 'assistant');
     res.json({ text });
   } catch (e) {
+    if (isKieOutOfCredits(e.message)) { await flagKieOutOfCredits(e.message); return res.status(503).json({ error: KIE_DOWN_MSG }); }
     res.status(502).json({ error: e.message });
   }
 });

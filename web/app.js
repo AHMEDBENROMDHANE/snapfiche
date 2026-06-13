@@ -629,9 +629,45 @@ function renderFeatureFlags(features) {
   };
 })();
 
+// Solde réel du compte kie.ai (l'argent derrière les générations).
+async function loadKieBalance() {
+  const box = document.getElementById('kieBalanceBox');
+  if (!box) return;
+  box.innerHTML = '<span class="spinner"></span> Solde kie.ai…';
+  try {
+    const b = await window.api.adminKieBalance();
+    const low = b.credits < 500; // seuil d'alerte visuelle
+    box.className = 'kie-balance' + (low ? ' low' : '');
+    box.innerHTML =
+      `<span class="kb-label">Solde kie.ai (réel)</span>` +
+      `<span class="kb-val">${b.credits.toLocaleString('fr-FR')} crédits</span>` +
+      `<span class="kb-usd">≈ $${b.usd}</span>` +
+      (low ? `<span class="kb-warn">Solde bas — pense à recharger sur kie.ai</span>` : '') +
+      `<button id="kieRefresh" class="mini">↻</button>` +
+      `<a href="https://kie.ai/api-key" target="_blank" rel="noopener" class="mini">Recharger sur kie.ai</a>`;
+    const rb = document.getElementById('kieRefresh');
+    if (rb) rb.onclick = loadKieBalance;
+  } catch (e) {
+    box.className = 'kie-balance';
+    box.innerHTML = `<span class="kb-label">Solde kie.ai</span><span class="kb-warn">Lecture impossible : ${esc(e.message)}</span>`;
+  }
+}
+// Bannière d'alerte « crédits kie.ai insuffisants » (déclenchée quand une génération a échoué pour ça).
+function renderKieAlert(alert) {
+  const b = document.getElementById('kieAlertBanner');
+  if (!b) return;
+  if (!alert || !alert.at) { b.classList.add('hidden'); return; }
+  const when = new Date(alert.at).toLocaleString('fr-FR');
+  b.classList.remove('hidden');
+  b.innerHTML = `<b>⚠ Crédits kie.ai insuffisants</b> — une génération a échoué (${when}). Recharge ton compte kie.ai pour rétablir le service. <button id="kieAckBtn" class="mini">J'ai rechargé</button>`;
+  const ack = document.getElementById('kieAckBtn');
+  if (ack) ack.onclick = async () => { try { await window.api.adminKieAck(); b.classList.add('hidden'); loadKieBalance(); } catch (_) {} };
+}
+
 async function loadAdmin() {
   const stats = document.getElementById('adminStats');
   const recent = document.getElementById('adminRecent');
+  loadKieBalance();
   stats.innerHTML = '<span class="spinner"></span>';
   try {
     const o = await window.api.adminOverview();
@@ -642,6 +678,7 @@ async function loadAdmin() {
       card(o.companies, 'Entreprises / marques') +
       card(o.tasks, 'Générations lancées') +
       card(o.creditsSpent, 'Crédits consommés');
+    renderKieAlert(o.kieAlert);
     recent.innerHTML = (o.recent || []).map((r) => {
       const d = new Date(r.created_at);
       const when = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });

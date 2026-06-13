@@ -570,6 +570,17 @@ code { background: var(--panel-2); padding: 2px 5px; border-radius: 4px; font-si
 .thumb-x:hover { background: var(--danger); }
 .req { color: var(--danger); font-size: 11.5px; font-weight: 700; }
 
+/* ============ Solde kie.ai + alerte (admin) ============ */
+.kie-balance { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--ok); border-radius: var(--r-md); padding: 12px 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.kie-balance.low { border-left-color: #d97706; }
+.kie-balance .kb-label { font-size: 12px; color: var(--muted); font-weight: 600; font-family: 'Space Grotesk','Inter',sans-serif; }
+.kie-balance .kb-val { font-size: 18px; font-weight: 800; color: var(--text); font-family: 'Plus Jakarta Sans','Inter',sans-serif; }
+.kie-balance .kb-usd { font-size: 13px; color: var(--muted); }
+.kie-balance .kb-warn { font-size: 12.5px; color: #b45309; font-weight: 600; }
+.kie-balance .mini { margin-left: 4px; text-decoration: none; }
+.kie-alert { background: #fef2f2; border: 1px solid #fecaca; border-left: 3px solid var(--danger); color: #991b1b; border-radius: var(--r-md); padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; }
+.kie-alert .mini { margin-left: 8px; }
+
 /* ============ Dashboard admin ============ */
 .admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
 .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); animation: fadeUp var(--t-med) both; }
