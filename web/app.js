@@ -3255,10 +3255,10 @@ const RECIPES = [
     needsImage: true,
     ask: [{ key: 'subject', label: 'Que faut-il faire ?', ph: 'Ex : elle porte la robe de la photo — costume bleu élégant — plage au coucher du soleil — elle tient le produit en souriant' }],
     build: (a) =>
-      `À partir des photos de référence fournies : ${a.subject}. Conserve EXACTEMENT la même personne (même visage, même morphologie, même identité). ` +
-      `Si un VÊTEMENT est fourni en photo, habille la personne avec EXACTEMENT ce vêtement : même coupe, même tissu, mêmes couleurs, mêmes motifs et détails, ajusté naturellement à sa morphologie. ` +
-      `Si un PRODUIT/OBJET est fourni, reproduis-le À L'IDENTIQUE (même forme, étiquette, couleurs) et mets-le en scène avec elle de façon naturelle. ` +
-      `Ne change que ce qui est demandé (tenue, décor, ou mise en scène). Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
+      `À partir des photos de référence fournies : ${a.subject}. ` +
+      `COHÉRENCE OBLIGATOIRE selon la nature de l'objet fourni : un VÊTEMENT doit être PORTÉ par une personne adaptée (une robe → une femme, un costume → un homme), des chaussures aux pieds, une montre au poignet ; un PRODUIT/OBJET doit être utilisé ou présenté dans son contexte naturel (tenu, posé en situation). JAMAIS l'objet qui flotte seul. ` +
+      `Reproduis le produit/vêtement À L'IDENTIQUE (même forme, coupe, tissu, couleurs, motifs, étiquette) et, si une personne est fournie, conserve EXACTEMENT son visage et sa morphologie. ` +
+      `Rendu photoréaliste, lumière, ombres et perspective cohérentes.`,
   },
   {
     id: 'product', icon: 'tag', title: 'Visuel produit',
@@ -3565,8 +3565,9 @@ function openRecipe(r, opts) {
   if (ulg) ulg.checked = true; // logo intégré par défaut (ignoré si le cadre est appliqué : il le porte déjà)
   // Assistant en 2 temps pour TOUTES les recettes image : 1) textes, 2) idées visuelles.
   // (vidéo : un seul bouton d'idées, pas de texte rendu à l'écran)
-  document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image');
-  document.getElementById('aiIdeas').textContent = r.kind === 'image' ? '2 · Idées visuelles' : 'Proposer des idées';
+  // Produit/vêtement (needsImage) : pas de « textes » (hors-sujet) ; bouton idées = mises en scène.
+  document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image' || !!r.needsImage);
+  document.getElementById('aiIdeas').textContent = r.needsImage ? 'Proposer des mises en scène' : (r.kind === 'image' ? '2 · Idées visuelles' : 'Proposer des idées');
   // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
   document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
@@ -3916,6 +3917,53 @@ document.getElementById('aiTexts').onclick = async () => {
 document.getElementById('aiIdeas').onclick = async () => {
   if (!guidedRecipe) return;
   const statusEl = document.getElementById('aiStatus');
+
+  // Mise en scène produit/vêtement : SnapFiche VOIT la photo importée et propose des
+  // mises en scène COHÉRENTES (une robe est portée par une femme, etc.).
+  if (guidedRecipe.needsImage) {
+    if (!guidedRefs.length) {
+      statusEl.textContent = "Importe d'abord la photo du produit / vêtement.";
+      statusEl.className = 'ai-status error';
+      return;
+    }
+    const ib = document.getElementById('aiIdeas');
+    ib.disabled = true;
+    document.getElementById('aiSuggestions').innerHTML = '';
+    statusEl.className = 'ai-status';
+    statusEl.innerHTML = '<span class="spinner"></span>SnapFiche regarde ton produit…';
+    try {
+      const c = activeCompany();
+      const SYS =
+        "Tu es directeur artistique mode & produit. On te MONTRE un produit ou un vêtement à mettre en valeur. " +
+        "Tu proposes des mises en scène RÉALISTES et COHÉRENTES avec la nature de l'objet : un vêtement est PORTÉ par une personne adaptée (robe → femme, costume → homme, chaussures aux pieds…), " +
+        "une boisson est tenue ou versée, un objet est utilisé dans son contexte naturel. JAMAIS l'objet seul qui flotte. " +
+        "Tu décris à chaque fois : qui (mannequin/personne), l'action, le décor, la lumière, l'ambiance.";
+      const USR =
+        `Identifie d'abord ce produit, puis propose 5 mises en scène différentes et crédibles pour le valoriser` +
+        (c ? ` (marque « ${c.name} »${c.category ? ', ' + c.category : ''})` : '') + '. ' +
+        `Une proposition par ligne, concrète et imagée. Exemple : « Une femme élégante porte la robe, marchant dans une ruelle blanche de Sidi Bou Saïd au coucher du soleil ». ` +
+        `Pas de numéro, pas de puce, pas d'introduction.`;
+      const text = (await window.api.aiChat({
+        model: AI_MODEL,
+        messages: [
+          { role: 'system', content: SYS },
+          { role: 'user', content: [{ type: 'text', text: USR }, { type: 'image_url', image_url: { url: guidedRefs[0].dataUrl } }] },
+        ],
+      })).text;
+      const ideas = text.split(/\r?\n/).map((l) => l.replace(/^\s*(\d+[.)]|[-*•])\s*/, '').trim()).filter((l) => l.length > 3).slice(0, 6);
+      if (!ideas.length) throw new Error('Aucune idée reçue — réessaie.');
+      statusEl.textContent = 'Clique une mise en scène pour l\'utiliser :';
+      renderSuggestions(ideas);
+      lastIdeaTitles = [...lastIdeaTitles, ...ideas.map((l) => l.slice(0, 50))].slice(-15);
+    } catch (e) {
+      statusEl.textContent = '✗ ' + e.message;
+      statusEl.className = 'ai-status error';
+    } finally {
+      ib.disabled = false;
+    }
+    return;
+  }
+
   // Affiche Pro : la langue n'est pas demandée (texte tapé en calques) -> idées en français par défaut.
   if (!guidedLang() && !guidedRecipe.proLayers) {
     statusEl.textContent = "Choisissez d'abord la langue de l'affiche (au-dessus).";
