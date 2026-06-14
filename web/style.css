@@ -414,8 +414,8 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
 .gen-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; width: 100%; padding: 50px 16px; }
 /* Logo violet qui pulse (sans cadre/fond) + barre de progression */
 @keyframes gen-logo-flip {
-  0%,100% { filter: drop-shadow(0 0 8px hsla(262,90%,62%,.35)); transform: scale(.96); opacity: .85; }
-  50%     { filter: drop-shadow(0 0 16px hsla(262,95%,65%,.65)); transform: scale(1.08); opacity: 1; }
+  0%,100% { filter: drop-shadow(0 0 3px hsla(262,90%,62%,.18)); transform: scale(.96); opacity: .85; }
+  50%     { filter: drop-shadow(0 0 6px hsla(262,95%,65%,.3)); transform: scale(1.08); opacity: 1; }
 }
 .gen-loading .gen-logo-pulse { width: 76px; height: 76px; max-height: none; object-fit: contain; background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; animation: gen-logo-flip 1.8s ease-in-out infinite; }
 .gen-bar { width: min(260px, 80%); height: 8px; border-radius: 99px; background: var(--accent-soft, hsla(262,60%,90%,.5)); overflow: hidden; }
