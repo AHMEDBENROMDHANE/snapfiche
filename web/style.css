@@ -411,23 +411,8 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
 @keyframes gen-logo { 0%,100% { transform: scale(.92); opacity: .8; } 50% { transform: scale(1.06); opacity: 1; } }
 @keyframes gen-ring { 0% { transform: scale(.7); opacity: .6; } 100% { transform: scale(1.6); opacity: 0; } }
 @keyframes gen-pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
-@keyframes gen-spin { to { transform: rotate(360deg); } }
-@keyframes gen-spin-rev { to { transform: rotate(-360deg); } }
-@keyframes gen-orbit { from { transform: rotate(0) translateX(58px); } to { transform: rotate(360deg) translateX(58px); } }
-@keyframes gen-orbit2 { from { transform: rotate(180deg) translateX(46px); } to { transform: rotate(540deg) translateX(46px); } }
-@keyframes gen-scanline { 0% { top: 8%; opacity: 0; } 30% { opacity: 1; } 100% { top: 88%; opacity: 0; } }
-.gen-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; padding: 44px 16px; }
-.gen-orb { position: relative; width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; }
-.gen-orb .gen-orbit { position: absolute; inset: 8px; border-radius: 50%; border: 2px solid transparent;
-  background: conic-gradient(from 0deg, transparent, var(--accent) 70%, transparent) border-box;
-  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
-  animation: gen-spin 2.2s linear infinite; }
-.gen-orb .gen-orbit2 { inset: 22px; opacity: .7; background: conic-gradient(from 90deg, transparent, #c4b5fd 60%, transparent) border-box; animation: gen-spin-rev 3s linear infinite; }
-.gen-orb .gen-sat { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: gen-orbit 2.4s linear infinite; }
-.gen-orb .gen-sat2 { width: 6px; height: 6px; margin: -3px; background: #c4b5fd; box-shadow: 0 0 8px #c4b5fd; animation: gen-orbit2 3.2s linear infinite; }
-.gen-orb .gen-glow { position: absolute; inset: 18px; border-radius: 50%; background: radial-gradient(circle, hsla(262,90%,70%,.45), transparent 65%); animation: gen-logo 2s ease-in-out infinite; filter: blur(3px); }
-.gen-orb .gen-logo { position: relative; z-index: 2; width: 56px; height: 56px; object-fit: contain; animation: gen-logo 1.8s ease-in-out infinite; filter: drop-shadow(0 0 14px hsla(262,95%,68%,.6)); }
-.gen-orb .gen-scanline { position: absolute; left: 26px; right: 26px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 10px var(--accent); animation: gen-scanline 1.8s ease-in-out infinite; z-index: 3; }
+.gen-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%; padding: 48px 16px; }
+.gen-logo { width: 70px; height: 70px; object-fit: contain; animation: gen-logo 1.6s ease-in-out infinite; filter: drop-shadow(0 4px 12px rgba(109,40,217,.25)); }
 .gen-loading-text { font-weight: 700; font-family: 'Plus Jakarta Sans','Inter',sans-serif; text-align: center; }
 .gen-loading-sub { font-size: 13px; color: var(--muted); animation: gen-pulse 2s ease-in-out infinite; text-align: center; }
 

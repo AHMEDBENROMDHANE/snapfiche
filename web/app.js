@@ -1563,13 +1563,7 @@ function showGenLoading(container, ratio, title) {
   // Hologramme futuriste : logo + orbites néon rotatives + balayage, centré.
   container.innerHTML =
     `<div class="gen-loading">` +
-    `<div class="gen-orb">` +
-      `<div class="gen-orbit"></div><div class="gen-orbit gen-orbit2"></div>` +
-      `<div class="gen-sat"></div><div class="gen-sat gen-sat2"></div>` +
-      `<div class="gen-glow"></div>` +
-      `<img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" />` +
-      `<div class="gen-scanline"></div>` +
-    `</div>` +
+    `<img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" />` +
     `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
     `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
     `</div>`;
@@ -3527,16 +3521,10 @@ function renderGuidedCards() {
     if (r.proLayers) return false; // édition manuelle retirée
     if (r.kind === 'video' && !featureOn('video')) return false;
     return true;
-  }).forEach((r, i) => {
-    const hue = CARD_HUES[i % CARD_HUES.length]; // teinte néon par carte
+  }).forEach((r) => {
     const card = document.createElement('div');
-    card.className = 'guided-card futuristic';
-    card.style.setProperty('--hue', hue);
-    card.innerHTML =
-      `<div class="gcard-thumb"><div class="gcard-grid"></div><div class="gcard-scan"></div>` +
-      `<div class="gcard-glow"></div><div class="gcard-icon">${svgIcon(r.icon, 'ico-card')}</div>` +
-      `<span class="gcard-kind">${r.kind === 'video' ? 'Vidéo' : 'Image'}</span></div>` +
-      `<div class="gcard-body"><h4>${r.title}</h4><p>${r.desc}</p></div>`;
+    card.className = 'guided-card';
+    card.innerHTML = `<div class="gicon">${svgIcon(r.icon, 'ico-card')}</div><h4>${r.title}</h4><p>${r.desc}</p><span class="gtag">${r.kind === 'video' ? 'Vidéo' : 'Image'} · réglages auto</span>`;
     card.onclick = () => openRecipe(r);
     grid.appendChild(card);
   });
