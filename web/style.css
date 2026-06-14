@@ -412,12 +412,12 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
 @keyframes gen-ring { 0% { transform: scale(.7); opacity: .6; } 100% { transform: scale(1.6); opacity: 0; } }
 @keyframes gen-pulse { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
 .gen-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; width: 100%; padding: 50px 16px; }
-/* Logo qui pulse entre violet et blanc + barre de progression */
+/* Logo violet qui pulse (sans cadre/fond) + barre de progression */
 @keyframes gen-logo-flip {
-  0%,100% { filter: drop-shadow(0 0 10px hsla(262,95%,68%,.5)); transform: scale(1); }
-  50%     { filter: brightness(0) invert(1) drop-shadow(0 0 12px hsla(262,95%,80%,.7)); transform: scale(1.08); }
+  0%,100% { filter: drop-shadow(0 0 8px hsla(262,90%,62%,.35)); transform: scale(.96); opacity: .85; }
+  50%     { filter: drop-shadow(0 0 16px hsla(262,95%,65%,.65)); transform: scale(1.08); opacity: 1; }
 }
-.gen-logo-pulse { width: 76px; height: 76px; object-fit: contain; animation: gen-logo-flip 1.8s ease-in-out infinite; }
+.gen-loading .gen-logo-pulse { width: 76px; height: 76px; max-height: none; object-fit: contain; background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; animation: gen-logo-flip 1.8s ease-in-out infinite; }
 .gen-bar { width: min(260px, 80%); height: 8px; border-radius: 99px; background: var(--accent-soft, hsla(262,60%,90%,.5)); overflow: hidden; }
 .gen-bar-fill { width: 0; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent, #6d28d9), var(--accent-2, #a855f7)); box-shadow: 0 0 10px hsla(262,90%,65%,.5); transition: width .3s ease; }
 .gen-loading-text { font-weight: 700; font-family: 'Plus Jakarta Sans','Inter',sans-serif; text-align: center; }
