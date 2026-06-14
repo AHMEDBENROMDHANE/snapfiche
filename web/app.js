@@ -1561,9 +1561,11 @@ imgGenerate.onclick = async () => {
 const GEN_MSGS = ['Composition de la scène…', 'Application de la charte…', 'Réglage des lumières…', 'Peaufinage des détails…', 'Presque prêt…'];
 function showGenLoading(container, ratio, title) {
   // Hologramme futuriste : logo + orbites néon rotatives + balayage, centré.
+  const faces = ['front', 'back', 'right', 'left', 'top', 'bottom']
+    .map((f) => `<div class="cube-face cube-${f}"><img src="/assets/logo.png" alt="SnapFiche" /></div>`).join('');
   container.innerHTML =
     `<div class="gen-loading">` +
-    `<img class="gen-logo" src="/assets/logo.png" alt="SnapFiche" />` +
+    `<div class="gen-cube-scene"><div class="gen-cube">${faces}</div></div>` +
     `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
     `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
     `</div>`;
