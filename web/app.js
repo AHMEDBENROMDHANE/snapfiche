@@ -1560,19 +1560,29 @@ imgGenerate.onclick = async () => {
 // balayage lumineux + messages qui défilent.
 const GEN_MSGS = ['Composition de la scène…', 'Application de la charte…', 'Réglage des lumières…', 'Peaufinage des détails…', 'Presque prêt…'];
 function showGenLoading(container, ratio, title) {
-  // Hologramme futuriste : logo + orbites néon rotatives + balayage, centré.
-  const faces = ['front', 'back', 'right', 'left', 'top', 'bottom']
-    .map((f) => `<div class="cube-face cube-${f}"><img src="/assets/logo.png" alt="SnapFiche" /></div>`).join('');
+  // Logo pulsant (violet ↔ blanc) + barre de progression avec pourcentage.
   container.innerHTML =
     `<div class="gen-loading">` +
-    `<div class="gen-cube-scene"><div class="gen-cube">${faces}</div></div>` +
+    `<img class="gen-logo-pulse" src="/assets/logo.png" alt="SnapFiche" />` +
     `<div class="gen-loading-text">${esc(title || 'Création en cours…')}</div>` +
-    `<div class="gen-loading-sub" id="genMsg">${GEN_MSGS[0]}</div>` +
+    `<div class="gen-bar"><div class="gen-bar-fill" id="genBar"></div></div>` +
+    `<div class="gen-loading-sub"><span id="genMsg">${GEN_MSGS[0]}</span> · <b id="genPct">0%</b></div>` +
     `</div>`;
   let i = 0;
-  const el = container.querySelector('#genMsg');
-  const timer = setInterval(() => { i = (i + 1) % GEN_MSGS.length; if (el && el.isConnected) el.textContent = GEN_MSGS[i]; else clearInterval(timer); }, 2200);
-  return () => clearInterval(timer);
+  const msgEl = container.querySelector('#genMsg');
+  const barEl = container.querySelector('#genBar');
+  const pctEl = container.querySelector('#genPct');
+  const timer = setInterval(() => { i = (i + 1) % GEN_MSGS.length; if (msgEl && msgEl.isConnected) msgEl.textContent = GEN_MSGS[i]; else clearInterval(timer); }, 2200);
+  // Progression simulée : monte vite puis ralentit, plafonne à ~95% (le 100% arrive avec le résultat).
+  let pct = 0;
+  const prog = setInterval(() => {
+    if (!barEl || !barEl.isConnected) { clearInterval(prog); return; }
+    const step = pct < 60 ? 3.5 : pct < 85 ? 1.2 : 0.35;
+    pct = Math.min(95, pct + step);
+    barEl.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  }, 320);
+  return () => { clearInterval(timer); clearInterval(prog); };
 }
 
 // Grille de propositions (batch) : on clique celle qu'on préfère -> elle s'ouvre en grand
