@@ -3,7 +3,7 @@
   "short_name": "SnapFiche",
   "description": "Création d'affiches & vidéos par IA",
   "lang": "fr",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

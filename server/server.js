@@ -41,6 +41,7 @@ app.use((req, res, next) => {
 // Sert le frontend SnapFiche (web/) depuis le même serveur (même origine).
 // HTML/JS/CSS : no-cache (déploiements immédiats). Images/icônes : cache 1 jour.
 app.use(express.static(path.join(__dirname, '..', 'web'), {
+  index: false, // « / » est servi par la landing (voir routes), pas par index.html (= l'app)
   setHeaders: (res, filePath) => {
     if (/\.(png|jpe?g|webp|svg|ico)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=86400');
     else res.setHeader('Cache-Control', 'no-cache');
@@ -195,6 +196,9 @@ app.get('/health', (_req, res) => res.json({ ok: true, service: 'snapfiche-api' 
 
 // URLs « propres » pour les pages publiques (légales + parcours de paiement).
 const PUBLIC_PAGES = {
+  '/': 'accueil.html',
+  '/accueil': 'accueil.html',
+  '/app': 'index.html',
   '/cgu': 'cgu.html',
   '/conditions-generales': 'cgu.html',
   '/mentions-legales': 'mentions-legales.html',
