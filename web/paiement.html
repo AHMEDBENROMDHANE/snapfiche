@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Paiement — SnapFiche</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/legal.css" />
+</head>
+<body>
+<header class="lp-header"><div class="container">
+  <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+  <nav class="lp-nav">
+    <a href="/offre">Offre &amp; tarifs</a>
+    <a href="/cgu">CGU</a>
+    <a href="/contact">Contact</a>
+    <a class="lp-cta" href="/">Ouvrir l'app</a>
+  </nav>
+</div></header>
+
+<section class="lp-hero"><div class="container">
+  <span class="lp-eyebrow">Étape 2 / 3</span>
+  <h1>Paiement sécurisé</h1>
+  <p>Vérifiez votre commande et procédez au règlement via Floussi.</p>
+</div></section>
+
+<main class="lp-main"><div class="container" style="max-width:620px">
+  <div class="steps">1. Choix du pack → <b>2. Paiement</b> → 3. Confirmation</div>
+  <div class="demo-banner">🔒 Environnement de démonstration — aucun paiement réel n'est effectué.</div>
+
+  <div class="card">
+    <h2 style="margin-top:6px">Récapitulatif de la commande</h2>
+    <div class="recap">
+      <div class="recap-row"><span>Pack <b id="rPack">—</b></span><span id="rCredits">— crédits</span></div>
+      <div class="recap-row"><span>Montant HT</span><span id="rHt">—</span></div>
+      <div class="recap-row"><span>TVA (19 %)</span><span id="rTva">—</span></div>
+      <div class="recap-row total"><span>Total TTC</span><span id="rTtc">—</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:6px">Vos informations</h2>
+    <div class="field"><label for="bName">Nom complet</label><input id="bName" type="text" placeholder="Votre nom" /></div>
+    <div class="field"><label for="bEmail">E-mail</label><input id="bEmail" type="email" placeholder="vous@exemple.com" /></div>
+
+    <h3>Mode de paiement</h3>
+    <div class="pay-methods">
+      <div class="pay-pill active">
+        <img src="/assets/logo.png" alt="" style="width:18px;height:18px;display:none" />
+        💳 Floussi — Carte bancaire / e-DINAR
+      </div>
+    </div>
+
+    <form id="payForm" style="margin-top:14px">
+      <button class="btn-primary" type="submit" id="payBtn">Payer <span id="payAmt"></span> via Floussi</button>
+    </form>
+    <a class="btn-ghost" href="/offre">← Revenir aux offres</a>
+  </div>
+
+  <p style="color:var(--muted);font-size:13px;text-align:center">
+    En validant, vous acceptez nos <a href="/cgu">conditions de vente</a>.
+    Paiement traité par Floussi. SnapFiche ne stocke aucune donnée bancaire.
+  </p>
+</div></main>
+
+<footer class="lp-footer"><div class="container">
+  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
+  <div class="lp-foot-links">
+    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+  </div>
+</div></footer>
+
+<script>
+function qp(k){ return new URLSearchParams(location.search).get(k); }
+function fmt(n){ return Number(n).toFixed(2).replace('.', ',') + ' TND'; }
+var pack = qp('pack') || 'Pack';
+var credits = parseInt(qp('credits') || '0', 10);
+var ttc = parseFloat(qp('price') || '0');
+var ht = ttc / 1.19;
+var tva = ttc - ht;
+document.getElementById('rPack').textContent = pack;
+document.getElementById('rCredits').textContent = credits + ' crédits';
+document.getElementById('rHt').textContent = fmt(ht);
+document.getElementById('rTva').textContent = fmt(tva);
+document.getElementById('rTtc').textContent = fmt(ttc);
+document.getElementById('payAmt').textContent = fmt(ttc);
+
+document.getElementById('payForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.textContent = 'Redirection vers Floussi…';
+  // Démonstration : on simule le traitement Floussi puis la redirection de confirmation.
+  setTimeout(function(){
+    var url = '/merci?pack=' + encodeURIComponent(pack)
+            + '&credits=' + credits + '&price=' + ttc
+            + '&name=' + encodeURIComponent(document.getElementById('bName').value || '')
+            + '&email=' + encodeURIComponent(document.getElementById('bEmail').value || '');
+    location.href = url;
+  }, 1400);
+});
+</script>
+</body>
+</html>

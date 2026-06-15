@@ -101,6 +101,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .auth-box #signupBtn:hover { border-color: var(--accent); color: var(--accent-2); }
 .auth-remember { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; justify-content: center; }
 .auth-error { color: var(--danger); font-size: 13px; min-height: 18px; }
+.auth-legal { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.auth-legal a { color: var(--muted); font-size: 12.5px; text-decoration: none; }
+.auth-legal a:hover { color: var(--accent); text-decoration: underline; }
 
 /* ============ Sidebar (glass tendance) ============ */
 .sidebar {

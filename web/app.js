@@ -457,8 +457,11 @@ async function loadUserPacks() {
         priceHtml +
         `<div class="pack-equiv">≈ ${equiv} affiches HD (2K) · soit ${((p.promo_active ? +p.promo_price_tnd : +p.price_tnd) / equiv).toFixed(2)} DT l'affiche</div>` +
         `<button class="primary pack-buy">Choisir ce pack</button>`;
-      card.querySelector('.pack-buy').onclick = () =>
-        alert('Le paiement en ligne (Flouci / Paymee) arrive très bientôt.\nEn attendant, contacte-nous pour recharger ton compte.');
+      const price = p.promo_active ? +p.promo_price_tnd : +p.price_tnd;
+      card.querySelector('.pack-buy').onclick = () => {
+        window.location.href = '/paiement?pack=' + encodeURIComponent(p.name) +
+          '&credits=' + p.credits + '&price=' + price;
+      };
       wrap.appendChild(card);
     }
   } catch (_) { /* on garde le contenu par défaut */ }

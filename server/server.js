@@ -193,6 +193,23 @@ const KIE_DOWN_MSG = 'Service de création momentanément indisponible. Réessai
 // ---------------- Routes ----------------
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'snapfiche-api' }));
 
+// URLs « propres » pour les pages publiques (légales + parcours de paiement).
+const PUBLIC_PAGES = {
+  '/cgu': 'cgu.html',
+  '/conditions-generales': 'cgu.html',
+  '/mentions-legales': 'mentions-legales.html',
+  '/confidentialite': 'confidentialite.html',
+  '/politique-de-confidentialite': 'confidentialite.html',
+  '/contact': 'contact.html',
+  '/offre': 'offre.html',
+  '/tarifs': 'offre.html',
+  '/paiement': 'paiement.html',
+  '/merci': 'merci.html',
+};
+for (const [route, file] of Object.entries(PUBLIC_PAGES)) {
+  app.get(route, (_req, res) => res.sendFile(path.join(__dirname, '..', 'web', file)));
+}
+
 // Fonctionnalités actives (public : utilisé par l'écran de connexion pour le bouton Inscription).
 app.get('/api/features', async (_req, res) => {
   res.json({ features: await getFeatures() });
@@ -333,6 +350,24 @@ app.get('/api/packs', auth, async (req, res) => {
     promo_active: p.promo_price_tnd != null && (!p.promo_until || new Date(p.promo_until) > new Date()),
   }));
   res.json({ packs });
+});
+
+// Packs publics (sans authentification) — pour la page d'offre et le parcours de paiement
+// affichés à un visiteur non connecté (exigence du prestataire de paiement).
+app.get('/api/public/packs', async (_req, res) => {
+  try {
+    const cols = 'name, credits, price_tnd, promo_price_tnd, promo_until, badge';
+    const r = await q(`select ${cols} from packs where active order by sort, credits`);
+    const packs = r.rows.map((p) => ({
+      ...p,
+      price_tnd: +p.price_tnd,
+      promo_price_tnd: p.promo_price_tnd != null ? +p.promo_price_tnd : null,
+      promo_active: p.promo_price_tnd != null && (!p.promo_until || new Date(p.promo_until) > new Date()),
+    }));
+    res.json(packs);
+  } catch (_e) {
+    res.json([]); // la page a un repli statique
+  }
 });
 
 // Admin : liste complète + création / modification / suppression.

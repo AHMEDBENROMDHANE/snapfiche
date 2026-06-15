@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Offre &amp; tarifs — SnapFiche</title>
+<meta name="description" content="Packs de crédits SnapFiche — prix en dinars tunisiens, TTC. Paiement sécurisé via Floussi." />
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/legal.css" />
+</head>
+<body>
+<header class="lp-header"><div class="container">
+  <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+  <nav class="lp-nav">
+    <a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+    <a class="lp-cta" href="/">Ouvrir l'app</a>
+  </nav>
+</div></header>
+
+<section class="lp-hero"><div class="container">
+  <span class="lp-eyebrow">Packs de crédits</span>
+  <h1>Choisissez votre pack</h1>
+  <p>Rechargez votre compte SnapFiche en crédits. Prix en dinars tunisiens, <b>TTC (TVA incluse)</b>.
+  Paiement 100&nbsp;% sécurisé via <b>Floussi</b>.</p>
+</div></section>
+
+<main class="lp-main"><div class="container">
+  <div class="steps"><b>1. Choix du pack</b> → 2. Paiement → 3. Confirmation</div>
+  <div id="packGrid" class="pack-grid">
+    <p style="color:var(--muted)">Chargement des offres…</p>
+  </div>
+
+  <div class="callout" style="margin-top:26px">
+    Le paiement est traité par notre prestataire sécurisé <b>Floussi</b>. SnapFiche ne stocke aucune donnée bancaire.
+    Voir nos <a href="/cgu">conditions de vente</a> et notre <a href="/confidentialite">politique de confidentialité</a>.
+  </div>
+</div></main>
+
+<footer class="lp-footer"><div class="container">
+  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
+  <div class="lp-foot-links">
+    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+  </div>
+</div></footer>
+
+<script>
+var FALLBACK = [
+  { name: 'Starter',  credits: 200,  price_tnd: 15,  badge: '' },
+  { name: 'Pro',      credits: 600,  price_tnd: 39,  badge: 'Populaire' },
+  { name: 'Business', credits: 1500, price_tnd: 89,  badge: '' },
+  { name: 'Agence',   credits: 4000, price_tnd: 199, badge: 'Meilleur prix' }
+];
+function fmt(n){ return Number(n).toFixed(2).replace('.', ','); }
+function render(packs){
+  var grid = document.getElementById('packGrid');
+  grid.innerHTML = '';
+  packs.forEach(function(p){
+    var active = p.promo_active && p.promo_price_tnd != null;
+    var price = active ? p.promo_price_tnd : p.price_tnd;
+    var priceHtml = active
+      ? '<div class="pk-price"><s>'+fmt(p.price_tnd)+'</s>'+fmt(price)+' <small>TND TTC</small></div>'
+      : '<div class="pk-price">'+fmt(price)+' <small>TND TTC</small></div>';
+    var equiv = Math.max(1, Math.round(p.credits / 30));
+    var url = '/paiement?pack=' + encodeURIComponent(p.name)
+            + '&credits=' + p.credits + '&price=' + price;
+    var el = document.createElement('div');
+    el.className = 'pk';
+    el.innerHTML =
+      (p.badge ? '<span class="pk-badge">'+p.badge+'</span>' : '') +
+      '<div class="pk-name">'+p.name+'</div>' +
+      priceHtml +
+      '<div class="pk-meta">'+p.credits+' crédits</div>' +
+      '<div class="pk-meta">≈ '+equiv+' affiches HD · '+fmt(price/equiv)+' DT l\'affiche</div>' +
+      '<a class="pk-btn" href="'+url+'">Choisir ce pack</a>';
+    grid.appendChild(el);
+  });
+}
+fetch('/api/public/packs')
+  .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+  .then(function(d){ render(d && d.length ? d : FALLBACK); })
+  .catch(function(){ render(FALLBACK); });
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact — SnapFiche</title>
+<meta name="description" content="Contactez l'équipe SnapFiche — Triple A Agency, Tunis." />
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/legal.css" />
+</head>
+<body>
+<header class="lp-header"><div class="container">
+  <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+  <nav class="lp-nav">
+    <a href="/offre">Offre &amp; tarifs</a>
+    <a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a class="lp-cta" href="/">Ouvrir l'app</a>
+  </nav>
+</div></header>
+
+<section class="lp-hero"><div class="container">
+  <span class="lp-eyebrow">Nous contacter</span>
+  <h1>Contact</h1>
+  <p>Une question, un besoin, un partenariat ? L'équipe SnapFiche vous répond.</p>
+</div></section>
+
+<main class="lp-main"><div class="container">
+  <div class="card">
+    <h2 style="margin-top:6px">Coordonnées</h2>
+    <table class="info-table">
+      <tr><td>Société</td><td>Triple A Agency (SARL)</td></tr>
+      <tr><td>E-mail</td><td><a href="mailto:contact@snapfiche.com">contact@snapfiche.com</a></td></tr>
+      <tr><td>Adresse</td><td>Immeuble Ezzitouna Plass, Bloc A11-12, 6<sup>e</sup> étage,<br />Montplaisir, 1073 Bab Bhar, Tunis, Tunisie</td></tr>
+      <tr><td>Site web</td><td><a href="https://snapfiche.com">snapfiche.com</a></td></tr>
+      <tr><td>Horaires support</td><td>Du lundi au vendredi, 9h – 18h (GMT+1)</td></tr>
+    </table>
+  </div>
+
+  <h2>Écrivez-nous</h2>
+  <p>Remplissez ce formulaire : il ouvrira votre messagerie avec le message pré-rempli vers
+  <b>contact@snapfiche.com</b>.</p>
+  <div class="card">
+    <form id="contactForm">
+      <div class="field"><label for="cName">Nom complet</label><input id="cName" type="text" required placeholder="Votre nom" /></div>
+      <div class="field"><label for="cEmail">Votre e-mail</label><input id="cEmail" type="email" required placeholder="vous@exemple.com" /></div>
+      <div class="field"><label for="cSubject">Objet</label><input id="cSubject" type="text" placeholder="Objet de votre message" /></div>
+      <div class="field"><label for="cMsg">Message</label><input id="cMsg" type="text" placeholder="Votre message" /></div>
+      <button class="btn-primary" type="submit">Envoyer le message</button>
+    </form>
+  </div>
+</div></main>
+
+<footer class="lp-footer"><div class="container">
+  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
+  <div class="lp-foot-links">
+    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+  </div>
+</div></footer>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var name = encodeURIComponent(document.getElementById('cName').value || '');
+  var email = encodeURIComponent(document.getElementById('cEmail').value || '');
+  var subject = document.getElementById('cSubject').value || 'Contact depuis snapfiche.com';
+  var msg = document.getElementById('cMsg').value || '';
+  var body = 'Nom : ' + decodeURIComponent(name) + '\nE-mail : ' + decodeURIComponent(email) + '\n\n' + msg;
+  window.location.href = 'mailto:contact@snapfiche.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Paiement confirmé — SnapFiche</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/legal.css" />
+</head>
+<body>
+<header class="lp-header"><div class="container">
+  <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+  <nav class="lp-nav">
+    <a href="/offre">Offre &amp; tarifs</a>
+    <a href="/cgu">CGU</a>
+    <a href="/contact">Contact</a>
+    <a class="lp-cta" href="/">Ouvrir l'app</a>
+  </nav>
+</div></header>
+
+<main class="lp-main" style="padding-top:50px"><div class="container" style="max-width:560px">
+  <div class="steps">1. Choix du pack → 2. Paiement → <b>3. Confirmation</b></div>
+  <div class="demo-banner">🔒 Environnement de démonstration — paiement simulé (aucun débit réel).</div>
+
+  <div class="card" style="text-align:center">
+    <div class="success-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h2 style="margin:0 0 6px;color:var(--accent)">Paiement accepté</h2>
+    <p style="color:var(--muted);margin-top:0">Merci ! Votre commande a bien été enregistrée.</p>
+
+    <table class="info-table" style="text-align:left;margin-top:14px">
+      <tr><td>Transaction</td><td id="tTxn">—</td></tr>
+      <tr><td>Pack</td><td id="tPack">—</td></tr>
+      <tr><td>Crédits ajoutés</td><td id="tCredits">—</td></tr>
+      <tr><td>Montant payé</td><td id="tPrice">—</td></tr>
+      <tr><td>Prestataire</td><td>Floussi</td></tr>
+    </table>
+
+    <p style="margin-top:16px">Vos crédits sont disponibles dans votre compte.</p>
+    <a class="btn-primary" href="/" style="max-width:300px;margin:6px auto 0">Accéder à mon compte</a>
+    <a class="btn-ghost" href="/offre">Voir les autres offres</a>
+  </div>
+
+  <p style="color:var(--muted);font-size:13px;text-align:center">
+    Un reçu sera envoyé par e-mail. Besoin d'aide ? <a href="/contact">Contactez-nous</a>.
+  </p>
+</div></main>
+
+<footer class="lp-footer"><div class="container">
+  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
+  <div class="lp-foot-links">
+    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+  </div>
+</div></footer>
+
+<script>
+function qp(k){ return new URLSearchParams(location.search).get(k); }
+function fmt(n){ return Number(n).toFixed(2).replace('.', ',') + ' TND'; }
+var credits = parseInt(qp('credits') || '0', 10);
+var ttc = parseFloat(qp('price') || '0');
+// Référence de transaction déterministe (démo) à partir des paramètres.
+var seed = (qp('pack')||'') + credits + Math.round(ttc*100) + (qp('email')||'');
+var ref = 'SF-DEMO-';
+for (var i = 0; i < seed.length; i++) ref += '';
+ref = 'SF-DEMO-' + Math.abs(seed.split('').reduce(function(a,c){return (a*31 + c.charCodeAt(0))|0;},7)).toString(36).toUpperCase().slice(0,8);
+document.getElementById('tTxn').textContent = ref;
+document.getElementById('tPack').textContent = qp('pack') || '—';
+document.getElementById('tCredits').textContent = credits + ' crédits';
+document.getElementById('tPrice').textContent = fmt(ttc);
+</script>
+</body>
+</html>
