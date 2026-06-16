@@ -25,7 +25,7 @@
 <section class="lp-hero"><div class="container">
   <span class="lp-eyebrow">Étape 2 / 3</span>
   <h1>Paiement sécurisé</h1>
-  <p>Vérifiez votre commande et procédez au règlement via Floussi.</p>
+  <p>Vérifiez votre commande et procédez au règlement via Flouci.</p>
 </div></section>
 
 <main class="lp-main"><div class="container" style="max-width:620px">
@@ -51,19 +51,19 @@
     <div class="pay-methods">
       <div class="pay-pill active">
         <img src="/assets/logo.png" alt="" style="width:18px;height:18px;display:none" />
-        💳 Floussi — Carte bancaire / e-DINAR
+        💳 Flouci — Carte bancaire / e-DINAR
       </div>
     </div>
 
     <form id="payForm" style="margin-top:14px">
-      <button class="btn-primary" type="submit" id="payBtn">Payer <span id="payAmt"></span> via Floussi</button>
+      <button class="btn-primary" type="submit" id="payBtn">Payer <span id="payAmt"></span> via Flouci</button>
     </form>
     <a class="btn-ghost" href="/offre">← Revenir aux offres</a>
   </div>
 
   <p style="color:var(--muted);font-size:13px;text-align:center">
     En validant, vous acceptez nos <a href="/cgu">conditions de vente</a>.
-    Paiement traité par Floussi. SnapFiche ne stocke aucune donnée bancaire.
+    Paiement traité par Flouci. SnapFiche ne stocke aucune donnée bancaire.
   </p>
 </div></main>
 
@@ -96,8 +96,8 @@ document.getElementById('payForm').addEventListener('submit', function(e){
   e.preventDefault();
   var btn = document.getElementById('payBtn');
   btn.disabled = true;
-  btn.textContent = 'Redirection vers Floussi…';
-  // Démonstration : on simule le traitement Floussi puis la redirection de confirmation.
+  btn.textContent = 'Redirection vers Flouci…';
+  // Démonstration : on simule le traitement Flouci puis la redirection de confirmation.
   setTimeout(function(){
     var url = '/merci?pack=' + encodeURIComponent(pack)
             + '&credits=' + credits + '&price=' + ttc
