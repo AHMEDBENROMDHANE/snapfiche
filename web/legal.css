@@ -44,6 +44,10 @@ a:hover{color:var(--accent);text-decoration:underline}
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
+/* Bandeau « site en cours de construction » */
+.site-banner{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--accent-grad);color:#fff;text-align:center;font-size:13px;font-weight:600;padding:9px 16px;line-height:1.4}
+.site-banner svg{width:16px;height:16px;stroke:currentColor;fill:none;flex-shrink:0}
+
 /* En-tête */
 .lp-header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
 .lp-header .container{display:flex;align-items:center;gap:18px;height:66px}
