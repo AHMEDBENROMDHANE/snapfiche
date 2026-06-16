@@ -202,6 +202,7 @@
 .pc-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;margin:2px 0 2px}
 .pc-price{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:38px;line-height:1;color:var(--accent-2)}
 .pc-price small{font-size:13px;color:var(--muted);font-weight:600;margin-left:4px}
+.pc-ht{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px}
 .pc-credits{color:var(--muted);font-size:13.5px;margin:8px 0 16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
 .pc-credits b{color:var(--ink)}
 .pc-list{list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:11px;flex:1}

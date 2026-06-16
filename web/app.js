@@ -1270,7 +1270,6 @@ const REF_ROLES = [
   { v: 'product', label: 'Produit' },
   { v: 'person', label: 'Personne' },
   { v: 'scene', label: 'Décor' },
-  { v: 'logo', label: 'Logo' },
 ];
 function renderThumbs(container, list, onChange, withRoles) {
   container.innerHTML = '';
@@ -4467,7 +4466,6 @@ document.getElementById('guidedGenerate').onclick = async () => {
         product: "Reproduis FIDÈLEMENT le produit fourni (même forme, couleurs, étiquette) et mets-le en situation réaliste, jamais flottant.",
         person: "Conserve EXACTEMENT le visage et la morphologie de la personne fournie.",
         scene: "Utilise le décor / l'environnement de l'image fournie comme arrière-plan de la scène.",
-        logo: "Intègre proprement le logo fourni, sans le déformer ni le recolorer.",
       };
       const usedRoles = [...new Set(guidedRefs.map((rf) => rf.role || 'style'))];
       const roleParts = usedRoles.map((ro) => ROLE_TXT[ro]).filter(Boolean);
