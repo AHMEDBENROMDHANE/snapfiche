@@ -741,7 +741,10 @@ tr.pk-new td { background: var(--accent-soft); }
 /* ============ Menu hamburger (mobile) ============ */
 .mobile-bar { display: none; }
 .nav-backdrop { display: none; }
-.menu-toggle { background: var(--panel); border: 1px solid var(--border); color: var(--text); font-size: 20px; width: 44px; height: 44px; border-radius: var(--r-sm); cursor: pointer; line-height: 1; box-shadow: var(--shadow-sm); }
+.menu-toggle { display: inline-flex; align-items: center; justify-content: center; background: var(--panel); border: 1px solid var(--border); color: var(--accent-2); width: 44px; height: 44px; border-radius: var(--r-sm); cursor: pointer; box-shadow: var(--shadow-sm); transition: background var(--t-fast), border-color var(--t-fast); }
+.menu-toggle:hover { background: var(--accent-soft); border-color: var(--accent); }
+.menu-toggle svg { width: 22px; height: 22px; }
+.mobile-logo { height: 26px; width: auto; object-fit: contain; }
 .mobile-brand { font-size: 18px; font-weight: 700; }
 .mobile-brand b { color: var(--accent-2); }
 
