@@ -668,6 +668,25 @@ app.get('/vendor/ffmpeg/:file', async (req, res) => {
   }
 });
 
+// Débit pour une action exécutée CÔTÉ NAVIGATEUR (sans appel kie), ex : l'animation
+// « Story dynamique ». Coûts fixes et connus du serveur (pas de montant fourni par le client).
+const LOCAL_COSTS = { 'anim-story': 10 };
+app.post('/api/charge-local', auth, async (req, res) => {
+  const feature = req.body && req.body.feature;
+  const cost = LOCAL_COSTS[feature];
+  if (!cost) return res.status(400).json({ error: 'Action inconnue.' });
+  const bal = await getBalance(req.user.id);
+  // Illimité (mode gratuit) et admin (solde kie réel) : aucun débit pour une action locale.
+  if (bal.unlimited || bal.admin) return res.json({ ok: true, charged: 0, credits: bal.credits });
+  if (req.body.refund === true) {
+    await changeCredits(req.user.id, cost, 'remboursement ' + feature);
+    return res.json({ ok: true, refunded: cost });
+  }
+  if (bal.credits < cost) return res.status(402).json({ error: `Crédits insuffisants (besoin ${cost}, solde ${bal.credits}).`, need: cost, have: bal.credits });
+  await changeCredits(req.user.id, -cost, 'animation locale: ' + feature);
+  res.json({ ok: true, charged: cost, credits: bal.credits - cost });
+});
+
 // ---- Récupération auto des infos d'un site web ----
 const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
 function metaContent(html, name) {

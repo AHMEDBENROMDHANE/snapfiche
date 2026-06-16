@@ -96,6 +96,8 @@
     poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),
     aiChat: (payload) => backend('/api/chat', { method: 'POST', body: payload }),
     uploadFile: (payload) => backend('/api/upload', { method: 'POST', body: payload }),
+    // Débit d'une action locale (ex : animation Story dynamique). refund=true pour rembourser.
+    chargeLocal: (feature, refund) => backend('/api/charge-local', { method: 'POST', body: { feature, refund: !!refund } }),
     // Récupère une image distante via le proxy même-origine (pour l'animation gratuite sur canvas).
     proxyImageBlob: async (remoteUrl) => {
       const t = await token();

@@ -1720,13 +1720,19 @@ async function freeAnimate(container, url, prompt, history, galleryId, taskId) {
   const fps = 24, dur = 5, N = fps * dur, pad = (i) => 'f' + String(i).padStart(4, '0') + '.jpg';
   container.innerHTML =
     '<div class="gen-loading"><img class="gen-logo-pulse" src="/assets/logo.png" alt="" />' +
-    '<div class="gen-loading-text">Story dynamique (gratuite)…</div>' +
+    '<div class="gen-loading-text">Story dynamique (10 cr)…</div>' +
     '<div class="gen-bar"><div class="gen-bar-fill" id="faBar"></div></div>' +
     '<div class="gen-loading-sub"><span id="faMsg">Préparation…</span> · <b id="faPct">0%</b></div></div>';
   const bar = container.querySelector('#faBar'), pct = container.querySelector('#faPct'), msg = container.querySelector('#faMsg');
   const setP = (p, m) => { p = Math.min(100, Math.round(p)); if (bar) bar.style.width = p + '%'; if (pct) pct.textContent = p + '%'; if (m && msg) msg.textContent = m; };
+  // Débit de 10 crédits (action locale). Illimité/admin = 0 débit. Insuffisant -> arrêt propre.
+  setP(2, 'Vérification des crédits…');
+  try { await window.api.chargeLocal('anim-story'); }
+  catch (e) { alert(e && e.message ? e.message : 'Crédits insuffisants pour l\'animation.'); showImageResult(container, url, prompt, history, galleryId, taskId); return; }
+  if (typeof refreshBalance === 'function') refreshBalance();
+  let charged = true;
   try {
-    setP(3, 'Chargement de l\'image…');
+    setP(5, 'Chargement de l\'image…');
     const blob = await window.api.proxyImageBlob(url);
     const img = await loadImageFromBlob(blob);
     setP(8, 'Préparation du moteur vidéo…');
@@ -1754,7 +1760,9 @@ async function freeAnimate(container, url, prompt, history, galleryId, taskId) {
     setP(100, 'Prêt !');
     showFreeVideo(container, URL.createObjectURL(mp4), url, prompt, history, galleryId, taskId);
   } catch (e) {
-    alert('Échec de l\'animation gratuite : ' + e.message);
+    // Production échouée après débit -> on rembourse les 10 crédits.
+    if (charged) { try { await window.api.chargeLocal('anim-story', true); if (typeof refreshBalance === 'function') refreshBalance(); } catch (_) {} }
+    alert('Échec de l\'animation : ' + e.message + '\n(Aucun crédit débité.)');
     showImageResult(container, url, prompt, history, galleryId, taskId);
   }
 }
@@ -1780,7 +1788,7 @@ function showFreeVideo(container, videoUrl, srcUrl, prompt, history, galleryId, 
   container.appendChild(actions);
   const note = document.createElement('div');
   note.className = 'hint'; note.style.marginTop = '8px';
-  note.textContent = 'Story dynamique gratuite (fond animé + lumière + particules, affiche entière jamais coupée) — 0 crédit. Pour un mouvement généré par IA, utilise « Animer en IA ».';
+  note.textContent = 'Story dynamique (fond animé + lumière + particules, affiche entière jamais coupée) — 10 crédits. Pour un mouvement généré par IA, utilise « Animer en IA ».';
   container.appendChild(note);
 }
 
@@ -1926,8 +1934,8 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
   // Animer GRATUITEMENT : effet studio (caméra + lumière) encodé en .mp4 dans le navigateur, 0 crédit.
   {
     const freeBtn = document.createElement('button');
-    freeBtn.textContent = '🎬 Animer (gratuit)';
-    freeBtn.title = 'Crée une courte vidéo « Story dynamique » (fond animé + lumière + particules, affiche entière) directement dans ton navigateur — sans crédit.';
+    freeBtn.textContent = '🎬 Animer · Story (10 cr)';
+    freeBtn.title = 'Crée une courte vidéo « Story dynamique » (fond animé + lumière + particules, affiche entière) directement dans ton navigateur — 10 crédits.';
     freeBtn.onclick = () => freeAnimate(container, url, prompt, history, galleryId, taskId);
     actions.appendChild(freeBtn);
   }
