@@ -1671,30 +1671,44 @@ function buildBlurBg(img, W, H) {
 // + balayage de lumière + particules + vignette + fondu d'entrée.
 function drawStoryFrame(ctx, img, bg, parts, W, H, t) {
   ctx.clearRect(0, 0, W, H);
-  // 1) Fond flou animé (léger zoom/dérive — recadrage sans importance)
-  const bz = 1.06 + 0.06 * easeInOut(t);
+  // 1) Fond flou nettement animé (zoom + travelling diagonal — recadrage sans importance)
+  const bz = 1.12 + 0.16 * easeInOut(t);
   const bw = W * bz, bh = H * bz;
-  ctx.drawImage(bg, (W - bw) / 2 - 0.015 * W * t, (H - bh) / 2, bw, bh);
-  ctx.fillStyle = 'rgba(18,14,28,0.30)'; ctx.fillRect(0, 0, W, H);
-  // 2) Poster ENTIER (contain ~86 %) + légère respiration + ombre portée
-  const fit = Math.min((W * 0.86) / img.naturalWidth, (H * 0.86) / img.naturalHeight);
-  const br = 1 + 0.015 * Math.sin(t * Math.PI * 2);
-  const fw = img.naturalWidth * fit * br, fh = img.naturalHeight * fit * br;
-  const fx = (W - fw) / 2, fy = (H - fh) / 2;
+  ctx.drawImage(bg, (W - bw) / 2 - 0.06 * W * easeInOut(t), (H - bh) / 2 - 0.04 * H * easeInOut(t), bw, bh);
+  ctx.fillStyle = 'rgba(18,14,28,0.26)'; ctx.fillRect(0, 0, W, H);
+
+  // 2) Poster ENTIER (≈80 %) : ENTRÉE animée (apparition + glissé + zoom) puis flottement + respiration
+  const intro = Math.min(1, t / 0.18);
+  const ie = 1 - Math.pow(1 - intro, 3);            // easeOut
+  const introY = (1 - ie) * 0.06 * H;               // démarre 6 % plus bas
+  const introScale = 0.90 + 0.10 * ie;              // 0.90 -> 1.0
+  const alpha = ie;                                 // fondu d'apparition
+  const bob = Math.sin(t * Math.PI * 2) * 0.008 * H;       // flottement vertical
+  const breathe = 1 + 0.012 * Math.sin(t * Math.PI * 2 + 1);
+  const fit = Math.min((W * 0.80) / img.naturalWidth, (H * 0.80) / img.naturalHeight) * introScale * breathe;
+  const fw = img.naturalWidth * fit, fh = img.naturalHeight * fit;
+  const fx = (W - fw) / 2, fy = (H - fh) / 2 + introY + bob;
   ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = W * 0.04; ctx.shadowOffsetY = H * 0.012;
+  ctx.globalAlpha = alpha;
+  // Halo mauve qui pulse (donne du relief et de la vie)
+  ctx.shadowColor = 'rgba(124,58,237,' + (0.35 + 0.30 * Math.abs(Math.sin(t * Math.PI * 2))) + ')';
+  ctx.shadowBlur = W * (0.05 + 0.02 * Math.abs(Math.sin(t * Math.PI * 2)));
+  ctx.shadowOffsetY = H * 0.012;
   ctx.fillStyle = '#000'; ctx.fillRect(fx, fy, fw, fh);
-  ctx.restore();
+  ctx.shadowColor = 'transparent';
   ctx.drawImage(img, fx, fy, fw, fh);
-  // 3) Balayage de lumière sur le poster (une fois)
-  const lt = (t - 0.25) / 0.4;
+  ctx.restore();
+
+  // 3) Balayage de lumière marqué sur le poster (une passe)
+  const lt = (t - 0.28) / 0.4;
   if (lt > 0 && lt < 1) {
-    const sx = fx + lt * (fw * 1.5) - fw * 0.25;
-    const g = ctx.createLinearGradient(sx, fy, sx + fw * 0.3, fy + fh);
-    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.20)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    const sx = fx + lt * (fw * 1.6) - fw * 0.3;
+    const g = ctx.createLinearGradient(sx, fy, sx + fw * 0.45, fy + fh);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.30)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip(); ctx.fillStyle = g; ctx.fillRect(fx, fy, fw, fh); ctx.restore();
   }
-  // 4) Particules (bokeh) qui montent doucement
+
+  // 4) Particules (bokeh) qui montent
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   for (const p of parts) {
@@ -1705,11 +1719,12 @@ function drawStoryFrame(ctx, img, bg, parts, W, H, t) {
     ctx.fillStyle = 'rgba(255,240,210,1)'; ctx.fill();
   }
   ctx.restore();
-  // 5) Vignette + fondu d'entrée
-  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.4, W / 2, H / 2, Math.max(W, H) * 0.78);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.22)');
+
+  // 5) Vignette + fondu global au tout début
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.38, W / 2, H / 2, Math.max(W, H) * 0.78);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.24)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  if (t < 0.14) { ctx.fillStyle = 'rgba(0,0,0,' + (1 - t / 0.14) + ')'; ctx.fillRect(0, 0, W, H); }
+  if (t < 0.08) { ctx.fillStyle = 'rgba(0,0,0,' + (1 - t / 0.08) + ')'; ctx.fillRect(0, 0, W, H); }
 }
 function loadImageFromBlob(blob) {
   return new Promise((res, rej) => {
