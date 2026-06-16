@@ -97,8 +97,31 @@ function buildStylePrompt(style, subject) {
 }
 
 // ============ Registre des modèles ============
-const CREDIT_USD = 0.005; // 1 crédit ≈ 0,005 $
+const CREDIT_USD = 0.005; // 1 crédit ≈ 0,005 $ (coût interne — non affiché au client)
 const usd = (c) => (c * CREDIT_USD).toFixed(2);
+
+// Valeur d'un crédit EN DINARS, déduite des packs (min/max selon le pack acheté).
+let _dtRate = null, _dtRateTried = false;
+function ensureDtRate() {
+  if (_dtRate || _dtRateTried) return;
+  _dtRateTried = true;
+  if (!window.api || !window.api.getPacks) return;
+  window.api.getPacks().then(({ packs }) => {
+    const rates = (packs || []).filter((p) => p.credits > 0)
+      .map((p) => (p.promo_active && p.promo_price_tnd != null ? +p.promo_price_tnd : +p.price_tnd) / p.credits);
+    if (rates.length) { _dtRate = { min: Math.min(...rates), max: Math.max(...rates) }; refreshCostLabels(); }
+  }).catch(() => {});
+}
+function dtCost(c) {
+  if (!_dtRate) return '';
+  const f = (n) => n.toFixed(2).replace('.', ',');
+  const lo = c * _dtRate.min, hi = c * _dtRate.max;
+  return Math.abs(lo - hi) < 0.01 ? '≈ ' + f(lo) + ' DT' : '≈ ' + f(lo) + ' à ' + f(hi) + ' DT';
+}
+function refreshCostLabels() {
+  try { if (document.getElementById('imgCost') && typeof updateImageUI === 'function') updateImageUI(); } catch (_) {}
+  try { if (document.getElementById('vidCost') && typeof updateVideoUI === 'function') updateVideoUI(); } catch (_) {}
+}
 
 // Les coûts en crédits sont des ESTIMATIONS basées sur les tarifs publiés de kie.ai.
 // Le solde réel (affiché en bas à gauche) fait foi.
@@ -1414,7 +1437,9 @@ function updateImageUI() {
   document.getElementById('imgResWrap').classList.toggle('hidden', !m.res);
   document.getElementById('imgModelHint').textContent = m.desc || '';
   const c = imageCost();
-  document.getElementById('imgCost').textContent = `Coût estimé : ~${c} crédits (~$${usd(c)}) / image`;
+  ensureDtRate();
+  const dt = dtCost(c);
+  document.getElementById('imgCost').textContent = `Coût estimé : ~${c} crédits${dt ? ' · ' + dt : ''} / image`;
 }
 imgModelSel.onchange = updateImageUI;
 document.getElementById('imgRes').onchange = updateImageUI;
@@ -1436,7 +1461,9 @@ function updateVideoUI() {
   document.getElementById('vidAudioWrap').classList.toggle('hidden', !m.audio);
   document.getElementById('vidModelHint').textContent = m.desc || '';
   const c = videoCost();
-  document.getElementById('vidCost').textContent = `Coût estimé : ~${c} crédits (~$${usd(c)}) / vidéo`;
+  ensureDtRate();
+  const dt = dtCost(c);
+  document.getElementById('vidCost').textContent = `Coût estimé : ~${c} crédits${dt ? ' · ' + dt : ''} / vidéo`;
 }
 vidModelSel.onchange = updateVideoUI;
 vidResSel.onchange = updateVideoUI;
