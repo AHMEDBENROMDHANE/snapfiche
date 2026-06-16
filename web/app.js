@@ -1265,14 +1265,31 @@ document.getElementById('addCompanyLogo').onclick = async () => {
 
 // ============ Images sources (upload) ============
 // Miniatures génériques : grille d'aperçus avec bouton de retrait.
-function renderThumbs(container, list, onChange) {
+const REF_ROLES = [
+  { v: 'style', label: 'Style' },
+  { v: 'product', label: 'Produit' },
+  { v: 'person', label: 'Personne' },
+  { v: 'logo', label: 'Logo' },
+];
+function renderThumbs(container, list, onChange, withRoles) {
   container.innerHTML = '';
   list.forEach((it, i) => {
     const d = document.createElement('div');
     d.className = 'thumb';
     d.innerHTML = `<img src="${it.dataUrl}" alt="Image importée ${i + 1}" /><button type="button" class="thumb-x" aria-label="Retirer cette image">✕</button>`;
     d.querySelector('.thumb-x').onclick = () => { list.splice(i, 1); onChange(); };
-    container.appendChild(d);
+    if (!withRoles) { container.appendChild(d); return; }
+    // Rôle par image : produit / style / personne / logo (choisi après l'upload)
+    const cell = document.createElement('div');
+    cell.className = 'thumb-cell';
+    cell.appendChild(d);
+    const sel = document.createElement('select');
+    sel.className = 'thumb-role';
+    sel.title = 'Que représente cette image ?';
+    sel.innerHTML = REF_ROLES.map((o) => `<option value="${o.v}"${(it.role || 'style') === o.v ? ' selected' : ''}>${o.label}</option>`).join('');
+    sel.onchange = (e) => { it.role = e.target.value; };
+    cell.appendChild(sel);
+    container.appendChild(cell);
   });
 }
 // Lit + réduit un fichier image -> {dataUrl, name}
@@ -3807,8 +3824,6 @@ function openRecipe(r, opts) {
   // Produit/vêtement (needsImage) : pas de « textes » (hors-sujet) ; bouton idées = mises en scène.
   document.getElementById('aiTexts').classList.toggle('hidden', r.kind !== 'image' || !!r.needsImage);
   document.getElementById('aiIdeas').textContent = r.needsImage ? 'Proposer des mises en scène' : (r.kind === 'image' ? '2 · Idées visuelles' : 'Proposer des idées');
-  // Pour "changer tenue/décor", la référence sert à préserver l'identité (mode forcé).
-  document.getElementById('guidedRefMode').classList.toggle('hidden', !!r.needsImage);
   document.getElementById('guidedStyleHint').textContent = lastStyleUrl ? '✓ style mémorisé' : '(aucune création précédente)';
   // Styles gardés : visibles pour les recettes image ; sélection remise à zéro à l'ouverture.
   const gqLib = document.getElementById('gqStyleLib');
@@ -3846,7 +3861,7 @@ const guidedRefs = [];
   const thumbs = document.getElementById('guidedRefThumbs');
   const sync = () => {
     clr.classList.toggle('hidden', !guidedRefs.length);
-    renderThumbs(thumbs, guidedRefs, sync);
+    renderThumbs(thumbs, guidedRefs, sync, true);
     const dz = document.getElementById('guidedDrop');
     const dzt = document.getElementById('guidedDropText');
     if (dz) dz.classList.toggle('filled', guidedRefs.length > 0);
@@ -4445,13 +4460,18 @@ document.getElementById('guidedGenerate').onclick = async () => {
         const up = await window.api.uploadFile({ base64DataUrl: guidedRefs[i].dataUrl, fileName: guidedRefs[i].name });
         images.push(up.url);
       }
-      if (!r.needsImage) {
-        const mode = document.getElementById('guidedRefMode').value;
-        prompt += mode === 'character'
-          ? " Garde les mêmes personnages / sujets / produits que les photos de référence fournies : mêmes visages, mêmes caractéristiques, mêmes produits à l'identique, cohérence d'identité parfaite."
-          : " Inspire-toi du style visuel, de l'ambiance et de la palette des photos de référence fournies.";
-      } else if (guidedRefs.length > 1) {
-        prompt += " Plusieurs photos sont fournies (personne, produit, élément…) : COMBINE-les naturellement dans une seule scène cohérente — même lumière, mêmes proportions, intégration réaliste.";
+      // Rôle PAR image (choisi sur chaque vignette) : produit / style / personne / logo
+      const ROLE_TXT = {
+        style: "Inspire-toi du style, de l'ambiance et de la palette de l'image de référence fournie.",
+        product: "Reproduis FIDÈLEMENT le produit fourni (même forme, couleurs, étiquette) et mets-le en situation réaliste, jamais flottant.",
+        person: "Conserve EXACTEMENT le visage et la morphologie de la personne fournie.",
+        logo: "Intègre proprement le logo fourni, sans le déformer ni le recolorer.",
+      };
+      const usedRoles = [...new Set(guidedRefs.map((rf) => rf.role || 'style'))];
+      const roleParts = usedRoles.map((ro) => ROLE_TXT[ro]).filter(Boolean);
+      if (roleParts.length) prompt += ' ' + roleParts.join(' ');
+      if (guidedRefs.length > 1) {
+        prompt += " Combine ces éléments dans UNE SEULE scène cohérente — même lumière, proportions réalistes, intégration naturelle.";
       }
     }
 
