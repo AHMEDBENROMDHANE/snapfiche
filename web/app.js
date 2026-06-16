@@ -3622,11 +3622,13 @@ function effectiveRecipe(r, quality) {
 }
 
 // Résumé sans jargon technique : format, qualité, durée et coût (pas de nom de modèle).
-function recipeSummary(eff) {
+function recipeSummary(eff, nVar) {
+  nVar = Math.max(1, nVar || 1);
   if (eff.kind === 'image') {
     const m = findModel('image', eff.model);
-    const c = m.creditsByRes ? m.creditsByRes[eff.params.resolution] || 0 : m.credits || 0;
-    return `Format ${eff.params.aspect_ratio}${eff.params.resolution ? ' · Qualité ' + eff.params.resolution : ''} · ~${c} crédits`;
+    const per = m.creditsByRes ? m.creditsByRes[eff.params.resolution] || 0 : m.credits || 0;
+    const total = per * nVar;
+    return `Format ${eff.params.aspect_ratio}${eff.params.resolution ? ' · Qualité ' + eff.params.resolution : ''} · ~${total} crédits${nVar > 1 ? ` (${nVar} × ${per})` : ''}`;
   }
   const m = findModel('video', eff.model);
   const cps = m.creditsPerSecByRes ? m.creditsPerSecByRes[eff.params.resolution] || 0 : m.creditsPerSec || 0;
@@ -3637,7 +3639,8 @@ function updateGuidedSummary() {
   if (!guidedRecipe) return;
   const quality = document.getElementById('guidedQuality').value;
   const eff = effectiveRecipe(guidedRecipe, quality);
-  document.getElementById('guidedSummary').innerHTML = `<b>${recipeSummary(eff)}</b>`;
+  const nv = eff.kind === 'image' ? (parseInt(document.getElementById('guidedVariants').value, 10) || 1) : 1;
+  document.getElementById('guidedSummary').innerHTML = `<b>${recipeSummary(eff, nv)}</b>`;
 }
 
 function guidedImageDescriptor(modelId, params, prompt, images) {
@@ -3828,6 +3831,7 @@ document.getElementById('guidedBack').onclick = () => {
   guidedRecipe = null;
 };
 document.getElementById('guidedQuality').onchange = updateGuidedSummary;
+document.getElementById('guidedVariants').onchange = updateGuidedSummary;
 document.getElementById('guidedLogoMode').onchange = (e) => {
   document.getElementById('guidedLogoPos').classList.toggle('hidden', e.target.value !== 'exact');
 };

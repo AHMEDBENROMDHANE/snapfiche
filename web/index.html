@@ -164,17 +164,22 @@
           </div>
           <div class="gq" id="gqRef">
             <label id="guidedRefLabel">Images de référence (optionnel — style, personnage, produit… max 6)</label>
-            <label class="dropzone" id="guidedDrop">
-              <input type="file" id="guidedRefFile" accept="image/*" multiple hidden />
-              <span class="dz-ico">＋</span>
-              <span class="dz-text" id="guidedDropText">Ajouter des images</span>
-            </label>
+            <div class="upload-choice">
+              <label class="dropzone" id="guidedDrop">
+                <input type="file" id="guidedRefFile" accept="image/*" multiple hidden />
+                <span class="dz-ico">＋</span>
+                <span class="dz-text" id="guidedDropText">Importer une image</span>
+              </label>
+              <button type="button" class="dropzone alt" id="guidedRefFromGallery">
+                <span class="dz-ico"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span>
+                <span class="dz-text">Mes créations</span>
+              </button>
+            </div>
             <div class="ref-row">
               <select id="guidedRefMode">
                 <option value="inspire">S'inspirer du style</option>
                 <option value="character">Garder personnage / produit</option>
               </select>
-              <button id="guidedRefFromGallery" type="button" class="mini">Mes créations</button>
               <button id="guidedRefClear" type="button" class="mini hidden">✕ Tout retirer</button>
             </div>
             <div id="guidedRefThumbs" class="thumbs"></div>
