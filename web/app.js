@@ -1644,28 +1644,70 @@ async function loadFFmpeg() {
 }
 function canvasBlob(c, type, q) { return new Promise((r) => c.toBlob(r, type, q)); }
 function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
-function drawKenBurns(ctx, img, W, H, t) {
-  const e = easeInOut(t);
+// Particules (bokeh) : positions/vitesses aléatoires, recalculées une fois.
+function makeParticles(n) {
+  const a = [];
+  for (let i = 0; i < n; i++) a.push({
+    x: Math.random(), y: Math.random(), r: 0.0035 + Math.random() * 0.009,
+    spd: 0.12 + Math.random() * 0.45, drift: 0.3 + Math.random() * 1.2,
+    tw: 0.4 + Math.random() * 1.8, a: 0.22 + Math.random() * 0.45,
+  });
+  return a;
+}
+// Fond flou (calculé une seule fois) : la même image, agrandie et floutée.
+function buildBlurBg(img, W, H) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const cover = Math.max(W / img.naturalWidth, H / img.naturalHeight) * 1.1;
+  const w = img.naturalWidth * cover, h = img.naturalHeight * cover;
+  x.filter = 'blur(26px) brightness(0.72) saturate(1.1)';
+  x.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+  x.filter = 'none';
+  return c;
+}
+// Une image de la « Story dynamique » : fond flou animé + poster ENTIER (jamais coupé)
+// + balayage de lumière + particules + vignette + fondu d'entrée.
+function drawStoryFrame(ctx, img, bg, parts, W, H, t) {
   ctx.clearRect(0, 0, W, H);
-  const cover = Math.max(W / img.naturalWidth, H / img.naturalHeight);
-  const scale = cover * (1.0 + 0.12 * e);
-  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-  const x = (W - dw) / 2 - 0.04 * W * e, y = (H - dh) / 2 - 0.03 * H * e;
-  ctx.drawImage(img, x, y, dw, dh);
-  // Balayage de lumière (une fois)
-  const lt = (t - 0.15) / 0.4;
+  // 1) Fond flou animé (léger zoom/dérive — recadrage sans importance)
+  const bz = 1.06 + 0.06 * easeInOut(t);
+  const bw = W * bz, bh = H * bz;
+  ctx.drawImage(bg, (W - bw) / 2 - 0.015 * W * t, (H - bh) / 2, bw, bh);
+  ctx.fillStyle = 'rgba(18,14,28,0.30)'; ctx.fillRect(0, 0, W, H);
+  // 2) Poster ENTIER (contain ~86 %) + légère respiration + ombre portée
+  const fit = Math.min((W * 0.86) / img.naturalWidth, (H * 0.86) / img.naturalHeight);
+  const br = 1 + 0.015 * Math.sin(t * Math.PI * 2);
+  const fw = img.naturalWidth * fit * br, fh = img.naturalHeight * fit * br;
+  const fx = (W - fw) / 2, fy = (H - fh) / 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = W * 0.04; ctx.shadowOffsetY = H * 0.012;
+  ctx.fillStyle = '#000'; ctx.fillRect(fx, fy, fw, fh);
+  ctx.restore();
+  ctx.drawImage(img, fx, fy, fw, fh);
+  // 3) Balayage de lumière sur le poster (une fois)
+  const lt = (t - 0.25) / 0.4;
   if (lt > 0 && lt < 1) {
-    const sx = lt * (W * 1.6) - W * 0.3;
-    const g = ctx.createLinearGradient(sx, 0, sx + W * 0.35, H);
-    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const sx = fx + lt * (fw * 1.5) - fw * 0.25;
+    const g = ctx.createLinearGradient(sx, fy, sx + fw * 0.3, fy + fh);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.20)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip(); ctx.fillStyle = g; ctx.fillRect(fx, fy, fw, fh); ctx.restore();
   }
-  // Vignette douce
-  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.16)');
+  // 4) Particules (bokeh) qui montent doucement
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of parts) {
+    const yy = ((((p.y - t * p.spd) % 1) + 1) % 1) * H;
+    const xx = p.x * W + Math.sin(t * 6.2832 * p.drift) * W * 0.02;
+    ctx.globalAlpha = p.a * (0.4 + 0.6 * Math.abs(Math.sin(t * 6.2832 * p.tw + p.x * 6)));
+    ctx.beginPath(); ctx.arc(xx, yy, p.r * W, 0, 6.2832);
+    ctx.fillStyle = 'rgba(255,240,210,1)'; ctx.fill();
+  }
+  ctx.restore();
+  // 5) Vignette + fondu d'entrée
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.4, W / 2, H / 2, Math.max(W, H) * 0.78);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  // Fondu d'entrée
-  if (t < 0.12) { ctx.fillStyle = 'rgba(0,0,0,' + (1 - t / 0.12) + ')'; ctx.fillRect(0, 0, W, H); }
+  if (t < 0.14) { ctx.fillStyle = 'rgba(0,0,0,' + (1 - t / 0.14) + ')'; ctx.fillRect(0, 0, W, H); }
 }
 function loadImageFromBlob(blob) {
   return new Promise((res, rej) => {
@@ -1678,7 +1720,7 @@ async function freeAnimate(container, url, prompt, history, galleryId, taskId) {
   const fps = 24, dur = 5, N = fps * dur, pad = (i) => 'f' + String(i).padStart(4, '0') + '.jpg';
   container.innerHTML =
     '<div class="gen-loading"><img class="gen-logo-pulse" src="/assets/logo.png" alt="" />' +
-    '<div class="gen-loading-text">Animation studio (gratuite)…</div>' +
+    '<div class="gen-loading-text">Story dynamique (gratuite)…</div>' +
     '<div class="gen-bar"><div class="gen-bar-fill" id="faBar"></div></div>' +
     '<div class="gen-loading-sub"><span id="faMsg">Préparation…</span> · <b id="faPct">0%</b></div></div>';
   const bar = container.querySelector('#faBar'), pct = container.querySelector('#faPct'), msg = container.querySelector('#faMsg');
@@ -1694,8 +1736,10 @@ async function freeAnimate(container, url, prompt, history, galleryId, taskId) {
     W = Math.max(2, Math.round(W * capf / 2) * 2); H = Math.max(2, Math.round(H * capf / 2) * 2);
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d');
+    const bgC = buildBlurBg(img, W, H);   // fond flou calculé une fois
+    const parts = makeParticles(42);      // particules bokeh
     for (let i = 0; i < N; i++) {
-      drawKenBurns(ctx, img, W, H, i / (N - 1));
+      drawStoryFrame(ctx, img, bgC, parts, W, H, i / (N - 1));
       const b = await canvasBlob(cv, 'image/jpeg', 0.9);
       await ff.writeFile(pad(i), new Uint8Array(await b.arrayBuffer()));
       setP(8 + (i / N) * 52, 'Création des images… ' + (i + 1) + '/' + N);
@@ -1736,7 +1780,7 @@ function showFreeVideo(container, videoUrl, srcUrl, prompt, history, galleryId, 
   container.appendChild(actions);
   const note = document.createElement('div');
   note.className = 'hint'; note.style.marginTop = '8px';
-  note.textContent = 'Animation studio gratuite (mouvement de caméra + lumière) — 0 crédit. Pour un mouvement généré par IA, utilise « Animer en IA ».';
+  note.textContent = 'Story dynamique gratuite (fond animé + lumière + particules, affiche entière jamais coupée) — 0 crédit. Pour un mouvement généré par IA, utilise « Animer en IA ».';
   container.appendChild(note);
 }
 
@@ -1883,7 +1927,7 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
   {
     const freeBtn = document.createElement('button');
     freeBtn.textContent = '🎬 Animer (gratuit)';
-    freeBtn.title = 'Crée une courte vidéo animée (mouvement de caméra + lumière) directement dans ton navigateur — sans crédit.';
+    freeBtn.title = 'Crée une courte vidéo « Story dynamique » (fond animé + lumière + particules, affiche entière) directement dans ton navigateur — sans crédit.';
     freeBtn.onclick = () => freeAnimate(container, url, prompt, history, galleryId, taskId);
     actions.appendChild(freeBtn);
   }
