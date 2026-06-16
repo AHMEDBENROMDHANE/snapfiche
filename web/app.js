@@ -3658,6 +3658,17 @@ function updateGuidedSummary() {
   const eff = effectiveRecipe(guidedRecipe, quality);
   const nv = eff.kind === 'image' ? (parseInt(document.getElementById('guidedVariants').value, 10) || 1) : 1;
   document.getElementById('guidedSummary').innerHTML = `<b>${recipeSummary(eff, nv)}</b>`;
+  // Coût total juste sous « Propositions à générer » (se met à jour avec qualité ET nombre de visuels)
+  const vc = document.getElementById('guidedVarCost');
+  if (vc) {
+    if (eff.kind === 'image') {
+      const m = findModel('image', eff.model);
+      const per = m.creditsByRes ? m.creditsByRes[eff.params.resolution] || 0 : m.credits || 0;
+      vc.innerHTML = `Coût total : <b>~${per * nv} crédits</b>${nv > 1 ? ` (${nv} × ${per})` : ''}`;
+    } else {
+      vc.textContent = '';
+    }
+  }
 }
 
 function guidedImageDescriptor(modelId, params, prompt, images) {
