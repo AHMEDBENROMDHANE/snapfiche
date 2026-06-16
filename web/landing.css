@@ -35,9 +35,6 @@
 .btn-ghost2:hover{border-color:var(--accent);background:#fff;transform:translateY(-2px)}
 .btn-dl svg,.btn-ghost2 svg,.btn-lg svg{width:20px;height:20px;fill:none;stroke:currentColor}
 
-/* ---- En-tête responsive (landing) : garder Connexion + Télécharger ---- */
-@media(max-width:1024px){.lp-nav a:not(.lp-login):not(.lp-dl){display:none}}
-@media(max-width:620px){.lp-nav a.lp-dl{display:inline-flex}.lp-nav a.lp-login{display:none}}
 
 /* ---- En-tête : bouton télécharger ---- */
 .lp-dl{display:inline-flex;align-items:center;gap:7px;background:var(--accent-grad);color:#fff!important;padding:9px 16px;border-radius:99px;font-weight:800;font-size:14px;box-shadow:var(--shadow-sm);transition:transform var(--t-fast),filter var(--t-fast)}

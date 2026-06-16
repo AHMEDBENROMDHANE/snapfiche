@@ -93,5 +93,6 @@ fetch('/api/public/packs')
   .then(function(d){ render(d && d.length ? d : FALLBACK); })
   .catch(function(){ render(FALLBACK); });
 </script>
+<script src="/nav.js" defer></script>
 </body>
 </html>
