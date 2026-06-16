@@ -461,6 +461,8 @@ button.danger { background: var(--danger); border: none; color: #fff; padding: 9
   padding: 9px 14px; border-radius: 8px; cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
 }
 .result-actions button:hover { border-color: var(--accent); color: var(--accent-2); box-shadow: var(--shadow-sm); }
+.result-actions .dl-video-btn { background: var(--accent-grad); border: 0; color: #fff; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: var(--shadow-sm); transition: filter var(--t-fast), transform var(--t-fast); }
+.result-actions .dl-video-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
 /* ============ Éditeur ============ */
 .editor-layout { display: flex; gap: 20px; }

@@ -4,6 +4,8 @@
 // Rôle : détenir la clé kie.ai, vérifier l'utilisateur, relayer kie.ai, débiter les crédits.
 // ============================================================
 const path = require('path');
+const fsp = require('fs').promises;
+const os = require('os');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
@@ -612,6 +614,57 @@ app.post('/api/upload', auth, async (req, res) => {
     res.json({ url });
   } catch (e) {
     res.status(502).json({ error: e.message });
+  }
+});
+
+// Proxy image (même origine) : permet de dessiner une image distante sur un <canvas>
+// sans la « tainter », pour l'animation gratuite côté navigateur. Garde anti-SSRF.
+app.get('/api/img', auth, async (req, res) => {
+  try {
+    const r = await fetch(assertPublicUrl(req.query.u || '')); // anti-SSRF
+    if (!r.ok) return res.status(502).end();
+    const ct = r.headers.get('content-type') || 'image/png';
+    if (!/^image\//i.test(ct)) return res.status(415).end();
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.setHeader('Content-Type', ct);
+    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.send(buf);
+  } catch (_e) {
+    res.status(400).end();
+  }
+});
+
+// Proxy ffmpeg.wasm (même origine) : sert les fichiers du moteur vidéo depuis NOTRE domaine,
+// ce qui évite le blocage cross-origin du Worker. Cache disque : téléchargé une seule fois.
+const FFMPEG_FILES = {
+  'ffmpeg.js': 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js',
+  '814.ffmpeg.js': 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js',
+  'ffmpeg-core.js': 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+  'ffmpeg-core.wasm': 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+};
+const FFMPEG_CACHE = path.join(os.tmpdir(), 'sf-ffmpeg');
+app.get('/vendor/ffmpeg/:file', async (req, res) => {
+  const f = req.params.file;
+  const upstream = FFMPEG_FILES[f];
+  if (!upstream) return res.status(404).end();
+  const ct = f.endsWith('.wasm') ? 'application/wasm' : 'text/javascript';
+  try {
+    await fsp.mkdir(FFMPEG_CACHE, { recursive: true });
+    const local = path.join(FFMPEG_CACHE, f);
+    let buf;
+    try {
+      buf = await fsp.readFile(local);
+    } catch (_) {
+      const r = await fetch(upstream);
+      if (!r.ok) return res.status(502).end();
+      buf = Buffer.from(await r.arrayBuffer());
+      await fsp.writeFile(local, buf).catch(() => {});
+    }
+    res.setHeader('Content-Type', ct);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(buf);
+  } catch (_e) {
+    res.status(502).end();
   }
 });
 

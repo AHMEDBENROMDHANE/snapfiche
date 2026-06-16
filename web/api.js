@@ -96,6 +96,13 @@
     poll: (descriptor) => backend('/api/poll', { method: 'POST', body: descriptor }),
     aiChat: (payload) => backend('/api/chat', { method: 'POST', body: payload }),
     uploadFile: (payload) => backend('/api/upload', { method: 'POST', body: payload }),
+    // Récupère une image distante via le proxy même-origine (pour l'animation gratuite sur canvas).
+    proxyImageBlob: async (remoteUrl) => {
+      const t = await token();
+      const res = await fetch(BASE + '/api/img?u=' + encodeURIComponent(remoteUrl), { headers: { Authorization: 'Bearer ' + t } });
+      if (!res.ok) throw new Error('Image inaccessible (HTTP ' + res.status + ')');
+      return res.blob();
+    },
 
     // ---- Entreprises (Supabase + stockage) ----
     companyList: async () => {

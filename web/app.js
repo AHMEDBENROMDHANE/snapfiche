@@ -1609,6 +1609,137 @@ function showImageGrid(container, urls, prompt) {
   container.appendChild(hint);
 }
 
+// ============ Animation GRATUITE (côté navigateur, 0 crédit) ============
+// Effet « Ken Burns » (zoom/travelling lent) + balayage de lumière + vignette,
+// encodé en .mp4 via ffmpeg.wasm. Aucun appel à l'IA, aucun crédit débité.
+let _ffmpeg = null, _ffmpegLoading = null;
+function loadScriptOnce(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector('script[data-src="' + src + '"]')) return res();
+    const s = document.createElement('script');
+    s.src = src; s.dataset.src = src;
+    s.onload = () => res(); s.onerror = () => rej(new Error('Échec de chargement : ' + src));
+    document.head.appendChild(s);
+  });
+}
+async function loadFFmpeg() {
+  if (_ffmpeg) return _ffmpeg;
+  if (_ffmpegLoading) return _ffmpegLoading;
+  _ffmpegLoading = (async () => {
+    // Fichiers servis en MÊME ORIGINE via notre proxy -> le worker (classique) se résout
+    // automatiquement à côté de ffmpeg.js. NE PAS passer classWorkerURL (créerait un worker
+    // « module » incompatible avec importScripts). URLs absolues obligatoires.
+    const O = location.origin;
+    await loadScriptOnce(O + '/vendor/ffmpeg/ffmpeg.js');
+    const { FFmpeg } = window.FFmpegWASM;
+    const ff = new FFmpeg();
+    await ff.load({
+      coreURL: O + '/vendor/ffmpeg/ffmpeg-core.js',
+      wasmURL: O + '/vendor/ffmpeg/ffmpeg-core.wasm',
+    });
+    _ffmpeg = ff;
+    return ff;
+  })();
+  return _ffmpegLoading;
+}
+function canvasBlob(c, type, q) { return new Promise((r) => c.toBlob(r, type, q)); }
+function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+function drawKenBurns(ctx, img, W, H, t) {
+  const e = easeInOut(t);
+  ctx.clearRect(0, 0, W, H);
+  const cover = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+  const scale = cover * (1.0 + 0.12 * e);
+  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+  const x = (W - dw) / 2 - 0.04 * W * e, y = (H - dh) / 2 - 0.03 * H * e;
+  ctx.drawImage(img, x, y, dw, dh);
+  // Balayage de lumière (une fois)
+  const lt = (t - 0.15) / 0.4;
+  if (lt > 0 && lt < 1) {
+    const sx = lt * (W * 1.6) - W * 0.3;
+    const g = ctx.createLinearGradient(sx, 0, sx + W * 0.35, H);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  // Vignette douce
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.16)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  // Fondu d'entrée
+  if (t < 0.12) { ctx.fillStyle = 'rgba(0,0,0,' + (1 - t / 0.12) + ')'; ctx.fillRect(0, 0, W, H); }
+}
+function loadImageFromBlob(blob) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im); im.onerror = () => rej(new Error('Image illisible.'));
+    im.src = URL.createObjectURL(blob);
+  });
+}
+async function freeAnimate(container, url, prompt, history, galleryId, taskId) {
+  const fps = 24, dur = 5, N = fps * dur, pad = (i) => 'f' + String(i).padStart(4, '0') + '.jpg';
+  container.innerHTML =
+    '<div class="gen-loading"><img class="gen-logo-pulse" src="/assets/logo.png" alt="" />' +
+    '<div class="gen-loading-text">Animation studio (gratuite)…</div>' +
+    '<div class="gen-bar"><div class="gen-bar-fill" id="faBar"></div></div>' +
+    '<div class="gen-loading-sub"><span id="faMsg">Préparation…</span> · <b id="faPct">0%</b></div></div>';
+  const bar = container.querySelector('#faBar'), pct = container.querySelector('#faPct'), msg = container.querySelector('#faMsg');
+  const setP = (p, m) => { p = Math.min(100, Math.round(p)); if (bar) bar.style.width = p + '%'; if (pct) pct.textContent = p + '%'; if (m && msg) msg.textContent = m; };
+  try {
+    setP(3, 'Chargement de l\'image…');
+    const blob = await window.api.proxyImageBlob(url);
+    const img = await loadImageFromBlob(blob);
+    setP(8, 'Préparation du moteur vidéo…');
+    const ff = await loadFFmpeg();
+    let W = img.naturalWidth, H = img.naturalHeight;
+    const capf = Math.min(1, 1280 / Math.max(W, H));
+    W = Math.max(2, Math.round(W * capf / 2) * 2); H = Math.max(2, Math.round(H * capf / 2) * 2);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    for (let i = 0; i < N; i++) {
+      drawKenBurns(ctx, img, W, H, i / (N - 1));
+      const b = await canvasBlob(cv, 'image/jpeg', 0.9);
+      await ff.writeFile(pad(i), new Uint8Array(await b.arrayBuffer()));
+      setP(8 + (i / N) * 52, 'Création des images… ' + (i + 1) + '/' + N);
+    }
+    ff.on('progress', (ev) => { if (ev && typeof ev.progress === 'number') setP(60 + Math.max(0, Math.min(1, ev.progress)) * 38, 'Encodage de la vidéo…'); });
+    await ff.exec(['-framerate', String(fps), '-i', 'f%04d.jpg', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-movflags', '+faststart', 'out.mp4']);
+    setP(99, 'Finalisation…');
+    const data = await ff.readFile('out.mp4');
+    const mp4 = new Blob([data.buffer], { type: 'video/mp4' });
+    for (let i = 0; i < N; i++) { try { await ff.deleteFile(pad(i)); } catch (_) {} }
+    try { await ff.deleteFile('out.mp4'); } catch (_) {}
+    setP(100, 'Prêt !');
+    showFreeVideo(container, URL.createObjectURL(mp4), url, prompt, history, galleryId, taskId);
+  } catch (e) {
+    alert('Échec de l\'animation gratuite : ' + e.message);
+    showImageResult(container, url, prompt, history, galleryId, taskId);
+  }
+}
+function showFreeVideo(container, videoUrl, srcUrl, prompt, history, galleryId, taskId) {
+  container.innerHTML = '';
+  const v = document.createElement('video');
+  v.src = videoUrl; v.controls = true; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+  container.appendChild(v);
+  const actions = document.createElement('div');
+  actions.className = 'result-actions';
+  const dl = document.createElement('a');
+  dl.className = 'dl-video-btn'; dl.textContent = '⬇ Télécharger la vidéo (.mp4)';
+  dl.href = videoUrl; dl.download = 'snapfiche-animation.mp4';
+  actions.appendChild(dl);
+  const again = document.createElement('button');
+  again.textContent = 'Refaire l\'animation';
+  again.onclick = () => freeAnimate(container, srcUrl, prompt, history, galleryId, taskId);
+  actions.appendChild(again);
+  const back = document.createElement('button');
+  back.textContent = '← Revenir à l\'image';
+  back.onclick = () => showImageResult(container, srcUrl, prompt, history, galleryId, taskId);
+  actions.appendChild(back);
+  container.appendChild(actions);
+  const note = document.createElement('div');
+  note.className = 'hint'; note.style.marginTop = '8px';
+  note.textContent = 'Animation studio gratuite (mouvement de caméra + lumière) — 0 crédit. Pour un mouvement généré par IA, utilise « Animer en IA ».';
+  container.appendChild(note);
+}
+
 // Affiche une image générée : enregistrée AUTOMATIQUEMENT dans la galerie, éditable par IA
 // avec historique des versions (Annuler), synchronisé avec l'élément de galerie (galleryId).
 //   galleryId : undefined = nouvelle création (auto-save) · string = élément existant · null = non enregistré
@@ -1748,10 +1879,19 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
     actions.appendChild(repBtn);
   }
 
+  // Animer GRATUITEMENT : effet studio (caméra + lumière) encodé en .mp4 dans le navigateur, 0 crédit.
+  {
+    const freeBtn = document.createElement('button');
+    freeBtn.textContent = '🎬 Animer (gratuit)';
+    freeBtn.title = 'Crée une courte vidéo animée (mouvement de caméra + lumière) directement dans ton navigateur — sans crédit.';
+    freeBtn.onclick = () => freeAnimate(container, url, prompt, history, galleryId, taskId);
+    actions.appendChild(freeBtn);
+  }
+
   // Animer en vidéo : transforme l'affiche/le visuel en courte vidéo (image -> vidéo).
   if (featureOn('video')) {
     const animBtn = document.createElement('button');
-    animBtn.textContent = 'Animer en vidéo (~100 cr)';
+    animBtn.textContent = 'Animer en IA (~100 cr)';
     animBtn.title = 'Crée une courte vidéo animée à partir de cette image (mouvement de caméra, vie)';
     animBtn.onclick = async () => {
       animBtn.disabled = true;
