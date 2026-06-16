@@ -50,12 +50,12 @@ a:hover{color:var(--accent);text-decoration:underline}
 
 /* En-tête */
 .lp-header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-.lp-header .container{display:flex;align-items:center;gap:18px;height:66px}
-.lp-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--ink)}
+.lp-header .container{display:flex;align-items:center;gap:18px;min-height:66px;flex-wrap:nowrap}
+.lp-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--ink);flex-shrink:0}
 .lp-brand img{width:34px;height:34px;object-fit:contain}
 .lp-brand b{color:var(--accent)}
-.lp-nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.lp-nav a{color:var(--muted);font-weight:600;font-size:14px;padding:8px 12px;border-radius:99px;transition:color var(--t-fast),background var(--t-fast)}
+.lp-nav{margin-left:auto;display:flex;gap:4px;flex-wrap:nowrap;align-items:center}
+.lp-nav a{color:var(--muted);font-weight:600;font-size:14px;padding:8px 12px;border-radius:99px;white-space:nowrap;transition:color var(--t-fast),background var(--t-fast)}
 .lp-nav a:hover{color:var(--accent);background:var(--accent-soft);text-decoration:none}
 .lp-cta{background:var(--accent-grad);color:#fff!important;padding:9px 18px;border-radius:99px;font-weight:700;box-shadow:var(--shadow-md)}
 .lp-cta:hover{filter:brightness(1.06);background:var(--accent-grad)!important;text-decoration:none}

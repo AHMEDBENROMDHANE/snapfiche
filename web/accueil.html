@@ -115,7 +115,7 @@
   </div>
   <div class="feat-grid">
     <div class="feat-card reveal"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3 7h5l-3 7"/></svg></div><h3>Génération en quelques secondes</h3><p>Décrivez votre idée en une phrase, obtenez un visuel fini quasi instantanément.</p></div>
-    <div class="feat-card reveal" style="transition-delay:.05s"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div><h3>Textes 100 % modifiables</h3><p>Titres, descriptions et contacts posés en calques : ajustez chaque mot après coup.</p></div>
+    <div class="feat-card reveal" style="transition-delay:.05s"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v14H3z"/><path d="M3 13l5-4 4 3 4-4 5 4"/><path d="m15.5 20 1.5 1.5L21 18"/></svg></div><h3>Modifiez l'image par IA</h3><p>Pas le bon rendu ? Décrivez le changement (couleur, objet, décor…) et SnapFiche retouche le visuel.</p></div>
     <div class="feat-card reveal" style="transition-delay:.1s"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M15 15a6 6 0 1 0 0-12"/></svg></div><h3>Fusion d'images</h3><p>Importez une personne + un produit : SnapFiche les combine dans une scène réaliste.</p></div>
     <div class="feat-card reveal" style="transition-delay:.15s"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 3 3-3 3M19 8l-3 3 3 3M12 3v18" opacity=".5"/></svg></div><h3>Votre charte appliquée</h3><p>Logo, couleurs et coordonnées intégrés automatiquement à chaque création.</p></div>
     <div class="feat-card reveal" style="transition-delay:.2s"><div class="feat-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v12H3z"/><path d="M3 7l3-3h12l3 3M8 11h8"/></svg></div><h3>Galerie &amp; historique</h3><p>Tout est sauvegardé. Retouchez et conservez l'historique de vos versions.</p></div>
@@ -174,6 +174,7 @@
   <div class="pricing-grid">
     <!-- Starter -->
     <div class="price-card reveal">
+      <span class="pc-tag">Images seules</span>
       <div class="pc-name">Starter</div>
       <div class="pc-price">25<small>DT TTC</small></div>
       <div class="pc-credits"><b>300</b> crédits</div>
@@ -188,6 +189,7 @@
     <!-- Pro -->
     <div class="price-card feature reveal" style="transition-delay:.05s">
       <span class="pc-badge">★ Populaire</span>
+      <span class="pc-tag">Vidéos incluses</span>
       <div class="pc-name">Pro</div>
       <div class="pc-price">69<small>DT TTC</small></div>
       <div class="pc-credits"><b>900</b> crédits</div>
@@ -201,6 +203,7 @@
     </div>
     <!-- Business -->
     <div class="price-card reveal" style="transition-delay:.1s">
+      <span class="pc-tag">Plus de volume</span>
       <div class="pc-name">Business</div>
       <div class="pc-price">149<small>DT TTC</small></div>
       <div class="pc-credits"><b>2 200</b> crédits</div>
@@ -215,6 +218,7 @@
     <!-- Agence -->
     <div class="price-card reveal" style="transition-delay:.15s">
       <span class="pc-badge">Meilleur prix</span>
+      <span class="pc-tag">Volume maximal</span>
       <div class="pc-name">Agence</div>
       <div class="pc-price">349<small>DT TTC</small></div>
       <div class="pc-credits"><b>5 500</b> crédits</div>
@@ -243,13 +247,36 @@
   </div>
 </div></section>
 
-<footer class="lp-footer"><div class="container">
-  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
-  <div class="lp-foot-links">
-    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
-    <a href="/mentions-legales">Mentions légales</a>
-    <a href="/confidentialite">Confidentialité</a>
-    <a href="/contact">Contact</a>
+<footer class="lp-footer rich"><div class="container">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+      <p>Vos visuels pro — affiches, posts, stories et vidéos — créés par IA en quelques secondes. Pensé pour les pros en Tunisie.</p>
+      <a class="btn-dl" href="/telecharger"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg> Télécharger l'app</a>
+    </div>
+    <div class="foot-col">
+      <h4>Produit</h4>
+      <a href="/#creer">Créations</a>
+      <a href="/#fonctionnalites">Fonctionnalités</a>
+      <a href="/offre">Tarifs</a>
+      <a href="/telecharger">Télécharger</a>
+    </div>
+    <div class="foot-col">
+      <h4>Légal</h4>
+      <a href="/cgu">CGU / CGV</a>
+      <a href="/mentions-legales">Mentions légales</a>
+      <a href="/confidentialite">Confidentialité</a>
+    </div>
+    <div class="foot-col">
+      <h4>Contact</h4>
+      <a href="/contact">Nous écrire</a>
+      <a href="mailto:contact@snapfiche.com">contact@snapfiche.com</a>
+      <span>Tunis, Tunisie</span>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</span>
+    <span>Paiement sécurisé via Flouci · Prix en dinars (TTC)</span>
   </div>
 </div></footer>
 
