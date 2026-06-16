@@ -156,6 +156,22 @@
 .compare .yes{color:var(--ok);font-weight:800}
 .compare .no{color:#b91c1c;font-weight:700}
 
+/* Pourquoi SnapFiche : blocs visuel + texte (remplace le tableau comparatif) */
+.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:920px;margin:0 auto}
+@media(max-width:680px){.why-grid{grid-template-columns:1fr}}
+.why-card{display:flex;gap:16px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:16px;transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
+.why-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--accent-soft2)}
+.why-visual{flex-shrink:0;width:90px;height:90px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.why-visual svg{width:42px;height:42px;stroke:#fff;fill:none}
+.why-visual.v1{background:linear-gradient(160deg,#7c3aed,#a855f7)}
+.why-visual.v2{background:linear-gradient(160deg,#d946ef,#9333ea)}
+.why-visual.v3{background:linear-gradient(160deg,#6366f1,#8b5cf6)}
+.why-visual.v4{background:linear-gradient(160deg,#9333ea,#6d28d9)}
+.why-body h3{font-family:'Bricolage Grotesque','Inter',sans-serif;font-size:18px;margin:0 0 5px}
+.why-body p{color:var(--muted);font-size:14.5px;margin:0;line-height:1.55}
+.why-body b{color:var(--accent-2)}
+@media(max-width:420px){.why-card{flex-direction:column;text-align:center;align-items:center}}
+
 /* Cartes de prix (landing) */
 .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:20px;align-items:stretch;max-width:1040px;margin:0 auto}
 .price-card{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 22px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
