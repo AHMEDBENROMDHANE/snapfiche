@@ -97,31 +97,8 @@ function buildStylePrompt(style, subject) {
 }
 
 // ============ Registre des modèles ============
-const CREDIT_USD = 0.005; // 1 crédit ≈ 0,005 $ (coût interne — non affiché au client)
+const CREDIT_USD = 0.005; // 1 crédit ≈ 0,005 $ (coût interne kie — affiché à l'admin uniquement)
 const usd = (c) => (c * CREDIT_USD).toFixed(2);
-
-// Valeur d'un crédit EN DINARS, déduite des packs (min/max selon le pack acheté).
-let _dtRate = null, _dtRateTried = false;
-function ensureDtRate() {
-  if (_dtRate || _dtRateTried) return;
-  _dtRateTried = true;
-  if (!window.api || !window.api.getPacks) return;
-  window.api.getPacks().then(({ packs }) => {
-    const rates = (packs || []).filter((p) => p.credits > 0)
-      .map((p) => (p.promo_active && p.promo_price_tnd != null ? +p.promo_price_tnd : +p.price_tnd) / p.credits);
-    if (rates.length) { _dtRate = { min: Math.min(...rates), max: Math.max(...rates) }; refreshCostLabels(); }
-  }).catch(() => {});
-}
-function dtCost(c) {
-  if (!_dtRate) return '';
-  const f = (n) => n.toFixed(2).replace('.', ',');
-  const lo = c * _dtRate.min, hi = c * _dtRate.max;
-  return Math.abs(lo - hi) < 0.01 ? '≈ ' + f(lo) + ' DT' : '≈ ' + f(lo) + ' à ' + f(hi) + ' DT';
-}
-function refreshCostLabels() {
-  try { if (document.getElementById('imgCost') && typeof updateImageUI === 'function') updateImageUI(); } catch (_) {}
-  try { if (document.getElementById('vidCost') && typeof updateVideoUI === 'function') updateVideoUI(); } catch (_) {}
-}
 
 // Les coûts en crédits sont des ESTIMATIONS basées sur les tarifs publiés de kie.ai.
 // Le solde réel (affiché en bas à gauche) fait foi.
@@ -1437,9 +1414,8 @@ function updateImageUI() {
   document.getElementById('imgResWrap').classList.toggle('hidden', !m.res);
   document.getElementById('imgModelHint').textContent = m.desc || '';
   const c = imageCost();
-  ensureDtRate();
-  const dt = dtCost(c);
-  document.getElementById('imgCost').textContent = `Coût estimé : ~${c} crédits${dt ? ' · ' + dt : ''} / image`;
+  const extra = ACCOUNT.isAdmin ? ` (~$${usd(c)})` : '';
+  document.getElementById('imgCost').textContent = `Coût estimé : ~${c} crédits${extra} / image`;
 }
 imgModelSel.onchange = updateImageUI;
 document.getElementById('imgRes').onchange = updateImageUI;
@@ -1461,9 +1437,8 @@ function updateVideoUI() {
   document.getElementById('vidAudioWrap').classList.toggle('hidden', !m.audio);
   document.getElementById('vidModelHint').textContent = m.desc || '';
   const c = videoCost();
-  ensureDtRate();
-  const dt = dtCost(c);
-  document.getElementById('vidCost').textContent = `Coût estimé : ~${c} crédits${dt ? ' · ' + dt : ''} / vidéo`;
+  const extra = ACCOUNT.isAdmin ? ` (~$${usd(c)})` : '';
+  document.getElementById('vidCost').textContent = `Coût estimé : ~${c} crédits${extra} / vidéo`;
 }
 vidModelSel.onchange = updateVideoUI;
 vidResSel.onchange = updateVideoUI;
@@ -1815,7 +1790,7 @@ function showFreeVideo(container, videoUrl, srcUrl, prompt, history, galleryId, 
   container.appendChild(actions);
   const note = document.createElement('div');
   note.className = 'hint'; note.style.marginTop = '8px';
-  note.textContent = 'Story dynamique (fond animé + lumière + particules, affiche entière jamais coupée) — 10 crédits. Pour un mouvement généré par IA, utilise « Animer en IA ».';
+  note.textContent = 'Story dynamique (fond animé + lumière + particules, affiche entière jamais coupée) — 10 crédits.';
   container.appendChild(note);
 }
 
@@ -1965,40 +1940,6 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
     freeBtn.title = 'Crée une courte vidéo « Story dynamique » (fond animé + lumière + particules, affiche entière) directement dans ton navigateur — 10 crédits.';
     freeBtn.onclick = () => freeAnimate(container, url, prompt, history, galleryId, taskId);
     actions.appendChild(freeBtn);
-  }
-
-  // Animer en vidéo : transforme l'affiche/le visuel en courte vidéo (image -> vidéo).
-  if (featureOn('video')) {
-    const animBtn = document.createElement('button');
-    animBtn.textContent = 'Animer en IA (~100 cr)';
-    animBtn.title = 'Crée une courte vidéo animée à partir de cette image (mouvement de caméra, vie)';
-    animBtn.onclick = async () => {
-      animBtn.disabled = true;
-      showGenLoading(container, '9:16', 'Animation en vidéo…');
-      try {
-        let srcUrl = url;
-        try { const up = await window.api.uploadFile({ remoteUrl: url, fileName: 'anim-src.png' }); if (up && up.url) srcUrl = up.url; } catch (_) {}
-        const motion = "Anime cette image en une courte vidéo cinématographique : léger mouvement de caméra (travelling/zoom lent), éléments vivants (lumière, vent, reflets). Garde EXACTEMENT la même scène, le même sujet et la même composition.";
-        const { taskId: vt } = await window.api.generate({
-          api: 'jobs', model: 'bytedance/seedance-2-fast',
-          input: { prompt: motion, first_frame_url: srcUrl, aspect_ratio: 'adaptive', resolution: '720p', duration: 5, generate_audio: false },
-        });
-        let videoUrl = null;
-        for (let t = 0; t < 90 && !videoUrl; t++) {
-          await new Promise((s) => setTimeout(s, 3000));
-          const rr = await window.api.poll({ api: 'jobs', taskId: vt });
-          if (rr.error) throw new Error(rr.error);
-          if (rr.done) videoUrl = rr.resultUrl;
-        }
-        if (!videoUrl) throw new Error('Délai dépassé — réessaie.');
-        refreshBalance();
-        showVideoResult(container, videoUrl, prompt);
-      } catch (e) {
-        alert('Échec : ' + e.message);
-        showImageResult(container, url, prompt, history, galleryId, taskId);
-      }
-    };
-    actions.appendChild(animBtn);
   }
 
   if (history.length) {
