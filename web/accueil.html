@@ -28,8 +28,11 @@
     <a href="#fonctionnalites">Fonctionnalités</a>
     <a href="#comment">Comment ça marche</a>
     <a href="/offre">Tarifs</a>
-    <a class="lp-login" href="/app">Se connecter</a>
-    <a class="lp-dl" href="/app" data-install>
+    <a class="lp-login" href="/app">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+      Mon compte
+    </a>
+    <a class="lp-dl" href="/telecharger">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
       Télécharger
     </a>
@@ -44,7 +47,7 @@
     <h1>Transformez une idée en <span class="grad">visuel professionnel</span> en quelques secondes.</h1>
     <p class="hero-sub">Affiches, posts, stories et vidéos — décrivez votre besoin, SnapFiche crée tout à votre charte de marque. Aucune compétence en design requise.</p>
     <div class="hero-cta">
-      <a class="btn-dl" href="/app" data-install>
+      <a class="btn-dl" href="/telecharger">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
         Télécharger l'application
       </a>
@@ -90,7 +93,7 @@
 <section class="section" id="creer"><div class="container">
   <div class="section-head reveal">
     <span class="lp-eyebrow">Possibilités infinies</span>
-    <h2>Ce que vous pouvez créer</h2>
+    <h2>Ce que vous pouvez créer pour <span class="rot-word" id="rotSector">les restaurants</span></h2>
     <p>Un seul outil pour tous vos supports de communication.</p>
   </div>
   <div class="show-grid">
@@ -227,11 +230,11 @@
   <div class="dl-band reveal">
     <h2>Téléchargez SnapFiche et lancez-vous</h2>
     <p>Installez l'application sur votre téléphone ou votre ordinateur et créez votre premier visuel dès maintenant — gratuitement.</p>
-    <a class="btn-dl" href="/app" data-install>
+    <a class="btn-dl" href="/telecharger">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
-      Télécharger l'application
+      Choisir mon appareil
     </a>
-    <div class="dl-sub">Compatible Android, iPhone et ordinateur · Aucun store requis</div>
+    <div class="dl-sub">Android · iPhone · Windows · PWA — aucun store requis</div>
   </div>
 </div></section>
 
@@ -246,15 +249,6 @@
 </div></footer>
 
 <!-- Modale d'installation (fallback selon plateforme) -->
-<div class="dl-modal" id="dlModal">
-  <div class="box">
-    <h3>Installer SnapFiche</h3>
-    <p id="dlText">Suivez ces étapes pour ajouter SnapFiche à votre écran d'accueil :</p>
-    <ol id="dlSteps"></ol>
-    <button class="close" id="dlClose">J'ai compris</button>
-  </div>
-</div>
-
 <script>
 // 1) Révélation au scroll
 (function(){
@@ -289,46 +283,17 @@
   counters.forEach(function(c){ io.observe(c); });
 })();
 
-// 3) Téléchargement / installation PWA
+// 3) Mot-secteur rotatif — réutilise les secteurs de la bannière pour animer la section « Créations »
 (function(){
-  var deferred = null;
-  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred = e; });
-
-  var modal = document.getElementById('dlModal');
-  var stepsEl = document.getElementById('dlSteps');
-  var textEl = document.getElementById('dlText');
-  function ua(){ return navigator.userAgent || ''; }
-  function isIOS(){ return /iPad|iPhone|iPod/.test(ua()) && !window.MSStream; }
-  function isAndroid(){ return /Android/.test(ua()); }
-  function openModal(){
-    var steps = [];
-    if (isIOS()) {
-      textEl.textContent = "Sur iPhone/iPad (Safari) :";
-      steps = ["Appuyez sur le bouton Partager (carré avec une flèche).", "Choisissez « Sur l'écran d'accueil ».", "Validez : SnapFiche s'installe comme une app."];
-    } else if (isAndroid()) {
-      textEl.textContent = "Sur Android (Chrome) :";
-      steps = ["Ouvrez le menu ⋮ en haut à droite.", "Choisissez « Installer l'application » ou « Ajouter à l'écran d'accueil ».", "Validez : l'icône SnapFiche apparaît."];
-    } else {
-      textEl.textContent = "Sur ordinateur (Chrome/Edge) :";
-      steps = ["Cliquez sur l'icône d'installation dans la barre d'adresse (à droite).", "Ou menu ⋮ → « Installer SnapFiche ».", "L'app s'ouvre dans sa propre fenêtre."];
-    }
-    stepsEl.innerHTML = steps.map(function(s){ return '<li>'+s+'</li>'; }).join('');
-    modal.classList.add('open');
-  }
-  document.getElementById('dlClose').addEventListener('click', function(){ modal.classList.remove('open'); });
-  modal.addEventListener('click', function(e){ if (e.target === modal) modal.classList.remove('open'); });
-
-  document.querySelectorAll('[data-install]').forEach(function(btn){
-    btn.addEventListener('click', function(e){
-      e.preventDefault();
-      if (deferred) {
-        deferred.prompt();
-        deferred.userChoice.finally(function(){ deferred = null; });
-      } else {
-        openModal();
-      }
-    });
-  });
+  var el = document.getElementById('rotSector');
+  if (!el) return;
+  var sectors = ['les restaurants', 'la mode & la beauté', "l'e-commerce", "l'événementiel", "l'immobilier", 'les cafés', 'les boutiques', 'les agences'];
+  var i = 0;
+  setInterval(function(){
+    i = (i + 1) % sectors.length;
+    el.classList.add('swap');
+    setTimeout(function(){ el.textContent = sectors[i]; el.classList.remove('swap'); }, 350);
+  }, 2000);
 })();
 </script>
 </body>

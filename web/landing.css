@@ -109,7 +109,12 @@
 .section-head p{color:var(--muted);font-size:16.5px;margin:0}
 
 /* Showcase « ce que vous pouvez créer » */
-.show-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.show-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.show-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.show-grid{grid-template-columns:1fr}}
+/* Mot-secteur rotatif (réutilise les secteurs de la bannière) */
+.rot-word{display:inline-block;min-width:1px;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transition:opacity .35s,transform .35s}
+.rot-word.swap{opacity:0;transform:translateY(8px)}
 .show-tile{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);aspect-ratio:4/5;display:flex;flex-direction:column;justify-content:flex-end;padding:18px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med);isolation:isolate}
 .show-tile::before{content:"";position:absolute;inset:0;z-index:-1;transition:transform .5s ease}
 .show-tile:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}

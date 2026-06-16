@@ -201,6 +201,8 @@ const PUBLIC_PAGES = {
   '/': 'accueil.html',
   '/accueil': 'accueil.html',
   '/app': 'index.html',
+  '/telecharger': 'telecharger.html',
+  '/download': 'telecharger.html',
   '/cgu': 'cgu.html',
   '/conditions-generales': 'cgu.html',
   '/mentions-legales': 'mentions-legales.html',

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Télécharger SnapFiche — Android, iPhone, Windows, PWA</title>
+<meta name="description" content="Installez SnapFiche sur votre appareil : Android, iPhone/iPad, Windows ou en application web (PWA). Aucun store requis." />
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/legal.css" />
+<link rel="stylesheet" href="/landing.css" />
+<style>
+  .dl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:880px;margin:0 auto}
+  @media(max-width:680px){.dl-grid{grid-template-columns:1fr}}
+  .dlc{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-md);padding:24px;display:flex;flex-direction:column;gap:12px;transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
+  .dlc:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--accent-soft2)}
+  .dlc-head{display:flex;align-items:center;gap:13px}
+  .dlc-ico{width:52px;height:52px;border-radius:14px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .dlc-ico svg{width:28px;height:28px;stroke:var(--accent-2);fill:none}
+  .dlc-ico svg.fill{fill:var(--accent-2);stroke:none}
+  .dlc h3{font-family:'Bricolage Grotesque',sans-serif;font-size:19px;margin:0}
+  .dlc .dlc-sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .dlc ol{margin:4px 0 0;padding-left:20px;color:var(--ink);font-size:14px;line-height:1.65}
+  .dlc ol li{margin:3px 0}
+  .dlc .dlc-btn{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent-grad);color:#fff;border:0;border-radius:99px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:var(--shadow-md);transition:filter var(--t-fast),transform var(--t-fast)}
+  .dlc .dlc-btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .dlc .dlc-btn.soft{background:#fff;color:var(--accent-2);border:1.5px solid var(--accent-soft2);box-shadow:none}
+  .dl-why{max-width:880px;margin:34px auto 0;background:var(--accent-soft);border:1px solid var(--accent-soft2);border-radius:var(--r);padding:18px 20px;font-size:14.5px;color:var(--ink)}
+  .dl-why b{color:var(--accent-2)}
+</style>
+</head>
+<body>
+<div class="site-banner">
+  <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 18H3z"/><path d="M12 9v4M12 17h.01"/></svg>
+  Site en cours de construction — version de démonstration, certaines fonctionnalités sont en finalisation.
+</div>
+<header class="lp-header"><div class="container">
+  <a class="lp-brand" href="/"><img src="/assets/logo.png" alt="SnapFiche" />Snap<b>Fiche</b></a>
+  <nav class="lp-nav">
+    <a href="/">Accueil</a>
+    <a href="/offre">Tarifs</a>
+    <a href="/contact">Contact</a>
+    <a class="lp-dl" href="/app">Mon compte</a>
+  </nav>
+</div></header>
+
+<section class="hero2" style="padding-bottom:30px">
+  <div class="hero-bg"><b></b><b></b><b></b></div>
+  <div class="container">
+    <span class="hero-badge"><span class="dot"></span> Installation en 1 clic · aucun store requis</span>
+    <h1 style="margin-bottom:10px">Téléchargez <span class="grad">SnapFiche</span></h1>
+    <p class="hero-sub">Choisissez votre appareil. SnapFiche s'installe comme une vraie application, fonctionne hors ligne pour la navigation et reste toujours à jour.</p>
+  </div>
+</section>
+
+<main class="lp-main" style="padding-top:6px"><div class="container">
+  <div class="dl-grid">
+
+    <!-- Android -->
+    <div class="dlc reveal">
+      <div class="dlc-head">
+        <div class="dlc-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 5h4M11 18.5h2"/></svg></div>
+        <div><h3>Android</h3><div class="dlc-sub">Chrome / Samsung Internet</div></div>
+      </div>
+      <ol>
+        <li>Touchez « Installer » ci-dessous (ou le menu ⋮ → « Installer l'application »).</li>
+        <li>Confirmez « Ajouter à l'écran d'accueil ».</li>
+        <li>L'icône SnapFiche apparaît comme une app.</li>
+      </ol>
+      <button class="dlc-btn" data-install>Installer sur Android</button>
+    </div>
+
+    <!-- iPhone / iPad -->
+    <div class="dlc reveal" style="transition-delay:.05s">
+      <div class="dlc-head">
+        <div class="dlc-ico"><svg class="fill" viewBox="0 0 24 24"><path d="M17.05 12.5c-.02-2 1.63-2.97 1.7-3.02-.93-1.36-2.38-1.55-2.89-1.57-1.23-.12-2.4.72-3.02.72-.62 0-1.58-.7-2.6-.68-1.34.02-2.57.78-3.26 1.97-1.39 2.41-.36 5.98 1 7.94.66.96 1.45 2.03 2.48 1.99 1-.04 1.37-.64 2.58-.64 1.2 0 1.54.64 2.6.62 1.07-.02 1.75-.97 2.41-1.94.76-1.11 1.07-2.19 1.08-2.24-.02-.01-2.07-.79-2.09-3.15zM15.1 6.2c.55-.67.92-1.6.82-2.53-.79.03-1.75.53-2.32 1.19-.51.59-.96 1.54-.84 2.45.88.07 1.78-.45 2.34-1.11z"/></svg></div>
+        <div><h3>iPhone / iPad</h3><div class="dlc-sub">Safari</div></div>
+      </div>
+      <ol>
+        <li>Ouvrez snapfiche.com dans <b>Safari</b>.</li>
+        <li>Touchez le bouton <b>Partager</b> (carré avec une flèche).</li>
+        <li>Choisissez <b>« Sur l'écran d'accueil »</b> puis « Ajouter ».</li>
+      </ol>
+      <a class="dlc-btn soft" href="/app">Ouvrir dans Safari</a>
+    </div>
+
+    <!-- Windows -->
+    <div class="dlc reveal" style="transition-delay:.1s">
+      <div class="dlc-head">
+        <div class="dlc-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5 10.5 4.4v7.1H3zM10.5 12.5v7.1L3 18.5v-6zM12 4.2 21 3v8.5h-9zM12 12.5h9V21l-9-1.3z"/></svg></div>
+        <div><h3>Windows</h3><div class="dlc-sub">Edge / Chrome</div></div>
+      </div>
+      <ol>
+        <li>Cliquez « Installer » ci-dessous (ou l'icône d'installation dans la barre d'adresse).</li>
+        <li>Ou menu ⋮ → « Applications » → « Installer SnapFiche ».</li>
+        <li>L'app s'ouvre dans sa propre fenêtre, épinglable.</li>
+      </ol>
+      <button class="dlc-btn" data-install>Installer sur Windows</button>
+    </div>
+
+    <!-- PWA générique -->
+    <div class="dlc reveal" style="transition-delay:.15s">
+      <div class="dlc-head">
+        <div class="dlc-ico"><svg viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+        <div><h3>Application web (PWA)</h3><div class="dlc-sub">Tout navigateur moderne</div></div>
+      </div>
+      <ol>
+        <li>Pas d'installation ? Utilisez SnapFiche directement dans le navigateur.</li>
+        <li>Cliquez « Installer » pour l'ajouter à votre appareil.</li>
+        <li>Fonctionne sur Mac, Linux, Chromebook…</li>
+      </ol>
+      <button class="dlc-btn" data-install>Installer maintenant</button>
+    </div>
+
+  </div>
+
+  <div class="dl-why reveal">
+    <b>Pourquoi une application web ?</b> SnapFiche est une <b>PWA</b> : pas besoin d'App Store ni de Play Store,
+    installation en 1 clic, mises à jour automatiques, et la même expérience sur téléphone et ordinateur.
+  </div>
+</div></main>
+
+<footer class="lp-footer"><div class="container">
+  <div>© 2026 Triple A Agency — SnapFiche. Tous droits réservés.</div>
+  <div class="lp-foot-links">
+    <a href="/offre">Offre</a><a href="/cgu">CGU</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/confidentialite">Confidentialité</a>
+    <a href="/contact">Contact</a>
+  </div>
+</div></footer>
+
+<div class="dl-modal" id="dlModal">
+  <div class="box">
+    <h3>Installer SnapFiche</h3>
+    <p id="dlText"></p>
+    <ol id="dlSteps"></ol>
+    <button class="close" id="dlClose">J'ai compris</button>
+  </div>
+</div>
+
+<script>
+// Révélation au scroll
+(function(){
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+  var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.12});
+  els.forEach(function(e){io.observe(e);});
+})();
+// Installation PWA (prompt natif si dispo, sinon instructions selon la plateforme)
+(function(){
+  var deferred=null;
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;});
+  var modal=document.getElementById('dlModal'),stepsEl=document.getElementById('dlSteps'),textEl=document.getElementById('dlText');
+  function ua(){return navigator.userAgent||'';}
+  var isIOS=/iPad|iPhone|iPod/.test(ua())&&!window.MSStream, isAndroid=/Android/.test(ua());
+  function openModal(){
+    var steps;
+    if(isIOS){textEl.textContent='Sur iPhone/iPad (Safari) :';steps=['Touchez le bouton Partager (carré + flèche).','Choisissez « Sur l’écran d’accueil ».','Validez : SnapFiche s’installe comme une app.'];}
+    else if(isAndroid){textEl.textContent='Sur Android (Chrome) :';steps=['Ouvrez le menu ⋮ en haut à droite.','Choisissez « Installer l’application ».','Validez : l’icône apparaît.'];}
+    else{textEl.textContent='Sur ordinateur (Chrome/Edge) :';steps=['Cliquez l’icône d’installation dans la barre d’adresse.','Ou menu ⋮ → « Installer SnapFiche ».','L’app s’ouvre dans sa propre fenêtre.'];}
+    stepsEl.innerHTML=steps.map(function(s){return '<li>'+s+'</li>';}).join('');
+    modal.classList.add('open');
+  }
+  document.getElementById('dlClose').addEventListener('click',function(){modal.classList.remove('open');});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('open');});
+  document.querySelectorAll('[data-install]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.preventDefault();
+      if(deferred){deferred.prompt();deferred.userChoice.finally(function(){deferred=null;});}
+      else{openModal();}
+    });
+  });
+})();
+</script>
+</body>
+</html>
