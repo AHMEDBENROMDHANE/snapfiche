@@ -3378,22 +3378,6 @@ async function loadGallery() {
 // et construit le prompt à partir de réponses simples (+ charte de l'entreprise).
 const RECIPES = [
   {
-    id: 'poster-pro', icon: 'layers', title: 'Affiche Pro (texte modifiable)',
-    desc: "SnapFiche crée le visuel SANS texte — titre, description, logo et contacts sont posés en calques 100 % modifiables.",
-    kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '4:5', resolution: '2K' },
-    proLayers: true,
-    ask: [
-      { key: 'subject', label: 'Quel visuel de fond ?', ph: 'Ex : burger gourmet sur table en bois, vapeur, éclairage dramatique, fond sombre' },
-      { key: 'headline', label: "Titre de l'affiche (calque modifiable)", ph: 'Ex : SOLDES -50%' },
-      { key: 'desc', label: "Texte de l'affiche (calque modifiable — infos, points éducatifs, offre…)", ph: 'Ex : Invisible au quotidien • Amovible pour manger • Résultats dès 6 mois', multiline: true },
-    ],
-    build: (a) =>
-      `Visuel d'arrière-plan pour une affiche professionnelle. Sujet : ${a.subject}. ` +
-      `INTERDICTION ABSOLUE : aucun texte, aucune lettre, aucun chiffre, aucun mot, aucun logo, aucune typographie, aucun filigrane dans l'image — uniquement le visuel. ` +
-      `Composition pensée pour accueillir du texte ensuite : zone supérieure épurée et dégagée (fond uni, ciel, flou doux) pour un grand titre, zone inférieure calme pour une barre de contact. ` +
-      `Sujet principal au centre ou au tiers, profondeur de champ, éclairage soigné, qualité studio.`,
-  },
-  {
     id: 'poster-event', icon: 'star', title: 'Affiche événement',
     desc: 'Affiche verticale percutante (concert, expo, soirée…).',
     kind: 'image', model: 'nano-banana-pro', params: { aspect_ratio: '9:16', resolution: '2K' },
