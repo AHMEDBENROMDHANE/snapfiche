@@ -190,7 +190,7 @@
 .pricing-grid{display:flex;gap:16px;overflow-x:auto;width:fit-content;max-width:100%;margin:0 auto;padding:26px 6px 16px;scrollbar-width:thin;scrollbar-color:var(--accent-soft2) transparent}
 .pricing-grid::-webkit-scrollbar{height:8px}
 .pricing-grid::-webkit-scrollbar-thumb{background:var(--accent-soft2);border-radius:99px}
-.price-card{position:relative;flex:0 0 200px;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 18px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
+.price-card{position:relative;flex:0 0 244px;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
 .price-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--accent-soft2)}
 /* Pack populaire : pas de barre, un halo mauve animé */
 @keyframes pc-glow{0%,100%{box-shadow:0 6px 22px rgba(124,58,237,.22)}50%{box-shadow:0 16px 44px rgba(124,58,237,.5)}}
@@ -210,6 +210,8 @@
 .pc-list li.yes svg{stroke:var(--ok)}
 .pc-list li.no{color:var(--muted)}
 .pc-list li.no svg{stroke:#c4bcd6}
+.pc-list li.inherit{font-weight:800;color:var(--accent-2);padding-bottom:9px;border-bottom:1px dashed var(--border);margin-bottom:2px}
+.pc-list li.inherit svg{stroke:var(--accent-2)}
 .pc-btn{margin-top:auto;display:block;text-align:center;border-radius:99px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;transition:transform var(--t-fast),filter var(--t-fast),background var(--t-fast),border-color var(--t-fast)}
 .pc-btn.solid{background:var(--accent-grad);color:#fff!important;border:0;box-shadow:var(--shadow-md)}
 .pc-btn.solid:hover{transform:translateY(-2px);filter:brightness(1.07);text-decoration:none}
