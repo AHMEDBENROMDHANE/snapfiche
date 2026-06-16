@@ -186,15 +186,15 @@
 .foot-col a:hover{color:var(--accent);text-decoration:none}
 .foot-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:32px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
 
-/* Tarifs : une seule ligne scrollable (scroll-snap) */
-.pricing-grid{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;max-width:1080px;margin:0 auto;padding:26px 6px 14px;scrollbar-width:thin;scrollbar-color:var(--accent-soft2) transparent}
+/* Tarifs : tiennent sur une ligne (desktop) et défilent horizontalement si besoin (mobile) */
+.pricing-grid{display:flex;gap:16px;overflow-x:auto;width:fit-content;max-width:100%;margin:0 auto;padding:26px 6px 16px;scrollbar-width:thin;scrollbar-color:var(--accent-soft2) transparent}
 .pricing-grid::-webkit-scrollbar{height:8px}
 .pricing-grid::-webkit-scrollbar-thumb{background:var(--accent-soft2);border-radius:99px}
-.price-card{position:relative;flex:0 0 250px;scroll-snap-align:center;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:26px 22px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
+.price-card{position:relative;flex:0 0 200px;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 18px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
 .price-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--accent-soft2)}
-@keyframes pc-glow{0%,100%{box-shadow:0 8px 24px rgba(124,58,237,.18)}50%{box-shadow:0 14px 36px rgba(124,58,237,.36)}}
-.price-card.feature{border:2px solid var(--accent);animation:pc-glow 3s ease-in-out infinite}
-.price-card.feature::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;border-radius:14px 14px 0 0;background:var(--accent-grad)}
+/* Pack populaire : pas de barre, un halo mauve animé */
+@keyframes pc-glow{0%,100%{box-shadow:0 6px 22px rgba(124,58,237,.22)}50%{box-shadow:0 16px 44px rgba(124,58,237,.5)}}
+.price-card.feature{border:2px solid var(--accent);animation:pc-glow 2.6s ease-in-out infinite}
 .pc-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--accent-grad);color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em;padding:5px 14px;border-radius:99px;box-shadow:var(--shadow-md);white-space:nowrap;animation:ls-pop .4s both}
 /* Étiquette de différence (pour que le client comprenne ce qui change) */
 .pc-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.02em;padding:4px 11px;border-radius:99px;background:var(--accent-soft);color:var(--accent-2);margin-bottom:8px}
