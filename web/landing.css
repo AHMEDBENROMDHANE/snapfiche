@@ -154,6 +154,34 @@
 .compare .yes{color:var(--ok);font-weight:800}
 .compare .no{color:#b91c1c;font-weight:700}
 
+/* Cartes de prix (landing) */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:20px;align-items:stretch;max-width:1040px;margin:0 auto}
+.price-card{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 22px;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med),border-color var(--t-med)}
+.price-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--accent-soft2)}
+.price-card.feature{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.price-card.feature::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--accent-grad)}
+.pc-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent-grad);color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em;padding:5px 14px;border-radius:99px;box-shadow:var(--shadow-md);white-space:nowrap;animation:ls-pop .4s both}
+.pc-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;margin:6px 0 2px}
+.pc-price{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:38px;line-height:1;color:var(--accent-2)}
+.pc-price small{font-size:13px;color:var(--muted);font-weight:600;margin-left:4px}
+.pc-credits{color:var(--muted);font-size:13.5px;margin:8px 0 16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.pc-credits b{color:var(--ink)}
+.pc-list{list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:11px;flex:1}
+.pc-list li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.4}
+.pc-list li svg{width:18px;height:18px;flex-shrink:0;margin-top:1px;fill:none}
+.pc-list li.yes svg{stroke:var(--ok)}
+.pc-list li.no{color:var(--muted)}
+.pc-list li.no svg{stroke:#c4bcd6}
+.pc-btn{margin-top:auto;display:block;text-align:center;border-radius:99px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;transition:transform var(--t-fast),filter var(--t-fast),background var(--t-fast),border-color var(--t-fast)}
+.pc-btn.solid{background:var(--accent-grad);color:#fff!important;border:0;box-shadow:var(--shadow-md)}
+.pc-btn.solid:hover{transform:translateY(-2px);filter:brightness(1.07);text-decoration:none}
+.pc-btn.soft{background:#fff;color:var(--accent-2)!important;border:1.5px solid var(--accent-soft2)}
+.pc-btn.soft:hover{border-color:var(--accent);background:var(--accent-soft);text-decoration:none}
+@media(min-width:940px){
+  .price-card.feature{transform:scale(1.04);z-index:1}
+  .price-card.feature:hover{transform:scale(1.04) translateY(-6px)}
+}
+
 /* Tarifs mini */
 .price-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;max-width:780px;margin:0 auto 28px}
 .pm{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;box-shadow:var(--shadow-sm);transition:transform var(--t-med),box-shadow var(--t-med)}
