@@ -3645,12 +3645,12 @@ function recipeSummary(eff, nVar) {
     const m = findModel('image', eff.model);
     const per = m.creditsByRes ? m.creditsByRes[eff.params.resolution] || 0 : m.credits || 0;
     const total = per * nVar;
-    return `Format ${eff.params.aspect_ratio}${eff.params.resolution ? ' · Qualité ' + eff.params.resolution : ''} · ~${total} crédits${nVar > 1 ? ` (${nVar} × ${per})` : ''}`;
+    return `Format ${eff.params.aspect_ratio}${eff.params.resolution ? ' · Qualité ' + eff.params.resolution : ''} · <span class="gs-cost">~${total} crédits${nVar > 1 ? ` (${nVar} × ${per})` : ''}</span>`;
   }
   const m = findModel('video', eff.model);
   const cps = m.creditsPerSecByRes ? m.creditsPerSecByRes[eff.params.resolution] || 0 : m.creditsPerSec || 0;
   const c = Math.round(cps * eff.params.duration);
-  return `Format ${eff.params.aspect_ratio} · ${eff.params.resolution} · ${eff.params.duration}s · ~${c} crédits`;
+  return `Format ${eff.params.aspect_ratio} · ${eff.params.resolution} · ${eff.params.duration}s · <span class="gs-cost">~${c} crédits</span>`;
 }
 function updateGuidedSummary() {
   if (!guidedRecipe) return;
