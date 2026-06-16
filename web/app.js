@@ -1751,7 +1751,7 @@ function showImageResult(container, url, prompt, history, galleryId, taskId) {
   // Animer en vidéo : transforme l'affiche/le visuel en courte vidéo (image -> vidéo).
   if (featureOn('video')) {
     const animBtn = document.createElement('button');
-    animBtn.textContent = 'Animer en vidéo (~45 cr)';
+    animBtn.textContent = 'Animer en vidéo (~100 cr)';
     animBtn.title = 'Crée une courte vidéo animée à partir de cette image (mouvement de caméra, vie)';
     animBtn.onclick = async () => {
       animBtn.disabled = true;
